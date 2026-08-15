@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #172642;
+  --color-green: #87CE18;
+  --color-blue: #00A4DE;
+  --color-orange: #EE7900;
+  --color-warm: #FBF9F5;
+  --color-warm-muted: #F5F2EC;
+
+  --font-montserrat: "Montserrat", sans-serif;
+  --font-lora: "Lora", serif;
+
+  --shadow-soft: 0 12px 30px -14px rgba(23,38,66,0.15);
+  --shadow-soft-hover: 0 20px 40px -14px rgba(23,38,66,0.22);
+
+  --radius-4xl: 2rem;
+}
+
+@layer base {
+  body {
+    @apply font-montserrat bg-warm text-navy antialiased;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

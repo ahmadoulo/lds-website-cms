@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,500&family=Lora:ital@1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    *{box-sizing:border-box;}
+    body{margin:0;-webkit-font-smoothing:antialiased;}
+    html{scroll-behavior:smooth;}
+    a{color:#00A4DE;text-decoration:none;}
+    a:hover{color:#EE7900;}
+    ::selection{background:#87CE18;color:#fff;}
+    @keyframes floatSlow{0%,100%{transform:translateY(0px);}50%{transform:translateY(-12px);}}
+  </style>
+</helmet>
+<div style="font-family:'Montserrat',sans-serif;background:#FBF9F5;color:#172642;overflow-x:hidden;">
+
+  <div style="background:#172642;color:rgba(255,255,255,0.85);font-size:13px;">
+    <div style="max-width:1280px;margin:0 auto;padding:9px 6%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;gap:22px;flex-wrap:wrap;">
+        <a href="mailto:lougasolidaire@gmail.com" style="color:rgba(255,255,255,0.85);">
+          <i class="fa-solid fa-envelope" style="margin-right:7px;color:#87CE18;"></i>lougasolidaire@gmail.com
+        </a>
+        <a href="tel:+221774723364" style="color:rgba(255,255,255,0.85);">
+          <i class="fa-solid fa-phone" style="margin-right:7px;color:#87CE18;"></i>+221 77 472 33 64
+        </a>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <a href="#" aria-label="Facebook" style="color:rgba(255,255,255,0.9);width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:12px;" style-hover="background:#00A4DE;">
+          <i class="fa-brands fa-facebook-f"></i>
+        </a>
+        <a href="#" aria-label="Instagram" style="color:rgba(255,255,255,0.9);width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:12px;" style-hover="background:#EE7900;">
+          <i class="fa-brands fa-instagram"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <header style="position:sticky;top:0;z-index:100;background:#ffffff;box-shadow:{{ headerShadow }};transition:box-shadow 0.3s ease;">
+    <div style="max-width:1280px;margin:0 auto;padding:16px 6%;display:flex;align-items:center;justify-content:space-between;gap:24px;">
+      <a href="#accueil" style="display:flex;align-items:center;">
+        <img src="assets/logo.jpeg" alt="Louga Développement Solidaire" style="height:50px;width:auto;object-fit:contain;display:block;" />
+      </a>
+      <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+        <nav style="display:flex;align-items:center;gap:30px;">
+          <sc-for list="{{ nav }}" as="item" hint-placeholder-count="6">
+            <a href="{{ item.href }}" style="font-size:15px;font-weight:600;color:#172642;" style-hover="color:#00A4DE;">{{ item.label }}</a>
+          </sc-for>
+          <a href="#soutenir" style="background:#EE7900;color:#fff;padding:12px 26px;border-radius:100px;font-weight:700;font-size:14.5px;display:inline-flex;align-items:center;gap:8px;box-shadow:0 10px 22px -8px rgba(238,121,0,0.55);" style-hover="background:#172642;">
+            <i class="fa-solid fa-heart"></i>Faire un don
+          </a>
+        </nav>
+      </sc-if>
+      <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+        <button type="button" onClick="{{ toggleMenu }}" style="background:none;border:none;font-size:24px;color:#172642;cursor:pointer;padding:4px 6px;">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </sc-if>
+    </div>
+    <sc-if value="{{ mobileMenuOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#fff;border-top:1px solid rgba(23,38,66,0.08);padding:8px 6% 22px;display:flex;flex-direction:column;gap:2px;">
+        <sc-for list="{{ nav }}" as="item" hint-placeholder-count="6">
+          <a href="{{ item.href }}" onClick="{{ closeMenu }}" style="padding:15px 4px;font-weight:600;font-size:15px;color:#172642;border-bottom:1px solid rgba(23,38,66,0.06);">{{ item.label }}</a>
+        </sc-for>
+        <a href="#soutenir" onClick="{{ closeMenu }}" style="margin-top:14px;background:#EE7900;color:#fff;padding:15px;border-radius:12px;font-weight:700;text-align:center;">Faire un don</a>
+      </div>
+    </sc-if>
+  </header>
+
+  <section id="accueil" style="position:relative;padding:76px 6% 100px;overflow:hidden;">
+    <div style="position:absolute;top:-90px;right:-90px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(135,206,24,0.16),transparent 70%);"></div>
+    <div style="position:absolute;bottom:-40px;left:-110px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(0,164,222,0.14),transparent 70%);"></div>
+
+    <div style="max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:64px;flex-wrap:wrap;position:relative;z-index:2;">
+      <div style="flex:1 1 460px;min-width:320px;">
+        <span style="display:inline-block;background:rgba(135,206,24,0.14);color:#5c9412;font-weight:700;font-size:12.5px;letter-spacing:0.06em;padding:8px 18px;border-radius:100px;margin-bottom:24px;text-transform:uppercase;">Louga Développement Solidaire</span>
+        <h1 style="font-size:clamp(32px,4.6vw,52px);line-height:1.14;font-weight:800;margin:0 0 22px;color:#172642;">Solidarité et action pour un avenir meilleur à Louga</h1>
+        <p style="font-size:18.5px;line-height:1.6;color:rgba(23,38,66,0.72);margin:0 0 36px;max-width:520px;">Association à but non lucratif engagée pour l'éducation, la santé et le développement durable des Lougatois, au Sénégal et depuis la diaspora.</p>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <a href="#soutenir" style="background:#EE7900;color:#fff;padding:16px 32px;border-radius:100px;font-weight:700;font-size:15.5px;box-shadow:0 14px 28px -10px rgba(238,121,0,0.55);transition:transform 0.25s ease;" style-hover="transform:translateY(-3px);">Faire un don</a>
+          <a href="#missions" style="background:#fff;color:#172642;padding:16px 32px;border-radius:100px;font-weight:700;font-size:15.5px;border:1.5px solid rgba(23,38,66,0.15);transition:border-color 0.25s ease;" style-hover="border-color:#172642;">Découvrir nos actions</a>
+        </div>
+      </div>
+      <div style="flex:1 1 320px;min-width:280px;max-width:400px;position:relative;">
+        <div style="position:absolute;inset:-16px;background:linear-gradient(135deg,#87CE18,#00A4DE 55%,#EE7900);border-radius:32px;opacity:0.18;transform:rotate(3deg);"></div>
+        <img src="assets/vest-photo.png" alt="Bénévole de Louga Développement Solidaire sur le terrain" style="position:relative;width:100%;display:block;border-radius:26px;box-shadow:0 30px 60px -20px rgba(23,38,66,0.35);object-fit:cover;aspect-ratio:3/4;" />
+        <div style="position:absolute;bottom:-22px;left:-22px;background:#fff;padding:14px 20px;border-radius:16px;box-shadow:0 16px 32px -8px rgba(23,38,66,0.25);display:flex;align-items:center;gap:12px;animation:floatSlow 5s ease-in-out infinite;">
+          <div style="width:38px;height:38px;border-radius:50%;background:#87CE18;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;"><i class="fa-solid fa-users"></i></div>
+          <div>
+            <div style="font-weight:800;font-size:15px;color:#172642;line-height:1.2;">100% bénévole</div>
+            <div style="font-size:11.5px;color:rgba(23,38,66,0.6);">Sénégal &amp; diaspora</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="max-width:1080px;margin:72px auto 0;background:#fff;border-radius:24px;box-shadow:0 24px 48px -16px rgba(23,38,66,0.12);padding:36px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:24px;position:relative;z-index:2;">
+      <sc-for list="{{ heroStats }}" as="s" hint-placeholder-count="4">
+        <div style="text-align:center;">
+          <div style="font-size:36px;font-weight:800;color:#172642;font-variant-numeric:tabular-nums;">{{ s.display }}</div>
+          <div style="font-size:12.5px;color:rgba(23,38,66,0.6);margin-top:6px;font-weight:600;">{{ s.label }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="association" style="padding:110px 6%;background:#fff;">
+    <div style="max-width:1280px;margin:0 auto;display:flex;gap:72px;align-items:center;flex-wrap:wrap;">
+      <div style="flex:1 1 440px;min-width:300px;">
+        <div style="color:#00A4DE;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;font-size:13px;margin-bottom:14px;">Qui sommes-nous</div>
+        <h2 style="font-size:clamp(27px,3.6vw,38px);font-weight:800;margin:0 0 26px;line-height:1.22;">L'association au service des Lougatois</h2>
+        <p style="font-size:16.5px;line-height:1.75;color:rgba(23,38,66,0.75);margin:0 0 20px;"><strong style="color:#172642;">Louga Développement Solidaire (LDS)</strong> est une association à but non lucratif composée de membres résidant au Sénégal et à l'international. LDS tire sa particularité et sa richesse de l'hétérogénéité des profils de ses membres — de l'étudiant à l'ingénieur, en passant par le professeur.</p>
+        <p style="font-size:16.5px;line-height:1.75;color:rgba(23,38,66,0.75);margin:0 0 36px;">Notre objectif fondamental est de subvenir aux besoins primaires des Lougatois : de la formation professionnelle à l'accès aux soins de santé, en passant par les aides sociales, nous identifions les difficultés pour y apporter des solutions durables.</p>
+        <div style="display:flex;gap:16px;align-items:flex-start;">
+          <span style="font-family:'Lora',serif;font-size:44px;color:#87CE18;line-height:0.6;">"</span>
+          <p style="font-family:'Lora',serif;font-style:italic;font-size:19px;color:#172642;margin:10px 0 0;line-height:1.5;">Nous croyons qu'ensemble, nous pouvons construire un avenir meilleur pour tous.</p>
+        </div>
+      </div>
+      <div style="flex:1 1 380px;min-width:300px;position:relative;padding-bottom:40px;">
+        <img src="assets/crowd-distribution.png" alt="Distribution de kits scolaires à la population de Louga" style="width:80%;border-radius:20px;box-shadow:0 24px 50px -18px rgba(23,38,66,0.3);object-fit:cover;aspect-ratio:4/3;display:block;" />
+        <img src="assets/louga-arches.png" alt="Les arches emblématiques de Louga" style="position:absolute;bottom:0;right:6%;width:148px;height:148px;border-radius:50%;object-fit:cover;border:6px solid #fff;box-shadow:0 16px 32px -8px rgba(23,38,66,0.3);" />
+      </div>
+    </div>
+  </section>
+
+  <section id="missions" style="padding:110px 6%;background:#F5F2EC;">
+    <div style="max-width:1280px;margin:0 auto;">
+      <div style="max-width:640px;margin:0 auto 60px;text-align:center;">
+        <div style="color:#EE7900;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;font-size:13px;margin-bottom:14px;">Nos missions</div>
+        <h2 style="font-size:clamp(27px,3.6vw,38px);font-weight:800;margin:0 0 18px;">Cinq piliers d'action à Louga</h2>
+        <p style="font-size:16.5px;color:rgba(23,38,66,0.7);line-height:1.6;margin:0;">Notre mission est d'améliorer les conditions de vie à Louga à travers cinq domaines d'intervention complémentaires.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:32px;">
+        <div style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 12px 30px -14px rgba(23,38,66,0.15);transition:transform 0.3s ease,box-shadow 0.3s ease;" style-hover="transform:translateY(-6px);box-shadow:0 20px 40px -14px rgba(23,38,66,0.22);">
+          <div style="position:relative;aspect-ratio:16/10;">
+            <img src="assets/classroom-handsup.png" alt="Éducation" style="width:100%;height:100%;object-fit:cover;display:block;" />
+            <div style="position:absolute;bottom:-22px;left:20px;width:50px;height:50px;border-radius:50%;background:#87CE18;color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 8px 16px -4px rgba(0,0,0,0.28);">
+              <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+          </div>
+          <div style="padding:36px 24px 28px;">
+            <h3 style="font-size:18.5px;font-weight:800;margin:0 0 12px;color:#172642;">Éducation</h3>
+            <p style="font-size:14.5px;line-height:1.6;color:rgba(23,38,66,0.68);margin:0;">Distribution de kits scolaires, cours de vacances gratuits et renforcement des élèves en classe d'examen.</p>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 12px 30px -14px rgba(23,38,66,0.15);transition:transform 0.3s ease,box-shadow 0.3s ease;" style-hover="transform:translateY(-6px);box-shadow:0 20px 40px -14px rgba(23,38,66,0.22);">
+          <div style="position:relative;aspect-ratio:16/10;">
+            <img src="assets/masks-distribution.png" alt="Santé" style="width:100%;height:100%;object-fit:cover;display:block;" />
+            <div style="position:absolute;bottom:-22px;left:20px;width:50px;height:50px;border-radius:50%;background:#00A4DE;color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 8px 16px -4px rgba(0,0,0,0.28);">
+              <i class="fa-solid fa-hospital"></i>
+            </div>
+          </div>
+          <div style="padding:36px 24px 28px;">
+            <h3 style="font-size:18.5px;font-weight:800;margin:0 0 12px;color:#172642;">Santé</h3>
+            <p style="font-size:14.5px;line-height:1.6;color:rgba(23,38,66,0.68);margin:0;">Consultations médicales gratuites et actions de prévention pour protéger les populations vulnérables.</p>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 12px 30px -14px rgba(23,38,66,0.15);transition:transform 0.3s ease,box-shadow 0.3s ease;" style-hover="transform:translateY(-6px);box-shadow:0 20px 40px -14px rgba(23,38,66,0.22);">
+          <div style="position:relative;aspect-ratio:16/10;">
+            <img src="assets/foot-sapling.png" alt="Environnement" style="width:100%;height:100%;object-fit:cover;display:block;" />
+            <div style="position:absolute;bottom:-22px;left:20px;width:50px;height:50px;border-radius:50%;background:#87CE18;color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 8px 16px -4px rgba(0,0,0,0.28);">
+              <i class="fa-solid fa-leaf"></i>
+            </div>
+          </div>
+          <div style="padding:36px 24px 28px;">
+            <h3 style="font-size:18.5px;font-weight:800;margin:0 0 12px;color:#172642;">Environnement</h3>
+            <p style="font-size:14.5px;line-height:1.6;color:rgba(23,38,66,0.68);margin:0;">Reboisement et lancement de jardins scolaires productifs pour un Louga plus vert et plus durable.</p>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 12px 30px -14px rgba(23,38,66,0.15);transition:transform 0.3s ease,box-shadow 0.3s ease;" style-hover="transform:translateY(-6px);box-shadow:0 20px 40px -14px rgba(23,38,66,0.22);">
+          <div style="position:relative;aspect-ratio:16/10;">
+            <img src="assets/chicks-crate.png" alt="Insertion professionnelle" style="width:100%;height:100%;object-fit:cover;display:block;" />
+            <div style="position:absolute;bottom:-22px;left:20px;width:50px;height:50px;border-radius:50%;background:#EE7900;color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 8px 16px -4px rgba(0,0,0,0.28);">
+              <i class="fa-solid fa-briefcase"></i>
+            </div>
+          </div>
+          <div style="padding:36px 24px 28px;">
+            <h3 style="font-size:18.5px;font-weight:800;margin:0 0 12px;color:#172642;">Insertion professionnelle</h3>
+            <p style="font-size:14.5px;line-height:1.6;color:rgba(23,38,66,0.68);margin:0;">Formation des acteurs locaux : apprendre aujourd'hui pour entreprendre demain.</p>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 12px 30px -14px rgba(23,38,66,0.15);transition:transform 0.3s ease,box-shadow 0.3s ease;" style-hover="transform:translateY(-6px);box-shadow:0 20px 40px -14px rgba(23,38,66,0.22);">
+          <div style="position:relative;aspect-ratio:16/10;">
+            <img src="assets/kits-boxes.png" alt="Solidarité et aide sociale" style="width:100%;height:100%;object-fit:cover;display:block;" />
+            <div style="position:absolute;bottom:-22px;left:20px;width:50px;height:50px;border-radius:50%;background:#00A4DE;color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 8px 16px -4px rgba(0,0,0,0.28);">
+              <i class="fa-solid fa-hands-holding-child"></i>
+            </div>
+          </div>
+          <div style="padding:36px 24px 28px;">
+            <h3 style="font-size:18.5px;font-weight:800;margin:0 0 12px;color:#172642;">Solidarité &amp; Aide sociale</h3>
+            <p style="font-size:14.5px;line-height:1.6;color:rgba(23,38,66,0.68);margin:0;">Cantine scolaire, kits sanitaires et assistance directe aux familles dans le besoin.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="galerie" style="padding:110px 6%;background:#fff;">
+    <div style="max-width:1280px;margin:0 auto;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:48px;flex-wrap:wrap;">
+        <div>
+          <div style="color:#00A4DE;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;font-size:13px;margin-bottom:14px;">Galerie</div>
+          <h2 style="font-size:clamp(27px,3.6vw,38px);font-weight:800;margin:0;">Nos actions en images</h2>
+        </div>
+        <p style="font-size:15.5px;color:rgba(23,38,66,0.65);max-width:400px;margin:0;">Des moments forts de nos interventions sur le terrain, à Louga.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px;">
+        <div onClick="{{ openGallery0 }}" style="position:relative;border-radius:16px;overflow:hidden;cursor:pointer;aspect-ratio:4/3;box-shadow:0 8px 20px -10px rgba(23,38,66,0.18);transition:box-shadow 0.25s ease;" style-hover="box-shadow:0 16px 32px -10px rgba(23,38,66,0.3);">
+          <img src="assets/crowd-distribution.png" alt="Distribution de kits scolaires" style="width:100%;height:100%;object-fit:cover;display:block;" />
+          <div style="position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,rgba(23,38,66,0.85),transparent);padding:30px 14px 12px;">
+            <span style="color:#fff;font-weight:600;font-size:13px;">Distribution de kits scolaires</span>
+          </div>
+          <div style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.92);display:flex;align-items:center;justify-content:center;color:#172642;font-size:12px;">
+            <i class="fa-solid fa-magnifying-glass-plus"></i>
+          </div>
+        </div>
+        <div onClick="{{ openGallery1 }}" style="position:relative;border-radius:16px;overflow:hidden;cursor:pointer;aspect-ratio:4/3;box-shadow:0 8px 20px -10px rgba(23,38,66,0.18);transition:box-shadow 0.25s ease;" style-hover="box-shadow:0 16px 32px -10px rgba(23,38,66,0.3);">
+          <img src="assets/classroom-handsup.png" alt="Renforcement en classe d'examen" style="width:100%;height:100%;object-fit:cover;display:block;" />
+          <div style="position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,rgba(23,38,66,0.85),transparent);padding:30px 14px 12px;">
+            <span style="color:#fff;font-weight:600;font-size:13px;">Renforcement en classe d'examen</span>
+          </div>
+          <div style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.92);display:flex;align-items:center;justify-content:center;color:#172642;font-size:12px;">
+            <i class="fa-solid fa-magnifying-glass-plus"></i>
+          </div>
+        </div>
+        <div onClick="{{ openGallery2 }}" style="position:relative;border-radius:16px;overflow:hidden;cursor:pointer;aspect-ratio:4/3;box-shadow:0 8px 20px -10px rgba(23,38,66,0.18);transition:box-shadow 0.25s ease;" style-hover="box-shadow:0 16px 32px -10px rgba(23,38,66,0.3);">
+          <img src="assets/vest-photo.png" alt="Nos bénévoles sur le terrain" style="width:100%;height:100%;object-fit:cover;display:block;" />
+          <div style="position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,rgba(23,38,66,0.85),transparent);padding:30px 14px 12px;">
+            <span style="color:#fff;font-weight:600;font-size:13px;">Nos bénévoles sur le terrain</span>
+          </div>
+          <div style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.92);display:flex;align-items:center;justify-content:center;color:#172642;font-size:12px;">
+            <i class="fa-solid fa-magnifying-glass-plus"></i>
+          </div>
+        </div>
+        <div onClick="{{ openGallery3 }}" style="position:relative;border-radius:16px;overflow:hidden;cursor:pointer;aspect-ratio:4/3;box-shadow:0 8px 20px -10px rgba(23,38,66,0.18);transition:box-shadow 0.25s ease;" style-hover="box-shadow:0 16px 32px -10px rgba(23,38,66,0.3);">
+          <img src="assets/masks-distribution.png" alt="Sensibilisation et distribution de masques" style="width:100%;height:100%;object-fit:cover;display:block;" />
+          <div style="position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,rgba(23,38,66,0.85),transparent);padding:30px 14px 12px;">
+            <span style="color:#fff;font-weight:600;font-size:13px;">Sensibilisation et distribution de masques</span>
+          </div>
+          <div style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.92);display:flex;align-items:center;justify-content:center;color:#172642;font-size:12px;">
+            <i class="fa-solid fa-magnifying-glass-plus"></i>
+          </div>
+        </div>
+        <div onClick="{{ openGallery4 }}" style="position:relative;border-radius:16px;overflow:hidden;cursor:pointer;aspect-ratio:4/3;box-shadow:0 8px 20px -10px rgba(23,38,66,0.18);transition:box-shadow 0.25s ease;" style-hover="box-shadow:0 16px 32px -10px rgba(23,38,66,0.3);">
+          <img src="assets/foot-sapling.png" alt="Journée de reboisement à Louga" style="width:100%;height:100%;object-fit:cover;display:block;" />
+          <div style="position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,rgba(23,38,66,0.85),transparent);padding:30px 14px 12px;">
+            <span style="color:#fff;font-weight:600;font-size:13px;">Journée de reboisement à Louga</span>
+          </div>
+          <div style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.92);display:flex;align-items:center;justify-content:center;color:#172642;font-size:12px;">
+            <i class="fa-solid fa-magnifying-glass-plus"></i>
+          </div>
+        </div>
+        <div onClick="{{ openGallery5 }}" style="position:relative;border-radius:16px;overflow:hidden;cursor:pointer;aspect-ratio:4/3;box-shadow:0 8px 20px -10px rgba(23,38,66,0.18);transition:box-shadow 0.25s ease;" style-hover="box-shadow:0 16px 32px -10px rgba(23,38,66,0.3);">
+          <img src="assets/kits-boxes.png" alt="Kits sanitaires prêts à être distribués" style="width:100%;height:100%;object-fit:cover;display:block;" />
+          <div style="position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,rgba(23,38,66,0.85),transparent);padding:30px 14px 12px;">
+            <span style="color:#fff;font-weight:600;font-size:13px;">Kits sanitaires prêts à être distribués</span>
+          </div>
+          <div style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.92);display:flex;align-items:center;justify-content:center;color:#172642;font-size:12px;">
+            <i class="fa-solid fa-magnifying-glass-plus"></i>
+          </div>
+        </div>
+        <div onClick="{{ openGallery6 }}" style="position:relative;border-radius:16px;overflow:hidden;cursor:pointer;aspect-ratio:4/3;box-shadow:0 8px 20px -10px rgba(23,38,66,0.18);transition:box-shadow 0.25s ease;" style-hover="box-shadow:0 16px 32px -10px rgba(23,38,66,0.3);">
+          <img src="assets/chicks-crate.png" alt="Formation à l'aviculture" style="width:100%;height:100%;object-fit:cover;display:block;" />
+          <div style="position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,rgba(23,38,66,0.85),transparent);padding:30px 14px 12px;">
+            <span style="color:#fff;font-weight:600;font-size:13px;">Formation à l'aviculture</span>
+          </div>
+          <div style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.92);display:flex;align-items:center;justify-content:center;color:#172642;font-size:12px;">
+            <i class="fa-solid fa-magnifying-glass-plus"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="actualites" style="padding:110px 6%;background:#F5F2EC;">
+    <div style="max-width:1280px;margin:0 auto;">
+      <div style="max-width:640px;margin:0 auto 60px;text-align:center;">
+        <div style="color:#87CE18;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;font-size:13px;margin-bottom:14px;">Actualités</div>
+        <h2 style="font-size:clamp(27px,3.6vw,38px);font-weight:800;margin:0 0 18px;">Nos dernières actions</h2>
+        <p style="font-size:16.5px;color:rgba(23,38,66,0.7);line-height:1.6;margin:0;">Retour sur nos événements et bilans les plus récents.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:32px;">
+        <article style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 12px 30px -14px rgba(23,38,66,0.14);display:flex;flex-direction:column;">
+          <div style="aspect-ratio:4/3;overflow:hidden;">
+            <img src="assets/classroom-handsup.png" alt="Rétrospective 2025-2026" style="width:100%;height:100%;object-fit:cover;display:block;" />
+          </div>
+          <div style="padding:28px;display:flex;flex-direction:column;flex:1;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+              <span style="background:rgba(0,164,222,0.12);color:#00A4DE;font-weight:700;font-size:11px;letter-spacing:0.04em;text-transform:uppercase;padding:5px 12px;border-radius:100px;">Bilan annuel</span>
+              <span style="font-size:12.5px;color:rgba(23,38,66,0.5);">2025 – 2026</span>
+            </div>
+            <h3 style="font-size:17.5px;font-weight:800;margin:0 0 12px;line-height:1.32;color:#172642;">Rétrospective 2025-2026</h3>
+            <p style="font-size:14.5px;line-height:1.6;color:rgba(23,38,66,0.68);margin:0 0 20px;flex:1;">Cours de vacances gratuits, kits scolaires, cantine scolaire, jardins scolaires productifs, consultations médicales gratuites : une année d'engagement au service des Lougatois.</p>
+            <span style="font-weight:700;font-size:13.5px;color:#EE7900;">Lire la suite<i class="fa-solid fa-arrow-right" style="margin-left:6px;font-size:11px;"></i></span>
+          </div>
+        </article>
+        <article style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 12px 30px -14px rgba(23,38,66,0.14);display:flex;flex-direction:column;">
+          <div style="aspect-ratio:4/3;overflow:hidden;">
+            <img src="assets/48h-solidarite.png" alt="48h de Solidarité à Louga" style="width:100%;height:100%;object-fit:cover;display:block;" />
+          </div>
+          <div style="padding:28px;display:flex;flex-direction:column;flex:1;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+              <span style="background:rgba(0,164,222,0.12);color:#00A4DE;font-weight:700;font-size:11px;letter-spacing:0.04em;text-transform:uppercase;padding:5px 12px;border-radius:100px;">Santé</span>
+              <span style="font-size:12.5px;color:rgba(23,38,66,0.5);">06 – 07 juin 2026</span>
+            </div>
+            <h3 style="font-size:17.5px;font-weight:800;margin:0 0 12px;line-height:1.32;color:#172642;">48h de Solidarité à Louga</h3>
+            <p style="font-size:14.5px;line-height:1.6;color:rgba(23,38,66,0.68);margin:0 0 20px;flex:1;">608 patients soignés gratuitement, plus de 30 professionnels de santé et 15 bénévoles mobilisés pendant deux jours de consultations et de dépistages.</p>
+            <span style="font-weight:700;font-size:13.5px;color:#EE7900;">Lire la suite<i class="fa-solid fa-arrow-right" style="margin-left:6px;font-size:11px;"></i></span>
+          </div>
+        </article>
+        <article style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 12px 30px -14px rgba(23,38,66,0.14);display:flex;flex-direction:column;">
+          <div style="aspect-ratio:4/3;overflow:hidden;">
+            <img src="assets/reboisement-cover.png" alt="Journée de reboisement — Projet Manar Al Houda" style="width:100%;height:100%;object-fit:cover;display:block;" />
+          </div>
+          <div style="padding:28px;display:flex;flex-direction:column;flex:1;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+              <span style="background:rgba(0,164,222,0.12);color:#00A4DE;font-weight:700;font-size:11px;letter-spacing:0.04em;text-transform:uppercase;padding:5px 12px;border-radius:100px;">Environnement</span>
+              <span style="font-size:12.5px;color:rgba(23,38,66,0.5);">2022</span>
+            </div>
+            <h3 style="font-size:17.5px;font-weight:800;margin:0 0 12px;line-height:1.32;color:#172642;">Journée de reboisement — Projet Manar Al Houda</h3>
+            <p style="font-size:14.5px;line-height:1.6;color:rgba(23,38,66,0.68);margin:0 0 20px;flex:1;">Première édition de notre journée de reboisement, en partenariat avec l'Institut Islamique Manar Al Houda, pour un Louga plus vert.</p>
+            <span style="font-weight:700;font-size:13.5px;color:#EE7900;">Lire la suite<i class="fa-solid fa-arrow-right" style="margin-left:6px;font-size:11px;"></i></span>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <sc-if value="{{ showPartners }}" hint-placeholder-val="{{ true }}">
+    <section id="partenaires" style="padding:76px 6%;background:#fff;border-top:1px solid rgba(23,38,66,0.06);border-bottom:1px solid rgba(23,38,66,0.06);">
+      <div style="max-width:1280px;margin:0 auto;text-align:center;">
+        <div style="color:#87CE18;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;font-size:13px;margin-bottom:14px;">Partenaires</div>
+        <h2 style="font-size:clamp(23px,2.8vw,30px);font-weight:800;margin:0 0 40px;">Ils nous accompagnent</h2>
+        <div style="display:flex;justify-content:center;gap:18px;flex-wrap:wrap;">
+          <sc-for list="{{ partners }}" as="p" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:12px;background:#F5F2EC;padding:15px 26px;border-radius:100px;">
+              <i class="fa-solid {{ p.icon }}" style="color:#172642;font-size:17px;"></i>
+              <span style="font-weight:700;font-size:14.5px;color:#172642;">{{ p.name }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+  <section id="impact" ref="{{ setImpactRef }}" style="padding:110px 6%;background:{{ impactBg }};transition:background 0.4s ease;position:relative;overflow:hidden;">
+    <div style="max-width:1280px;margin:0 auto;position:relative;z-index:2;">
+      <div style="max-width:640px;margin:0 auto 60px;text-align:center;">
+        <div style="color:{{ impactEyebrow }};font-weight:700;letter-spacing:0.08em;text-transform:uppercase;font-size:13px;margin-bottom:14px;">Notre impact</div>
+        <h2 style="font-size:clamp(27px,3.6vw,38px);font-weight:800;margin:0 0 18px;color:{{ impactHeading }};">Des résultats concrets sur le terrain</h2>
+        <p style="font-size:16.5px;color:{{ impactSub }};line-height:1.6;margin:0;">Grâce à la mobilisation de nos membres, bénévoles et donateurs.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:40px 24px;">
+        <sc-for list="{{ impactStats }}" as="s" hint-placeholder-count="8">
+          <div style="text-align:center;padding:0 10px;">
+            <div style="font-size:38px;font-weight:800;color:{{ s.color }};font-variant-numeric:tabular-nums;">{{ s.display }}</div>
+            <div style="font-size:13px;color:{{ impactLabel }};margin-top:8px;font-weight:600;line-height:1.4;">{{ s.label }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section style="position:relative;padding:130px 6%;text-align:center;overflow:hidden;">
+    <img src="assets/vest-photo.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.45) saturate(1.05);" />
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,38,66,0.6),rgba(23,38,66,0.88));"></div>
+    <div style="position:relative;z-index:2;max-width:740px;margin:0 auto;">
+      <div style="width:60px;height:60px;border-radius:50%;background:#fff;margin:0 auto 30px;display:flex;align-items:center;justify-content:center;">
+        <img src="assets/logo.jpeg" alt="LDS" style="width:42px;height:42px;object-fit:contain;border-radius:50%;" />
+      </div>
+      <h2 style="font-family:'Lora',serif;font-style:italic;font-size:clamp(26px,4.2vw,42px);color:#fff;font-weight:500;line-height:1.35;margin:0 0 36px;">"Ensemble, pour le développement de Louga."</h2>
+      <a href="#soutenir" style="background:#EE7900;color:#fff;padding:16px 34px;border-radius:100px;font-weight:700;font-size:15.5px;display:inline-block;" style-hover="background:#87CE18;">Rejoindre le mouvement</a>
+    </div>
+  </section>
+
+  <section id="soutenir" style="padding:110px 6%;background:#FBF9F5;">
+    <div style="max-width:640px;margin:0 auto 60px;text-align:center;">
+      <div style="color:#EE7900;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;font-size:13px;margin-bottom:14px;">Nous soutenir</div>
+      <h2 style="font-size:clamp(27px,3.6vw,38px);font-weight:800;margin:0 0 18px;">Comment nous soutenir ?</h2>
+      <p style="font-size:16.5px;color:rgba(23,38,66,0.7);line-height:1.6;margin:0;">Rejoignez-nous si vous voulez agir. Votre contribution fait la différence.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:32px;max-width:1120px;margin:0 auto;">
+      <div style="background:#fff;border-radius:20px;padding:40px 32px;box-shadow:0 12px 30px -16px rgba(23,38,66,0.12);display:flex;flex-direction:column;align-items:center;text-align:center;">
+        <div style="width:52px;height:52px;border-radius:50%;background:rgba(238,121,0,0.12);color:#EE7900;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;margin-bottom:22px;">1</div>
+        <h3 style="font-size:19px;font-weight:800;margin:0 0 14px;">Faire un don financier</h3>
+        <p style="font-size:14.5px;color:rgba(23,38,66,0.68);line-height:1.6;margin:0 0 22px;">Contribuez financièrement pour soutenir nos actions sur le terrain. Chaque franc compte.</p>
+        <div style="background:#F5F2EC;border-radius:14px;padding:14px 18px;width:100%;margin-bottom:16px;">
+          <div style="font-size:12px;color:rgba(23,38,66,0.55);margin-bottom:6px;font-weight:600;">Via Orange Money / Wave</div>
+          <div style="font-size:17px;font-weight:800;color:#172642;">{{ donationPhone }}</div>
+        </div>
+        <button type="button" onClick="{{ copyPhone }}" style="background:none;border:1.5px solid rgba(238,121,0,0.4);color:#EE7900;font-weight:700;font-size:13.5px;padding:10px 20px;border-radius:100px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;" style-hover="background:rgba(238,121,0,0.08);">
+          <i class="fa-regular {{ copyIcon }}"></i>{{ copyLabel }}
+        </button>
+      </div>
+      <div style="background:#fff;border-radius:20px;padding:40px 32px;box-shadow:0 12px 30px -16px rgba(23,38,66,0.12);display:flex;flex-direction:column;align-items:center;text-align:center;">
+        <div style="width:52px;height:52px;border-radius:50%;background:rgba(0,164,222,0.12);color:#00A4DE;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;margin-bottom:22px;">2</div>
+        <h3 style="font-size:19px;font-weight:800;margin:0 0 14px;">Devenir bénévole</h3>
+        <p style="font-size:14.5px;color:rgba(23,38,66,0.68);line-height:1.6;margin:0 0 24px;flex:1;">Offrez un peu de votre temps et vos compétences pour accompagner nos activités sur le terrain.</p>
+        <a href="#contact" style="width:100%;background:#00A4DE;color:#fff;font-weight:700;font-size:14.5px;padding:14px;border-radius:12px;" style-hover="background:#172642;">Rejoindre l'équipe</a>
+      </div>
+      <div style="background:#fff;border-radius:20px;padding:40px 32px;box-shadow:0 12px 30px -16px rgba(23,38,66,0.12);display:flex;flex-direction:column;align-items:center;text-align:center;">
+        <div style="width:52px;height:52px;border-radius:50%;background:rgba(135,206,24,0.14);color:#5c9412;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;margin-bottom:22px;">3</div>
+        <h3 style="font-size:19px;font-weight:800;margin:0 0 14px;">Fournir du matériel</h3>
+        <p style="font-size:14.5px;color:rgba(23,38,66,0.68);line-height:1.6;margin:0 0 24px;flex:1;">Soutenez-nous avec du matériel scolaire, médical ou autre, selon les besoins actuels de la population.</p>
+        <a href="#contact" style="width:100%;background:#87CE18;color:#fff;font-weight:700;font-size:14.5px;padding:14px;border-radius:12px;" style-hover="background:#172642;">Nous contacter</a>
+      </div>
+    </div>
+  </section>
+
+  <footer id="contact" style="background:#172642;color:rgba(255,255,255,0.85);padding-top:96px;">
+    <div style="max-width:1280px;margin:0 auto;padding:0 6%;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:48px;padding-bottom:64px;border-bottom:1px solid rgba(255,255,255,0.1);">
+        <div>
+          <div style="background:#fff;display:inline-flex;padding:10px 16px;border-radius:14px;margin-bottom:22px;">
+            <img src="assets/logo.jpeg" alt="LDS" style="height:40px;width:auto;object-fit:contain;display:block;" />
+          </div>
+          <p style="font-size:14px;line-height:1.7;color:rgba(255,255,255,0.65);margin:0 0 22px;max-width:280px;">Solidarité et action pour un avenir meilleur à Louga. Rejoignez-nous pour construire ensemble le développement de notre communauté.</p>
+          <div style="display:flex;gap:10px;">
+            <a href="#" aria-label="Facebook" style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;color:#fff;" style-hover="background:#00A4DE;">
+              <i class="fa-brands fa-facebook-f"></i>
+            </a>
+            <a href="#" aria-label="Instagram" style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;color:#fff;" style-hover="background:#EE7900;">
+              <i class="fa-brands fa-instagram"></i>
+            </a>
+          </div>
+        </div>
+        <div>
+          <h4 style="font-size:15px;font-weight:800;margin:0 0 22px;color:#fff;">Navigation</h4>
+          <div style="display:flex;flex-direction:column;gap:13px;">
+            <sc-for list="{{ nav }}" as="item" hint-placeholder-count="6">
+              <a href="{{ item.href }}" style="color:rgba(255,255,255,0.68);font-size:14px;" style-hover="color:#87CE18;">{{ item.label }}</a>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <h4 style="font-size:15px;font-weight:800;margin:0 0 22px;color:#fff;">Contact</h4>
+          <div style="display:flex;flex-direction:column;gap:16px;font-size:14px;color:rgba(255,255,255,0.68);">
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+              <i class="fa-solid fa-location-dot" style="color:#87CE18;margin-top:3px;"></i>
+              <span>Keur Serigne Louga Nord<br />Rue 11 Villa 342<br />Louga, Sénégal</span>
+            </div>
+            <a href="tel:+221774723364" style="display:flex;gap:12px;align-items:center;color:rgba(255,255,255,0.68);">
+              <i class="fa-solid fa-phone" style="color:#87CE18;"></i>+221 77 472 33 64
+            </a>
+            <a href="tel:+221778613202" style="display:flex;gap:12px;align-items:center;color:rgba(255,255,255,0.68);">
+              <i class="fa-solid fa-phone" style="color:#87CE18;"></i>+221 77 861 32 02
+            </a>
+            <a href="mailto:lougasolidaire@gmail.com" style="display:flex;gap:12px;align-items:center;color:rgba(255,255,255,0.68);">
+              <i class="fa-solid fa-envelope" style="color:#87CE18;"></i>lougasolidaire@gmail.com
+            </a>
+          </div>
+        </div>
+      </div>
+      <div style="padding:26px 0;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:13px;color:rgba(255,255,255,0.5);">
+        <span>© {{ year }} Association Louga Développement Solidaire. Tous droits réservés.</span>
+        <span>Conçu avec solidarité pour Louga.</span>
+      </div>
+    </div>
+  </footer>
+
+  <sc-if value="{{ lightboxOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeOverlay }}" style="position:fixed;inset:0;background:rgba(15,20,30,0.92);z-index:300;display:flex;align-items:center;justify-content:center;padding:40px;">
+      <button type="button" onClick="{{ stopAndClose }}" style="position:absolute;top:28px;right:28px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.12);color:#fff;border:none;font-size:18px;cursor:pointer;">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <button type="button" onClick="{{ stopAndPrev }}" style="position:absolute;left:20px;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.12);color:#fff;border:none;font-size:18px;cursor:pointer;">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <button type="button" onClick="{{ stopAndNext }}" style="position:absolute;right:20px;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.12);color:#fff;border:none;font-size:18px;cursor:pointer;">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+      <div onClick="{{ stopOnly }}" style="max-width:min(880px,90%);text-align:center;">
+        <div style="display:{{ lb0 }};">
+          <img src="assets/crowd-distribution.png" alt="Distribution de kits scolaires" style="max-width:100%;max-height:74vh;object-fit:contain;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.5);display:block;margin:0 auto 18px;" />
+          <span style="color:#fff;font-weight:600;font-size:15px;">Distribution de kits scolaires</span>
+        </div>
+        <div style="display:{{ lb1 }};">
+          <img src="assets/classroom-handsup.png" alt="Renforcement en classe d'examen" style="max-width:100%;max-height:74vh;object-fit:contain;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.5);display:block;margin:0 auto 18px;" />
+          <span style="color:#fff;font-weight:600;font-size:15px;">Renforcement en classe d'examen</span>
+        </div>
+        <div style="display:{{ lb2 }};">
+          <img src="assets/vest-photo.png" alt="Nos bénévoles sur le terrain" style="max-width:100%;max-height:74vh;object-fit:contain;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.5);display:block;margin:0 auto 18px;" />
+          <span style="color:#fff;font-weight:600;font-size:15px;">Nos bénévoles sur le terrain</span>
+        </div>
+        <div style="display:{{ lb3 }};">
+          <img src="assets/masks-distribution.png" alt="Sensibilisation et distribution de masques" style="max-width:100%;max-height:74vh;object-fit:contain;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.5);display:block;margin:0 auto 18px;" />
+          <span style="color:#fff;font-weight:600;font-size:15px;">Sensibilisation et distribution de masques</span>
+        </div>
+        <div style="display:{{ lb4 }};">
+          <img src="assets/foot-sapling.png" alt="Journée de reboisement à Louga" style="max-width:100%;max-height:74vh;object-fit:contain;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.5);display:block;margin:0 auto 18px;" />
+          <span style="color:#fff;font-weight:600;font-size:15px;">Journée de reboisement à Louga</span>
+        </div>
+        <div style="display:{{ lb5 }};">
+          <img src="assets/kits-boxes.png" alt="Kits sanitaires prêts à être distribués" style="max-width:100%;max-height:74vh;object-fit:contain;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.5);display:block;margin:0 auto 18px;" />
+          <span style="color:#fff;font-weight:600;font-size:15px;">Kits sanitaires prêts à être distribués</span>
+        </div>
+        <div style="display:{{ lb6 }};">
+          <img src="assets/chicks-crate.png" alt="Formation à l'aviculture" style="max-width:100%;max-height:74vh;object-fit:contain;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.5);display:block;margin:0 auto 18px;" />
+          <span style="color:#fff;font-weight:600;font-size:15px;">Formation à l'aviculture</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;donationPhone&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;+221 77 861 32 02&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Contenu&quot;}, &quot;showPartners&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Sections&quot;}, &quot;impactDark&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Sections&quot;}}">
+const NAV = [
+  { href: '#accueil', label: 'Accueil' },
+  { href: '#association', label: "L'Association" },
+  { href: '#missions', label: 'Missions' },
+  { href: '#galerie', label: 'Galerie' },
+  { href: '#actualites', label: 'Actualités' },
+  { href: '#contact', label: 'Contact' },
+];
+
+const GALLERY = [
+  { src: 'assets/crowd-distribution.png', caption: 'Distribution de kits scolaires' },
+  { src: 'assets/classroom-handsup.png', caption: "Renforcement en classe d'examen" },
+  { src: 'assets/vest-photo.png', caption: 'Nos bénévoles sur le terrain' },
+  { src: 'assets/masks-distribution.png', caption: 'Sensibilisation et distribution de masques' },
+  { src: 'assets/foot-sapling.png', caption: 'Journée de reboisement à Louga' },
+  { src: 'assets/kits-boxes.png', caption: 'Kits sanitaires prêts à être distribués' },
+  { src: 'assets/chicks-crate.png', caption: "Formation à l'aviculture" },
+];
+
+const PARTNERS = [
+  { name: 'Institut Islamique Manar Al Houda', icon: 'fa-mosque' },
+  { name: 'LaMe', icon: 'fa-heart-pulse' },
+  { name: 'Orange Money', icon: 'fa-mobile-screen-button' },
+  { name: 'Wave', icon: 'fa-wallet' },
+];
+
+const IMPACT = [
+  { value: 620, label: 'Kits scolaires distribués', color: '#87CE18' },
+  { value: 240, label: 'Élèves accompagnés', color: '#EE7900' },
+  { value: 608, label: 'Patients soignés gratuitement', color: '#00A4DE' },
+  { value: 1200, label: 'Masques distribués', color: '#87CE18' },
+  { value: 400, label: 'Kits sanitaires distribués', color: '#EE7900' },
+  { value: 30, label: 'Professionnels de santé mobilisés', color: '#00A4DE' },
+  { value: 25, label: 'Acteurs locaux formés', color: '#87CE18' },
+  { value: 20, label: 'Arbres plantés', color: '#EE7900' },
+];
+
+const HERO_STATS = [
+  { value: 620, label: 'Kits scolaires' },
+  { value: 240, label: 'Élèves accompagnés' },
+  { value: 608, label: 'Patients soignés' },
+  { value: 20, label: 'Arbres plantés' },
+];
+
+class Component extends DCLogic {
+  state = {
+    isMobile: false,
+    mobileMenuOpen: false,
+    scrolled: false,
+    heroCounts: HERO_STATS.map(() => 0),
+    impactCounts: IMPACT.map(() => 0),
+    impactAnimated: false,
+    lightboxIdx: null,
+    copied: false,
+  };
+
+  componentDidMount() {
+    this.checkWidth();
+    window.addEventListener('resize', this.checkWidth);
+    window.addEventListener('scroll', this.onScroll);
+    this.animateCounts(HERO_STATS, 'heroCounts', 1000);
+    this.impactObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && !this.state.impactAnimated) {
+          this.setState({ impactAnimated: true });
+          this.animateCounts(IMPACT, 'impactCounts', 1300);
+        }
+      });
+    }, { threshold: 0.3 });
+    if (this.impactEl) this.impactObserver.observe(this.impactEl);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.checkWidth);
+    window.removeEventListener('scroll', this.onScroll);
+    if (this.impactObserver) this.impactObserver.disconnect();
+  }
+
+  animateCounts(source, key, duration) {
+    const startTime = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      this.setState({ [key]: source.map((s) => Math.round(s.value * eased)) });
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  checkWidth = () => {
+    const isMobile = window.innerWidth <= 860;
+    if (isMobile !== this.state.isMobile) this.setState({ isMobile, mobileMenuOpen: false });
+  };
+
+  onScroll = () => {
+    const scrolled = window.scrollY > 16;
+    if (scrolled !== this.state.scrolled) this.setState({ scrolled });
+  };
+
+  setImpactRef = (el) => {
+    this.impactEl = el;
+    if (el && this.impactObserver && !this.state.impactAnimated) this.impactObserver.observe(el);
+  };
+
+  toggleMenu = () => this.setState((s) => ({ mobileMenuOpen: !s.mobileMenuOpen }));
+  closeMenu = () => this.setState({ mobileMenuOpen: false });
+
+  openGallery0 = () => this.openLightbox(0);
+  openGallery1 = () => this.openLightbox(1);
+  openGallery2 = () => this.openLightbox(2);
+  openGallery3 = () => this.openLightbox(3);
+  openGallery4 = () => this.openLightbox(4);
+  openGallery5 = () => this.openLightbox(5);
+  openGallery6 = () => this.openLightbox(6);
+
+  openLightbox(idx) {
+    this.setState({ lightboxIdx: idx });
+  }
+
+  closeOverlay = () => this.setState({ lightboxIdx: null });
+  stopOnly = (e) => e.stopPropagation();
+  stopAndClose = (e) => { e.stopPropagation(); this.closeOverlay(); };
+  stopAndNext = (e) => { e.stopPropagation(); this.setState((s) => ({ lightboxIdx: (s.lightboxIdx + 1) % GALLERY.length })); };
+  stopAndPrev = (e) => { e.stopPropagation(); this.setState((s) => ({ lightboxIdx: (s.lightboxIdx - 1 + GALLERY.length) % GALLERY.length })); };
+
+  copyPhone = () => {
+    const digits = (this.props.donationPhone ?? '+221 77 861 32 02').replace(/[^\d+]/g, '');
+    const finish = () => { this.setState({ copied: true }); setTimeout(() => this.setState({ copied: false }), 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(digits).then(finish).catch(finish);
+    } else finish();
+  };
+
+  renderVals() {
+    const heroStats = HERO_STATS.map((s, i) => ({ label: s.label, display: this.state.heroCounts[i].toLocaleString('fr-FR') }));
+    const impactStats = IMPACT.map((s, i) => ({ label: s.label, color: s.color, display: this.state.impactCounts[i].toLocaleString('fr-FR') }));
+    const lightboxOpen = this.state.lightboxIdx != null;
+    const lb = (i) => (this.state.lightboxIdx === i ? 'block' : 'none');
+    const impactDark = this.props.impactDark ?? true;
+
+    return {
+      nav: NAV,
+      partners: PARTNERS,
+      showPartners: this.props.showPartners ?? true,
+      heroStats,
+      impactStats,
+      isMobile: this.state.isMobile,
+      isDesktop: !this.state.isMobile,
+      mobileMenuOpen: this.state.mobileMenuOpen,
+      toggleMenu: this.toggleMenu,
+      closeMenu: this.closeMenu,
+      headerShadow: this.state.scrolled ? '0 6px 24px rgba(23,38,66,0.1)' : 'none',
+      setImpactRef: this.setImpactRef,
+      impactBg: impactDark ? '#172642' : '#F5F2EC',
+      impactHeading: impactDark ? '#ffffff' : '#172642',
+      impactSub: impactDark ? 'rgba(255,255,255,0.68)' : 'rgba(23,38,66,0.65)',
+      impactLabel: impactDark ? 'rgba(255,255,255,0.7)' : 'rgba(23,38,66,0.65)',
+      impactEyebrow: impactDark ? '#a8e85c' : '#5c9412',
+      lightboxOpen,
+      openGallery0: this.openGallery0,
+      openGallery1: this.openGallery1,
+      openGallery2: this.openGallery2,
+      openGallery3: this.openGallery3,
+      openGallery4: this.openGallery4,
+      openGallery5: this.openGallery5,
+      openGallery6: this.openGallery6,
+      lb0: lb(0),
+      lb1: lb(1),
+      lb2: lb(2),
+      lb3: lb(3),
+      lb4: lb(4),
+      lb5: lb(5),
+      lb6: lb(6),
+      closeOverlay: this.closeOverlay,
+      stopOnly: this.stopOnly,
+      stopAndClose: this.stopAndClose,
+      stopAndNext: this.stopAndNext,
+      stopAndPrev: this.stopAndPrev,
+      donationPhone: this.props.donationPhone ?? '+221 77 861 32 02',
+      copied: this.state.copied,
+      copyLabel: this.state.copied ? 'Copié !' : 'Copier le numéro',
+      copyIcon: this.state.copied ? 'fa-check' : 'fa-copy',
+      copyPhone: this.copyPhone,
+      year: 2026,
+    };
+  }
+}
+
+</script>
+</body>
+</html>
