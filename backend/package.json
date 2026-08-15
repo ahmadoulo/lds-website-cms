@@ -91,6 +91,6 @@
     }
   },
   "prisma": {
-    "seed": "npx tsc prisma/seed.ts --module commonjs --esModuleInterop --skipLibCheck && node prisma/seed.js"
+    "seed": "node prisma/seed.js"
   }
 }

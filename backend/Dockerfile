@@ -16,6 +16,7 @@ RUN npx prisma generate
 # Copy source and build
 COPY . .
 RUN npm run build
+RUN npx tsc prisma/seed.ts --module commonjs --esModuleInterop --skipLibCheck || true
 
 # Production stage
 FROM base AS production
