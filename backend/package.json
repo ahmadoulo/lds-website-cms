@@ -89,5 +89,8 @@
     "moduleNameMapper": {
       "^uuid$": "<rootDir>/../test/uuid.mock.ts"
     }
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   }
 }
