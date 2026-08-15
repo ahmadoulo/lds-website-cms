@@ -76,7 +76,7 @@ services:
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-super_secret_jwt_refresh_key_example}
       - ADMIN_SEED_EMAIL=${ADMIN_SEED_EMAIL:-admin@lougasolidaire.org}
       - ADMIN_SEED_PASSWORD=${ADMIN_SEED_PASSWORD:-Password123!}
-      - CORS_ORIGIN=${FRONTEND_URL:-http://lds-frontend:80}
+      - CORS_ORIGIN=${FRONTEND_URL:-http://localhost:8096}
     ports:
       - "3020:3000"
     networks:
@@ -94,7 +94,7 @@ services:
       dockerfile: Dockerfile
       args:
         # Default fallback for local testing
-        VITE_API_URL: ${API_URL:-http://lds-backend:3000/api/v1}
+        VITE_API_URL: ${API_URL:-http://localhost:3020/api/v1}
     container_name: lds-frontend
     ports:
       - "8096:80"
