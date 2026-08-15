@@ -78,7 +78,7 @@ services:
       - ADMIN_SEED_PASSWORD=${ADMIN_SEED_PASSWORD:-Password123!}
       - CORS_ORIGIN=${FRONTEND_URL:-http://localhost:80}
     ports:
-      - "3000:3000"
+      - "3020:3000"
     networks:
       - lds_network
     depends_on:
@@ -97,7 +97,7 @@ services:
         VITE_API_URL: ${API_URL:-http://localhost:3000/api/v1}
     container_name: lds-frontend
     ports:
-      - "80:80"
+      - "8096:80"
     networks:
       - lds_network
     depends_on:
