@@ -2,6 +2,8 @@ import React from 'react';
 import { useImpactStats } from '../../lib/queries/publicHooks';
 import CountUp from 'react-countup';
 
+const CountUpComponent = (CountUp as any).default || CountUp;
+
 export const ImpactPage = () => {
   const { data: stats, isLoading } = useImpactStats();
 
@@ -34,7 +36,7 @@ export const ImpactPage = () => {
                 className="text-5xl md:text-[64px] font-extrabold mb-3 tabular-nums transition-transform duration-500 group-hover:scale-110"
                 style={{ color: stat.color || '#87CE18' }}
               >
-                <CountUp end={stat.value} duration={2.5} enableScrollSpy scrollSpyOnce />
+                <CountUpComponent end={stat.value} duration={2.5} enableScrollSpy scrollSpyOnce />
               </div>
               <div className="text-sm md:text-base text-white/80 font-medium tracking-wide uppercase">{stat.label?.fr}</div>
             </div>

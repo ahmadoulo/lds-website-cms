@@ -6,6 +6,9 @@ import { motion } from 'framer-motion';
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
 
+const CountUpComponent = (CountUp as any).default || CountUp;
+const LightboxComponent = (Lightbox as any).default || Lightbox;
+
 // --- Hero Section ---
 const Hero = ({ stats }: { stats: any[] }) => (
   <section id="accueil" className="relative pt-[76px] px-6 pb-[100px] overflow-hidden">
@@ -55,7 +58,7 @@ const Hero = ({ stats }: { stats: any[] }) => (
         {stats?.slice(0, 4).map((s: any) => (
           <div key={s.id} className="text-center">
             <div className="text-4xl font-extrabold text-[#172642] tabular-nums">
-              <CountUp end={s.value} duration={2.5} enableScrollSpy scrollSpyOnce />
+              <CountUpComponent end={s.value} duration={2.5} enableScrollSpy scrollSpyOnce />
             </div>
             <div className="text-[12.5px] text-[#172642]/60 mt-1.5 font-semibold">{s.label?.fr}</div>
           </div>
@@ -197,13 +200,14 @@ const Gallery = ({ images, isLoading }: { images: any[], isLoading: boolean }) =
           ))}
         </div>
       </div>
-      
-      <Lightbox
-        open={lightboxOpen}
-        close={() => setLightboxOpen(false)}
-        index={photoIndex}
-        slides={slides}
-      />
+      {lightboxOpen && (
+        <LightboxComponent
+          open={lightboxOpen}
+          close={() => setLightboxOpen(false)}
+          index={photoIndex}
+          slides={slides}
+        />
+      )}
     </section>
   );
 };
