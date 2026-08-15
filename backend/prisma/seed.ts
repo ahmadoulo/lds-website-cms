@@ -7,10 +7,10 @@ async function main() {
   console.log('Seeding database...');
 
   // 1. Initial Admin Bootstrap
-  const adminEmail = process.env.ADMIN_SEED_EMAIL || 'admin@lougasolidaire.org';
-  const adminPassword = process.env.ADMIN_SEED_PASSWORD || 'Password123!';
-  const adminFirstName = process.env.ADMIN_FIRST_NAME || 'Admin';
-  const adminLastName = process.env.ADMIN_LAST_NAME || 'LDS';
+  const adminEmail = (process.env.ADMIN_SEED_EMAIL || 'admin@lougasolidaire.org').trim();
+  const adminPassword = (process.env.ADMIN_SEED_PASSWORD || 'Password123!').trim();
+  const adminFirstName = (process.env.ADMIN_FIRST_NAME || 'Admin').trim();
+  const adminLastName = (process.env.ADMIN_LAST_NAME || 'LDS').trim();
 
   const existingAdmin = await prisma.user.findUnique({
     where: { email: adminEmail },
