@@ -23,7 +23,7 @@ export class AuthController {
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current authenticated user' })
-  getProfile(@Request() req) {
+  getProfile(@Request() req: any) {
     return req.user;
   }
 
@@ -32,7 +32,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Change password on first login' })
-  changePassword(@Request() req, @Body() body: ChangePasswordDto) {
+  changePassword(@Request() req: any, @Body() body: ChangePasswordDto) {
     return this.authService.changePassword(req.user.id, body.newPassword);
   }
 }
