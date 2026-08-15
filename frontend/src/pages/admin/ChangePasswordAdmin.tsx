@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, KeyRound, Save } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../api/axios';
 
 export const ChangePasswordAdmin = () => {
   const [password, setPassword] = useState('');
@@ -27,24 +28,13 @@ export const ChangePasswordAdmin = () => {
       setIsLoading(true);
       setError('');
       
-      const response = await fetch('http://localhost:3000/api/v1/auth/change-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ newPassword: password })
-      });
-
-      if (!response.ok) {
-        throw new Error('Erreur lors du changement de mot de passe');
-      }
+      await api.post('/auth/change-password', { newPassword: password });
 
       // Update local context
       updateUser({ mustChangePassword: false });
       navigate('/admin');
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue');
+      setError(err.response?.data?.message || err.message || 'Une erreur est survenue');
     } finally {
       setIsLoading(false);
     }

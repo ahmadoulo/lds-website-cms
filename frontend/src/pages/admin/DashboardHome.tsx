@@ -3,6 +3,7 @@ import { Target, Users, Image as ImageIcon, MessageSquare, ArrowUpRight } from '
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../api/axios';
 
 export const DashboardHome = () => {
   const { token, user } = useAuth();
@@ -10,11 +11,8 @@ export const DashboardHome = () => {
   const { data: rawStats, isLoading } = useQuery({
     queryKey: ['dashboardStats'],
     queryFn: async () => {
-      const res = await fetch('http://localhost:3000/api/v1/dashboard/stats', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch stats');
-      return res.json();
+      const res = await api.get('/dashboard/stats');
+      return res.data;
     },
     enabled: !!token
   });
