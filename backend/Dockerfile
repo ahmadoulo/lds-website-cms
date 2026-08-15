@@ -29,7 +29,7 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
 
 # Create a startup script
-RUN echo 'npx prisma migrate deploy && node dist/main' > start.sh
+RUN echo 'npx prisma db push --accept-data-loss && node dist/main.js' > start.sh
 RUN chmod +x start.sh
 
 EXPOSE 3000
