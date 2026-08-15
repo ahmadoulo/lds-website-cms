@@ -8,7 +8,7 @@ export const useMissions = () => {
   return useQuery({
     queryKey: ['public', 'missions'],
     queryFn: async () => {
-      const { data } = await api.get('/missions');
+      const { data } = await api.get('/public/missions');
       return data;
     },
   });
@@ -18,7 +18,7 @@ export const useNews = () => {
   return useQuery({
     queryKey: ['public', 'news'],
     queryFn: async () => {
-      const { data } = await api.get('/news');
+      const { data } = await api.get('/public/news');
       return data;
     },
   });
@@ -28,7 +28,7 @@ export const usePartners = () => {
   return useQuery({
     queryKey: ['public', 'partners'],
     queryFn: async () => {
-      const { data } = await api.get('/partners');
+      const { data } = await api.get('/public/partners');
       return data;
     },
   });
@@ -38,7 +38,7 @@ export const useImpactStats = () => {
   return useQuery({
     queryKey: ['public', 'impact'],
     queryFn: async () => {
-      const { data } = await api.get('/impact');
+      const { data } = await api.get('/public/impact');
       return data;
     },
   });
@@ -58,7 +58,7 @@ export const useGallery = () => {
   return useQuery({
     queryKey: ['public', 'gallery'],
     queryFn: async () => {
-      const { data } = await api.get('/gallery');
+      const { data } = await api.get('/public/gallery');
       return data;
     },
   });

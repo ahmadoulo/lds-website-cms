@@ -52,7 +52,7 @@ const Hero = ({ stats }: { stats: any[] }) => (
     {/* Hero Stats */}
     {stats && stats.length > 0 && (
       <div className="max-w-[1080px] mx-auto mt-[72px] bg-white rounded-3xl shadow-[0_24px_48px_-16px_rgba(23,38,66,0.12)] p-9 grid grid-cols-2 md:grid-cols-4 gap-6 relative z-10">
-        {stats.slice(0, 4).map((s: any) => (
+        {stats?.slice(0, 4).map((s: any) => (
           <div key={s.id} className="text-center">
             <div className="text-4xl font-extrabold text-[#172642] tabular-nums">
               <CountUp end={s.value} duration={2.5} enableScrollSpy scrollSpyOnce />
@@ -135,7 +135,7 @@ const Missions = ({ missions, isLoading }: { missions: any[], isLoading: boolean
           <p className="text-[16.5px] text-[#172642]/70 leading-[1.6]">Notre mission est d'améliorer les conditions de vie à Louga à travers cinq domaines d'intervention complémentaires.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {missions.map((mission: any, index: number) => (
+          {missions?.map((mission: any, index: number) => (
             <div key={mission.id} className="bg-white rounded-[20px] overflow-hidden shadow-[0_12px_30px_-14px_rgba(23,38,66,0.15)] group hover:-translate-y-1.5 hover:shadow-[0_20px_40px_-14px_rgba(23,38,66,0.22)] transition-all duration-300">
               <div className="relative aspect-[16/10] bg-gray-100">
                 {mission.image ? (
@@ -167,7 +167,7 @@ const Gallery = ({ images, isLoading }: { images: any[], isLoading: boolean }) =
   if (isLoading) return null; // Skeleton omitted for brevity
   if (!images || images.length === 0) return null;
 
-  const slides = images.map(img => ({ src: img.image?.url || '', title: img.title?.fr }));
+  const slides = images?.map((img: any) => ({ src: img.image?.url || '', title: img.title?.fr })) || [];
 
   return (
     <section id="galerie" className="py-[110px] px-6 bg-white">
@@ -180,7 +180,7 @@ const Gallery = ({ images, isLoading }: { images: any[], isLoading: boolean }) =
           <p className="text-[15.5px] text-[#172642]/65 max-w-[400px] m-0">Des moments forts de nos interventions sur le terrain, à Louga.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-          {images.slice(0, 6).map((img, idx) => (
+          {images?.slice(0, 6).map((img: any, idx: number) => (
             <div 
               key={img.id} 
               onClick={() => { setPhotoIndex(idx); setLightboxOpen(true); }}
@@ -222,7 +222,7 @@ const News = ({ news, isLoading }: { news: any[], isLoading: boolean }) => {
           <p className="text-[16.5px] text-[#172642]/70 leading-[1.6]">Retour sur nos événements et bilans les plus récents.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {news.slice(0, 3).map((item: any) => (
+          {news?.slice(0, 3).map((item: any) => (
             <article key={item.id} className="bg-white rounded-[20px] overflow-hidden shadow-[0_12px_30px_-14px_rgba(23,38,66,0.14)] flex flex-col hover:-translate-y-1 transition-transform">
               <div className="aspect-[4/3] overflow-hidden bg-gray-100">
                 {item.coverImage && <img src={item.coverImage.url} alt="" className="w-full h-full object-cover" />}
@@ -308,7 +308,7 @@ const Home = () => {
             <div className="text-[#87CE18] font-bold tracking-wider uppercase text-[13px] mb-3.5">Partenaires</div>
             <h2 className="text-[clamp(23px,2.8vw,30px)] font-extrabold mb-10">Ils nous accompagnent</h2>
             <div className="flex justify-center gap-4 flex-wrap">
-              {partners.map((p: any) => (
+              {partners?.map((p: any) => (
                 <div key={p.id} className="flex items-center gap-3 bg-[#F5F2EC] px-6 py-3.5 rounded-full">
                   <span className="font-bold text-[14.5px] text-[#172642]">{p.name}</span>
                 </div>

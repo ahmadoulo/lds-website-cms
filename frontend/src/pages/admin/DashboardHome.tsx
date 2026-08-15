@@ -3,7 +3,7 @@ import { Target, Users, Image as ImageIcon, MessageSquare, ArrowUpRight } from '
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../api/axios';
+import api from '../../lib/api/axios';
 
 export const DashboardHome = () => {
   const { token, user } = useAuth();

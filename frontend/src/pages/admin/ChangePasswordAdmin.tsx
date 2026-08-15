@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, KeyRound, Save } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../api/axios';
+import api from '../../lib/api/axios';
 
 export const ChangePasswordAdmin = () => {
   const [password, setPassword] = useState('');
