@@ -19,19 +19,23 @@ describe('analyseImage', () => {
     expect(report.croppedAway).toBe(0);
   });
 
-  it('quantifies the crop when the ratio differs', () => {
+  it('quantifies the crop without treating it as a defect', () => {
     // A square in a 16:10 slot loses its top and bottom.
     const report = analyseImage(image(1200, 1200), cover);
-    const warning = report.issues.find((i) => i.level === 'warning');
+    const note = report.issues.find((i) => i.message.includes('masquée'));
 
-    expect(warning?.message).toMatch(/en haut et en bas/);
+    expect(note?.message).toMatch(/en haut et en bas/);
+    // A crop is something to be aware of, not a reason to reject the image.
+    expect(note?.level).toBe('info');
     expect(report.croppedAway).toBeCloseTo(0.375, 2);
   });
 
   it('says which way the crop goes for a very wide image', () => {
     const report = analyseImage(image(3000, 750), cover);
 
-    expect(report.issues.find((i) => i.level === 'warning')?.message).toMatch(/sur les côtés/);
+    expect(report.issues.find((i) => i.message.includes('masquée'))?.message).toMatch(
+      /sur les côtés/,
+    );
   });
 
   it('never reports a crop for a slot that shows the whole image', () => {
@@ -41,18 +45,20 @@ describe('analyseImage', () => {
     expect(report.issues.some((i) => i.message.includes('masquée'))).toBe(false);
   });
 
-  it('raises an error for an image that will look blurry', () => {
-    const report = analyseImage(image(300, 188), cover);
+  it('warns, without blocking, below the size the slot is displayed at', () => {
+    const report = analyseImage(image(300, 188), cover); // minWidth is 420
 
-    expect(report.issues.some((i) => i.level === 'error')).toBe(true);
-    expect(report.issues.find((i) => i.level === 'error')?.message).toMatch(/trop petite/);
+    const warning = report.issues.find((i) => i.level === 'warning');
+    expect(warning?.message).toMatch(/floue/);
+    // Nothing is ever reported as an error: the administrator decides.
+    expect(report.issues.some((i) => i.level === 'error')).toBe(false);
   });
 
-  it('only informs when the image is slightly under the recommendation', () => {
+  it('accepts an image between the floor and the recommendation with a note', () => {
     const report = analyseImage(image(1000, 625), cover);
 
-    expect(report.issues.some((i) => i.level === 'error')).toBe(false);
-    expect(report.issues.some((i) => i.level === 'info')).toBe(true);
+    expect(report.issues.some((i) => i.level === 'warning')).toBe(false);
+    expect(report.issues.find((i) => i.level === 'info')?.message).toMatch(/utilisable/);
   });
 
   it('suggests shrinking an oversized image', () => {
@@ -61,10 +67,21 @@ describe('analyseImage', () => {
     expect(report.issues.some((i) => i.message.includes('plus grande que nécessaire'))).toBe(true);
   });
 
-  it('flags a heavy file', () => {
+  it('mentions a heavy file as a suggestion', () => {
     const report = analyseImage(image(1200, 750, 2_400_000), cover);
+    const note = report.issues.find((i) => i.message.includes('Mo'));
 
-    expect(report.issues.find((i) => i.message.includes('lourd'))?.message).toMatch(/2\.3 Mo/);
+    expect(note?.message).toMatch(/2\.3 Mo/);
+    expect(note?.level).toBe('info');
+  });
+
+  it('says nothing about an .ico, which has no single size', () => {
+    const report = analyseImage(
+      { width: null, height: null, size: 15_000, mimeType: 'image/x-icon' },
+      IMAGE_SLOTS.favicon,
+    );
+
+    expect(report.issues).toHaveLength(0);
   });
 
   it('tolerates a small ratio difference without complaining', () => {
@@ -75,7 +92,10 @@ describe('analyseImage', () => {
   });
 
   it('degrades gracefully when the dimensions are unknown', () => {
-    const report = analyseImage({ width: null, height: null, size: 1000, mimeType: 'image/png' }, cover);
+    const report = analyseImage(
+      { width: null, height: null, size: 1000, mimeType: 'image/png' },
+      cover,
+    );
 
     expect(report.issues).toHaveLength(1);
     expect(report.croppedAway).toBe(0);

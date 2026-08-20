@@ -81,19 +81,30 @@ function sortRows(rows: any[], orderBy: any) {
   });
 }
 
-/** Column defaults declared with @default() in schema.prisma. */
+/**
+ * Column defaults from schema.prisma, plus the nullable columns.
+ * PostgreSQL returns NULL for a nullable column that was never written; without
+ * these the fake would return `undefined` and hide a genuine mismatch.
+ */
 const COLUMN_DEFAULTS: Record<string, Record<string, unknown>> = {
   user: { isActive: true, mustChangePassword: true, role: 'EDITOR', lastLoginAt: null },
-  mission: { order: 0, isPublished: false },
-  news: { isPublished: false, publishedAt: null },
-  media: { folder: 'general' },
+  mission: { order: 0, isPublished: false, imageId: null, icon: null },
+  news: { isPublished: false, publishedAt: null, imageId: null, categoryId: null },
+  media: { folder: 'general', altText: null, width: null, height: null },
   galleryAlbum: { order: 0, isPublished: false },
   galleryImage: { order: 0 },
-  partner: { order: 0, isPublished: true },
+  partner: { order: 0, isPublished: true, logoId: null, url: null, icon: null },
   impactStatistic: { order: 0, isPublished: true },
-  donationMethod: { order: 0, isPublished: true },
+  donationMethod: {
+    order: 0,
+    isPublished: true,
+    provider: null,
+    beneficiary: null,
+    paymentLink: null,
+  },
   contactMessage: { isRead: false, readAt: null },
   navigationItem: { order: 0, parentId: null },
+  siteSettings: { draftValue: null, draftUpdatedAt: null, publishedAt: null },
 };
 
 function applyDefaults(table: string, data: any) {
@@ -110,6 +121,10 @@ function normalizeWrite(data: any) {
 
   const out: any = {};
   for (const [key, value] of Object.entries(data)) {
+    // Prisma treats `undefined` as "field not provided" and leaves the column
+    // alone. Copying it through would overwrite a default with undefined.
+    if (value === undefined) continue;
+
     const tag = value?.constructor?.name;
     out[key] = tag === 'DbNull' || tag === 'JsonNull' || tag === 'AnyNull' ? null : value;
   }

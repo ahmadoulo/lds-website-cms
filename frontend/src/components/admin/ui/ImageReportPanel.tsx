@@ -2,7 +2,6 @@ import React from 'react';
 import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react';
 import { formatBytes } from '../../../lib/queries/adminHooks';
 import { analyseImage, formatRatio, type ImageSlot } from '../../../lib/imageAnalysis';
-import type { Media } from '../../../lib/types';
 import { cn } from '../../../lib/cn';
 
 const LEVEL_STYLES = {
@@ -11,12 +10,23 @@ const LEVEL_STYLES = {
   info: { icon: Info, className: 'text-blue', row: 'bg-blue/5 border-blue/20' },
 } as const;
 
+interface ImageStats {
+  width: number | null;
+  height: number | null;
+  size: number;
+  mimeType: string;
+  name: string;
+}
+
 /**
  * Everything the administrator cannot work out by looking at a thumbnail: the
  * real dimensions, the weight, and above all what the site is going to crop.
+ *
+ * It takes plain stats rather than a stored Media, so a file that has only been
+ * selected locally is analysed exactly like one already in the library.
  */
-export const ImageReportPanel = ({ media, slot }: { media: Media; slot: ImageSlot }) => {
-  const report = analyseImage(media, slot);
+export const ImageReportPanel = ({ stats, slot }: { stats: ImageStats; slot: ImageSlot }) => {
+  const report = analyseImage(stats, slot);
 
   return (
     <div className="space-y-2">
@@ -35,7 +45,7 @@ export const ImageReportPanel = ({ media, slot }: { media: Media; slot: ImageSlo
         </div>
         <div className="flex justify-between gap-2">
           <dt>Poids</dt>
-          <dd className="font-semibold text-navy">{formatBytes(media.size)}</dd>
+          <dd className="font-semibold text-navy">{formatBytes(stats.size)}</dd>
         </div>
         <div className="flex justify-between gap-2">
           <dt>Format</dt>
@@ -72,6 +82,13 @@ export const ImageReportPanel = ({ media, slot }: { media: Media; slot: ImageSlo
       )}
 
       {slot.note && <p className="text-[11px] italic text-navy/45">{slot.note}</p>}
+
+      {stats.width !== null && (
+        <p className="text-[11px] text-navy/45">
+          Pensez à décrire l'image dans la bibliothèque de médias : cette description est
+          lue par les lecteurs d'écran et affichée si l'image ne charge pas.
+        </p>
+      )}
     </div>
   );
 };

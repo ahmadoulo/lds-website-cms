@@ -225,6 +225,15 @@ model DonationMethod {
   iconColor   String // 'orange', 'blue', 'green'
   order       Int     @default(0)
   isPublished Boolean @default(true)
+
+  /// Mobile money or bank provider, when this method is one: 'wave',
+  /// 'orange_money', 'bank', 'cash', 'other'. NULL keeps the generic behaviour.
+  provider    String?
+  /// Account holder, shown so a donor can confirm before sending.
+  beneficiary String?
+  /// Official payment link, when the association actually has one. No deep link
+  /// is ever fabricated: without this the site falls back to showing the number.
+  paymentLink String?
 }
 
 model ContactMessage {

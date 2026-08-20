@@ -75,16 +75,48 @@ export async function uploadMedia(file: File, folder: string): Promise<Media> {
 }
 
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
-export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
 
-/** Mirrors the server-side rules so the user gets feedback before uploading. */
-export function validateImageFile(file: File): string | null {
-  if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-    return 'Format non supporté. Utilisez JPG, PNG, WebP, GIF ou AVIF.';
+export const ACCEPTED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/avif',
+];
+
+// A favicon is legitimately supplied as .ico, which browsers report
+// inconsistently (and sometimes not at all).
+export const ACCEPTED_ICON_TYPES = [
+  ...ACCEPTED_IMAGE_TYPES,
+  'image/x-icon',
+  'image/vnd.microsoft.icon',
+];
+
+/** The `accept` attribute for a file input, per kind of slot. */
+export const acceptAttribute = (allowIcon: boolean) =>
+  allowIcon ? `${ACCEPTED_ICON_TYPES.join(',')},.ico` : ACCEPTED_IMAGE_TYPES.join(',');
+
+/**
+ * Mirrors the server-side rules so the user gets feedback before uploading.
+ * The server re-checks the magic number; this only avoids a pointless round trip.
+ */
+export function validateImageFile(file: File, allowIcon = false): string | null {
+  const accepted = allowIcon ? ACCEPTED_ICON_TYPES : ACCEPTED_IMAGE_TYPES;
+
+  // Browsers report .ico as image/x-icon, image/vnd.microsoft.icon or nothing at
+  // all, so the extension is the reliable signal for that one format.
+  const looksLikeIcon = allowIcon && /\.ico$/i.test(file.name);
+
+  if (!looksLikeIcon && file.type && !accepted.includes(file.type)) {
+    return allowIcon
+      ? 'Format non supporté. Utilisez ICO, PNG, WebP ou JPG.'
+      : 'Format non supporté. Utilisez JPG, PNG, WebP, GIF ou AVIF.';
   }
+
   if (file.size > MAX_UPLOAD_BYTES) {
     return `Fichier trop volumineux (${formatBytes(file.size)}). Maximum : 5 Mo.`;
   }
+
   return null;
 }
 

@@ -273,6 +273,141 @@ describe('Content workflow (e2e)', () => {
     });
   });
 
+  describe('ways to support the association', () => {
+    let waveId: string;
+
+    it('stores a Wave method with its number and beneficiary', async () => {
+      const res = await request(http)
+        .post('/api/v1/donations')
+        .set(auth())
+        .send({
+          title: { fr: 'Wave' },
+          description: { fr: 'Envoyez votre don en quelques secondes.' },
+          actionType: 'phone',
+          actionData: '+221 77 861 32 02',
+          actionLabel: { fr: 'Copier le numéro' },
+          iconColor: 'blue',
+          provider: 'wave',
+          beneficiary: 'Louga Développement Solidaire',
+        })
+        .expect(201);
+
+      waveId = res.body.id;
+      expect(res.body.provider).toBe('wave');
+      expect(res.body.beneficiary).toBe('Louga Développement Solidaire');
+      // No link was given, so none is invented: the site shows the number.
+      expect(res.body.paymentLink).toBeNull();
+    });
+
+    it('serves it to the public site', async () => {
+      const res = await request(http).get('/api/v1/public/donations').expect(200);
+      const wave = res.body.find((m: any) => m.id === waveId);
+
+      expect(wave.provider).toBe('wave');
+      expect(wave.actionData).toBe('+221 77 861 32 02');
+    });
+
+    it('accepts an official payment link when the association has one', async () => {
+      const res = await request(http)
+        .patch(`/api/v1/donations/${waveId}`)
+        .set(auth())
+        .send({ paymentLink: 'https://pay.wave.com/m/exemple' })
+        .expect(200);
+
+      expect(res.body.paymentLink).toBe('https://pay.wave.com/m/exemple');
+    });
+
+    it('rejects a payment link that is not a URL', () =>
+      request(http)
+        .patch(`/api/v1/donations/${waveId}`)
+        .set(auth())
+        .send({ paymentLink: 'wave.com/00221778613202' })
+        .expect(400));
+
+    it('rejects an unknown provider', () =>
+      request(http)
+        .patch(`/api/v1/donations/${waveId}`)
+        .set(auth())
+        .send({ provider: 'paypal-maybe' })
+        .expect(400));
+
+    it('clears the link back to null rather than an empty string', async () => {
+      const res = await request(http)
+        .patch(`/api/v1/donations/${waveId}`)
+        .set(auth())
+        .send({ paymentLink: '' })
+        .expect(200);
+
+      expect(res.body.paymentLink).toBeNull();
+    });
+  });
+
+  describe('media library housekeeping', () => {
+    const PNG = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    );
+
+    let usedId: string;
+    let orphanId: string;
+
+    it('reports where each file is used', async () => {
+      const used = await request(http)
+        .post('/api/v1/media/upload')
+        .set(auth())
+        .field('folder', 'missions')
+        .attach('file', PNG, { filename: 'used.png', contentType: 'image/png' })
+        .expect(201);
+      usedId = used.body.id;
+
+      await request(http)
+        .post('/api/v1/missions')
+        .set(auth())
+        .send({
+          title: { fr: 'Domaine illustré' },
+          description: { fr: 'Avec une image' },
+          imageId: usedId,
+        })
+        .expect(201);
+
+      const library = await request(http).get('/api/v1/media').set(auth()).expect(200);
+      const entry = library.body.data.find((m: any) => m.id === usedId);
+
+      expect(entry.usedIn).toContain('Nos actions · Domaine illustré');
+    });
+
+    it('lists a never-attached file as an orphan', async () => {
+      const orphan = await request(http)
+        .post('/api/v1/media/upload')
+        .set(auth())
+        .attach('file', PNG, { filename: 'orphan.png', contentType: 'image/png' })
+        .expect(201);
+      orphanId = orphan.body.id;
+
+      const orphans = await request(http).get('/api/v1/media/orphans').set(auth()).expect(200);
+      const ids = orphans.body.map((m: any) => m.id);
+
+      expect(ids).toContain(orphanId);
+      // The one attached to a mission must never be offered for deletion.
+      expect(ids).not.toContain(usedId);
+    });
+
+    it('purges only the orphans', async () => {
+      const result = await request(http).delete('/api/v1/media/orphans').set(auth()).expect(200);
+      expect(result.body.deleted).toBeGreaterThan(0);
+
+      await request(http).get(`/api/v1/media/${orphanId}`).set(auth()).expect(404);
+      // The referenced file survived the purge.
+      await request(http).get(`/api/v1/media/${usedId}`).set(auth()).expect(200);
+    });
+
+    it('still refuses to delete a referenced file directly', () =>
+      request(http).delete(`/api/v1/media/${usedId}`).set(auth()).expect(409));
+
+    it('keeps the purge restricted to administrators', () =>
+      request(http).delete('/api/v1/media/orphans').expect(401));
+  });
+
   describe('site settings drive the public pages', () => {
     it('serves the defaults before anything is saved', async () => {
       const res = await request(http).get('/api/v1/public/settings').expect(200);

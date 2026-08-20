@@ -9,6 +9,7 @@ import { NewsCard } from '../../components/public/NewsCard';
 import { ImpactCounter } from '../../components/public/ImpactCounter';
 import { Lightbox } from '../../components/public/Lightbox';
 import { DonationCard } from '../../components/public/DonationCard';
+import { PaymentMethodCard } from '../../components/public/PaymentMethodCard';
 import { ErrorState, SkeletonCards, Skeleton } from '../../components/ui/States';
 import { resolveIcon } from '../../lib/icons';
 import { t } from '../../lib/types';
@@ -40,10 +41,12 @@ const Home = () => {
   const partners = data?.partners ?? [];
   const donations = data?.donations ?? [];
 
-  // Prefer what the administrator configured, and fall back to real content
-  // rather than to a stock photo, so nothing on the page is decorative filler.
-  const heroImage = homepage?.heroImage ?? missions.find((m) => m.image)?.image ?? null;
-  const aboutImage = homepage?.aboutImage ?? gallery[0]?.media ?? null;
+  // Each slot shows only the image chosen for it. Borrowing one from another
+  // section used to fill the gap, which made a gallery photo appear in the
+  // presentation block and left the administrator unable to tell where an image
+  // came from. An empty slot now stays visibly empty.
+  const heroImage = homepage?.heroImage ?? null;
+  const aboutImage = homepage?.aboutImage ?? null;
   const ctaImage = homepage?.ctaImage ?? null;
 
   const slides = gallery.map((image: GalleryImage) => ({
@@ -118,6 +121,10 @@ const Home = () => {
               <img
                 src={heroImage.url}
                 alt={heroImage.altText?.fr || "Bénévoles de l'association en action"}
+                width={900}
+                height={1200}
+                fetchPriority="high"
+                decoding="async"
                 className="relative aspect-[3/4] w-full rounded-[26px] object-cover shadow-[0_30px_60px_-20px_rgba(23,38,66,0.35)]"
               />
             ) : (
@@ -386,9 +393,13 @@ const Home = () => {
             />
 
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {donations.slice(0, 3).map((method) => (
-                <DonationCard key={method.id} method={method} />
-              ))}
+              {donations.slice(0, 3).map((method) =>
+                method.provider ? (
+                  <PaymentMethodCard key={method.id} method={method} />
+                ) : (
+                  <DonationCard key={method.id} method={method} />
+                ),
+              )}
             </div>
           </div>
         </section>

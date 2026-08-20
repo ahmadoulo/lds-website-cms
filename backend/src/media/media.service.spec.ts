@@ -53,9 +53,16 @@ describe('MediaService', () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  // Validation now works off the magic number, so the fixtures carry real ones.
+  const PNG_HEADER = Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    Buffer.alloc(24),
+  ]);
+  const ICO_HEADER = Buffer.concat([Buffer.from([0x00, 0x00, 0x01, 0x00]), Buffer.alloc(28)]);
+
   const file = (over: Partial<Express.Multer.File> = {}): Express.Multer.File =>
     ({
-      buffer: Buffer.from('fake-image-bytes'),
+      buffer: PNG_HEADER,
       size: 1024,
       mimetype: 'image/png',
       originalname: 'photo de louga.png',
@@ -67,15 +74,45 @@ describe('MediaService', () => {
     expect(mockMinioService.uploadFile).not.toHaveBeenCalled();
   });
 
-  it('rejects a disallowed mime type', async () => {
-    await expect(service.upload(file({ mimetype: 'application/pdf' }))).rejects.toThrow(
-      BadRequestException,
-    );
+  it('rejects a file whose bytes are not an image, whatever it claims to be', async () => {
+    await expect(
+      service.upload(file({ buffer: Buffer.from('%PDF-1.7'.padEnd(32)), mimetype: 'image/png' })),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('rejects SVG uploads because they can carry script', async () => {
-    await expect(service.upload(file({ mimetype: 'image/svg+xml' }))).rejects.toThrow(
-      BadRequestException,
+    await expect(
+      service.upload(
+        file({ buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>') }),
+      ),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('accepts an .ico favicon and stores it without dimensions', async () => {
+    mockPrismaService.media.create.mockResolvedValue({ id: 'm1' });
+
+    await service.upload(file({ buffer: ICO_HEADER, originalname: 'favicon.ico' }), 'branding');
+
+    expect(mockPrismaService.media.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          mimeType: 'image/x-icon',
+          // An .ico bundles several sizes; none is recorded.
+          width: null,
+          height: null,
+        }),
+      }),
+    );
+    expect(mockMinioService.uploadFile.mock.calls[0][1]).toMatch(/\.ico$/);
+  });
+
+  it('records the detected type, not the one the browser claimed', async () => {
+    mockPrismaService.media.create.mockResolvedValue({ id: 'm1' });
+
+    await service.upload(file({ mimetype: 'image/gif' }));
+
+    expect(mockPrismaService.media.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ mimeType: 'image/png' }) }),
     );
   });
 

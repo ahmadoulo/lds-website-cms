@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ImageIcon, Mail, MapPin, Phone } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
-import { useGalleryImages, useImpactStats } from '../../lib/queries/publicHooks';
+import { useImpactStats } from '../../lib/queries/publicHooks';
 import { Seo } from '../../components/seo/Seo';
 import { SectionHeading } from '../../components/public/SectionHeading';
 import { ImpactCounter } from '../../components/public/ImpactCounter';
@@ -11,13 +11,13 @@ import { t } from '../../lib/types';
 
 export const AboutPage = () => {
   const { settings, isLoading } = useSettings();
-  const { data: gallery } = useGalleryImages();
   const { data: impact } = useImpactStats();
 
   const organization = settings?.organization;
   const contact = settings?.global_contact;
-  // The administrator can set a dedicated photo; the gallery is the fallback.
-  const photo = settings?.homepage.aboutImage ?? gallery?.[0]?.media ?? null;
+  // Only the photo configured for this page. Falling back to the gallery made an
+  // unrelated image appear here, with no way for the administrator to trace it.
+  const photo = settings?.homepage.aboutImage ?? null;
 
   return (
     <>

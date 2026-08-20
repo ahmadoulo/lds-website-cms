@@ -17,6 +17,9 @@ export const MissionCard = ({ mission, index }: { mission: Mission; index: numbe
             src={mission.image.url}
             alt={mission.image.altText?.fr || t(mission.title)}
             loading="lazy"
+          decoding="async"
+          width={1200}
+          height={750}
             className="h-full w-full object-cover"
           />
         ) : (

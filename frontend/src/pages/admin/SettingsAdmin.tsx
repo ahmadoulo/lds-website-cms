@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { CloudUpload, Eye, RotateCcw, Save } from 'lucide-react';
 import api from '../../lib/api/axios';
@@ -13,6 +14,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Field, Input, Textarea } from '../../components/ui/Field';
 import { ErrorState, LoadingState } from '../../components/ui/States';
 import { cn } from '../../lib/cn';
+import { commitImage, type ImageSelection } from '../../lib/pendingImage';
 import type { Media, SiteSettings } from '../../lib/types';
 
 type TabKey = 'branding' | 'organization' | 'global_contact' | 'global_social' | 'homepage' | 'seo';
@@ -34,7 +36,13 @@ interface DraftStatus {
 }
 
 export const SettingsAdmin = () => {
-  const [tab, setTab] = useState<TabKey>('branding');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // The sidebar links straight to a section, e.g. /admin/parametres?section=organization.
+  const requested = searchParams.get('section') as TabKey | null;
+  const tab: TabKey = TABS.some((item) => item.key === requested) ? requested! : 'homepage';
+
+  const setTab = (next: TabKey) => setSearchParams({ section: next }, { replace: true });
 
   // The administration edits the draft; the public site keeps serving what was
   // published until someone presses Publish.
@@ -250,9 +258,9 @@ const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
     settings.branding.faviconId,
   ]);
 
-  const [logo, setLogo] = useState<Media | null>(null);
-  const [logoDark, setLogoDark] = useState<Media | null>(null);
-  const [favicon, setFavicon] = useState<Media | null>(null);
+  const [logo, setLogo] = useState<ImageSelection>(null);
+  const [logoDark, setLogoDark] = useState<ImageSelection>(null);
+  const [favicon, setFavicon] = useState<ImageSelection>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -269,22 +277,32 @@ const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
       title="Identité visuelle"
       description="Le logo et l'icône du site. Sans logo téléversé, le nom court ci-dessous est affiché à la place."
       isSaving={mutation.isPending}
-      onSubmit={handleSubmit((values) =>
+      onSubmit={handleSubmit(async (values) => {
+        // Files picked in this form reach MinIO here, not when they were chosen.
+        const [storedLogo, storedLogoDark, storedFavicon] = await Promise.all([
+          commitImage(logo, 'branding'),
+          commitImage(logoDark, 'branding'),
+          commitImage(favicon, 'branding'),
+        ]);
+
+        setLogo(storedLogo);
+        setLogoDark(storedLogoDark);
+        setFavicon(storedFavicon);
+
         mutation.mutate({
           ...values,
           logoHeight: Number(values.logoHeight) || 40,
-          logoId: logo?.id ?? null,
-          logoDarkId: logoDark?.id ?? null,
-          faviconId: favicon?.id ?? null,
-        }),
-      )}
+          logoId: storedLogo?.id ?? null,
+          logoDarkId: storedLogoDark?.id ?? null,
+          faviconId: storedFavicon?.id ?? null,
+        });
+      })}
     >
       <div className="grid gap-6 sm:grid-cols-2">
         <div>
           <MediaPicker
             value={logo}
             onChange={setLogo}
-            folder="branding"
             label="Logo principal"
             slot="siteLogo"
           />
@@ -297,7 +315,6 @@ const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
           <MediaPicker
             value={logoDark}
             onChange={setLogoDark}
-            folder="branding"
             label="Logo sur fond sombre"
             slot="siteLogo"
           />
@@ -326,7 +343,6 @@ const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
         <MediaPicker
           value={favicon}
           onChange={setFavicon}
-          folder="branding"
           label="Icône du site (favicon)"
             slot="favicon"
         />
@@ -523,9 +539,9 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
     settings.homepage.ctaImageId,
   ]);
 
-  const [heroImage, setHeroImage] = useState<Media | null>(null);
-  const [aboutImage, setAboutImage] = useState<Media | null>(null);
-  const [ctaImage, setCtaImage] = useState<Media | null>(null);
+  const [heroImage, setHeroImage] = useState<ImageSelection>(null);
+  const [aboutImage, setAboutImage] = useState<ImageSelection>(null);
+  const [ctaImage, setCtaImage] = useState<ImageSelection>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Seed the pickers once the stored media have been fetched, without clobbering
@@ -544,14 +560,24 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
       title="Page d'accueil"
       description="Le bandeau principal, l'illustration de présentation et l'appel à l'action."
       isSaving={mutation.isPending}
-      onSubmit={handleSubmit((values) =>
+      onSubmit={handleSubmit(async (values) => {
+        const [storedHero, storedAbout, storedCta] = await Promise.all([
+          commitImage(heroImage, 'homepage'),
+          commitImage(aboutImage, 'homepage'),
+          commitImage(ctaImage, 'homepage'),
+        ]);
+
+        setHeroImage(storedHero);
+        setAboutImage(storedAbout);
+        setCtaImage(storedCta);
+
         mutation.mutate({
           ...values,
-          heroImageId: heroImage?.id ?? null,
-          aboutImageId: aboutImage?.id ?? null,
-          ctaImageId: ctaImage?.id ?? null,
-        }),
-      )}
+          heroImageId: storedHero?.id ?? null,
+          aboutImageId: storedAbout?.id ?? null,
+          ctaImageId: storedCta?.id ?? null,
+        });
+      })}
     >
       <Field label="Titre du bandeau" htmlFor="home-hero-title">
         <Textarea id="home-hero-title" rows={2} {...register('heroTitle')} />
@@ -574,14 +600,12 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
         <MediaPicker
           value={heroImage}
           onChange={setHeroImage}
-          folder="homepage"
           label="Photo du bandeau"
             slot="heroPortrait"
         />
         <MediaPicker
           value={aboutImage}
           onChange={setAboutImage}
-          folder="homepage"
           label="Photo de présentation"
             slot="aboutPhoto"
         />
@@ -594,7 +618,6 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
       <MediaPicker
         value={ctaImage}
         onChange={setCtaImage}
-        folder="homepage"
         label="Image de fond de l'appel à l'action"
             slot="ctaBanner"
       />
@@ -607,7 +630,7 @@ const SeoForm = ({ settings }: { settings: SiteSettings }) => {
   const { register, handleSubmit, watch } = useForm({ defaultValues: settings.seo });
 
   const stored = useMediaById([settings.seo.ogImageId]);
-  const [ogImage, setOgImage] = useState<Media | null>(null);
+  const [ogImage, setOgImage] = useState<ImageSelection>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -624,7 +647,11 @@ const SeoForm = ({ settings }: { settings: SiteSettings }) => {
       title="Référencement"
       description="Le titre et la description utilisés par Google et lors des partages sur les réseaux sociaux."
       isSaving={mutation.isPending}
-      onSubmit={handleSubmit((values) => mutation.mutate({ ...values, ogImageId: ogImage?.id ?? null }))}
+      onSubmit={handleSubmit(async (values) => {
+        const stored = await commitImage(ogImage, 'seo');
+        setOgImage(stored);
+        mutation.mutate({ ...values, ogImageId: stored?.id ?? null });
+      })}
     >
       <Field label="Titre du site" htmlFor="seo-title" hint="Environ 60 caractères pour un affichage complet.">
         <Input id="seo-title" {...register('title')} />
@@ -645,7 +672,6 @@ const SeoForm = ({ settings }: { settings: SiteSettings }) => {
       <MediaPicker
         value={ogImage}
         onChange={setOgImage}
-        folder="seo"
         label="Image de partage"
             slot="ogImage"
       />

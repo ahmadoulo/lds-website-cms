@@ -1,65 +1,72 @@
 import React, { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Crop, Image as ImageIcon, Maximize2, Search, Trash2, Upload } from 'lucide-react';
-import api, { apiErrorMessage } from '../../../lib/api/axios';
-import { formatBytes, uploadMedia, validateImageFile } from '../../../lib/queries/adminHooks';
+import { Clock, Crop, Image as ImageIcon, Maximize2, Search, Trash2, Upload } from 'lucide-react';
+import api from '../../../lib/api/axios';
+import { acceptAttribute, formatBytes, validateImageFile } from '../../../lib/queries/adminHooks';
+import {
+  createPendingImage,
+  isPending,
+  releasePendingImage,
+  selectionStats,
+  selectionUrl,
+  type ImageSelection,
+} from '../../../lib/pendingImage';
 import { IMAGE_SLOTS, type ImageSlotKey } from '../../../lib/imageAnalysis';
 import { useToast } from '../../ui/Toast';
 import { Modal } from '../../ui/Modal';
 import { Button } from '../../ui/Button';
 import { Input } from '../../ui/Field';
-import { EmptyState, LoadingState, Spinner } from '../../ui/States';
+import { EmptyState, LoadingState } from '../../ui/States';
 import { ImageReportPanel } from './ImageReportPanel';
 import type { Media, Paginated } from '../../../lib/types';
 import { cn } from '../../../lib/cn';
 
 interface MediaPickerProps {
-  value: Media | null;
-  onChange: (media: Media | null) => void;
-  /** Logical MinIO folder new uploads land in. */
-  folder: string;
+  /** Either a stored media, a not-yet-uploaded selection, or nothing. */
+  value: ImageSelection;
+  onChange: (value: ImageSelection) => void;
   /** Where this image is rendered, which sets the crop and the recommended size. */
   slot: ImageSlotKey;
   label?: string;
 }
 
 /**
- * Uploads to MinIO through the API, or reuses a file already in the library.
+ * Picks an image for a slot: a local file, or one already in the library.
  *
- * The preview is deliberately shown at the ratio the public site crops to, so a
- * mismatch is visible here rather than discovered after publishing.
+ * A local file is NOT uploaded here. It is previewed from an object URL and only
+ * written to MinIO when the form is submitted, so changing your mind leaves no
+ * orphan behind. The preview uses the ratio the public site crops to, so a
+ * mismatch is visible before publishing rather than after.
  */
-export const MediaPicker = ({ value, onChange, folder, slot, label = 'Image' }: MediaPickerProps) => {
+export const MediaPicker = ({ value, onChange, slot, label = 'Image' }: MediaPickerProps) => {
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [showWholeImage, setShowWholeImage] = useState(false);
 
   const spec = IMAGE_SLOTS[slot];
+  const stats = selectionStats(value);
+  const previewUrl = selectionUrl(value);
+  const pending = isPending(value);
+
+  // The object URL of a replaced selection has to be released, or the file stays
+  // in memory for as long as the page is open.
+  const replace = (next: ImageSelection) => {
+    releasePendingImage(value);
+    onChange(next);
+  };
 
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
 
-    const validationError = validateImageFile(file);
+    const validationError = validateImageFile(file, spec.allowIcon);
     if (validationError) {
       toast.error(validationError);
       return;
     }
 
-    setIsUploading(true);
-    try {
-      const media = await uploadMedia(file, folder);
-      onChange(media);
-      // Uploading only stores the file; it reaches the site when the form is
-      // saved and the section published.
-      toast.success('Image ajoutée au brouillon. Elle sera visible après publication.');
-    } catch (error) {
-      toast.error(apiErrorMessage(error, "Échec du téléversement de l'image."));
-    } finally {
-      setIsUploading(false);
-      if (inputRef.current) inputRef.current.value = '';
-    }
+    replace(await createPendingImage(file));
+    if (inputRef.current) inputRef.current.value = '';
   };
 
   return (
@@ -83,15 +90,10 @@ export const MediaPicker = ({ value, onChange, folder, slot, label = 'Image' }: 
           void handleFile(event.dataTransfer.files?.[0]);
         }}
       >
-        {isUploading ? (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2">
-            <Spinner className="h-6 w-6 text-blue" />
-            <span className="text-xs font-medium text-navy/60">Téléversement…</span>
-          </div>
-        ) : value ? (
+        {previewUrl ? (
           <img
-            src={value.url}
-            alt={value.altText?.fr || value.originalName}
+            src={previewUrl}
+            alt={stats?.name ?? ''}
             className={cn(
               'h-full w-full',
               // `cover` reproduces the crop the site applies; `contain` reveals
@@ -113,7 +115,7 @@ export const MediaPicker = ({ value, onChange, folder, slot, label = 'Image' }: 
           </button>
         )}
 
-        {value && spec.fit === 'cover' && (
+        {previewUrl && spec.fit === 'cover' && (
           <button
             type="button"
             onClick={() => setShowWholeImage((shown) => !shown)}
@@ -134,13 +136,13 @@ export const MediaPicker = ({ value, onChange, folder, slot, label = 'Image' }: 
         <input
           ref={inputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+          accept={acceptAttribute(Boolean(spec.allowIcon))}
           className="hidden"
           onChange={(event) => void handleFile(event.target.files?.[0])}
         />
       </div>
 
-      {value && showWholeImage && spec.fit === 'cover' && (
+      {previewUrl && showWholeImage && spec.fit === 'cover' && (
         <p className="text-[11px] font-medium text-blue">
           Image entière. Seule la zone visible dans le cadrage sera affichée sur le site.
         </p>
@@ -152,39 +154,45 @@ export const MediaPicker = ({ value, onChange, folder, slot, label = 'Image' }: 
           variant="outline"
           size="sm"
           onClick={() => inputRef.current?.click()}
-          disabled={isUploading}
         >
-          <Upload className="h-3.5 w-3.5" /> {value ? 'Remplacer' : 'Téléverser'}
+          <Upload className="h-3.5 w-3.5" /> {previewUrl ? 'Remplacer' : 'Choisir une image'}
         </Button>
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={() => setIsLibraryOpen(true)}
-          disabled={isUploading}
         >
           <ImageIcon className="h-3.5 w-3.5" /> Bibliothèque
         </Button>
-        {value && (
+        {previewUrl && (
           <Button
             type="button"
             variant="ghost"
             size="sm"
             className="text-red-600 hover:bg-red-50"
-            onClick={() => onChange(null)}
+            onClick={() => replace(null)}
           >
             <Trash2 className="h-3.5 w-3.5" /> Retirer
           </Button>
         )}
       </div>
 
-      {value && <ImageReportPanel media={value} slot={spec} />}
+      {pending && (
+        <p className="flex items-start gap-1.5 rounded-lg border border-blue/25 bg-blue/5 px-2.5 py-1.5 text-[11px] text-navy/75">
+          <Clock className="mt-px h-3.5 w-3.5 shrink-0 text-blue" />
+          Image sélectionnée mais pas encore envoyée. Elle sera stockée lors de
+          l'enregistrement du formulaire.
+        </p>
+      )}
+
+      {stats && <ImageReportPanel stats={stats} slot={spec} />}
 
       <MediaLibraryModal
         isOpen={isLibraryOpen}
         onClose={() => setIsLibraryOpen(false)}
         onSelect={(media) => {
-          onChange(media);
+          replace(media);
           setIsLibraryOpen(false);
         }}
       />

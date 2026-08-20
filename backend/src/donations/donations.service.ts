@@ -50,6 +50,11 @@ export class DonationsService {
     if (dto.description) data.description = sanitizeLocalized(dto.description, sanitizePlainText);
     if (dto.actionLabel) data.actionLabel = sanitizeLocalized(dto.actionLabel, sanitizePlainText);
     if (dto.actionData) data.actionData = sanitizePlainText(dto.actionData);
+    if (dto.beneficiary !== undefined) data.beneficiary = dto.beneficiary?.trim() || null;
+    // An empty provider or link means "not a mobile money method", stored as NULL
+    // rather than an empty string so the front end has one thing to check.
+    if (dto.provider !== undefined) data.provider = dto.provider || null;
+    if (dto.paymentLink !== undefined) data.paymentLink = dto.paymentLink?.trim() || null;
     return data;
   }
 

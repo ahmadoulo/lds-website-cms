@@ -15,7 +15,8 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Badge } from '../../components/ui/Badge';
 import { Checkbox, Field, Input, Select } from '../../components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
-import type { Media, Partner } from '../../lib/types';
+import { commitImage, type ImageSelection } from '../../lib/pendingImage';
+import type { Partner } from '../../lib/types';
 
 interface FormValues {
   name: string;
@@ -35,7 +36,7 @@ export const PartnersAdmin = () => {
   const [editing, setEditing] = useState<Partner | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Partner | null>(null);
-  const [logo, setLogo] = useState<Media | null>(null);
+  const [logo, setLogo] = useState<ImageSelection>(null);
 
   const listQuery = useQuery({
     queryKey: ['admin', 'partners'],
@@ -77,13 +78,16 @@ export const PartnersAdmin = () => {
 
   const saveMutation = useAdminMutation<FormValues>({
     mutationFn: async (values) => {
+      // The picked file reaches MinIO here, when the administrator commits.
+      const uploaded = await commitImage(logo, 'partners');
+
       const payload = {
         name: values.name,
         // null (not undefined) so an existing link can actually be cleared;
         // undefined would be dropped from the JSON body and leave it unchanged.
         url: values.url.trim() || null,
         icon: values.icon,
-        logoId: logo?.id ?? null,
+        logoId: uploaded?.id ?? null,
         isPublished: values.isPublished,
       };
 
@@ -291,7 +295,6 @@ export const PartnersAdmin = () => {
           <MediaPicker
             value={logo}
             onChange={setLogo}
-            folder="partners"
             slot="partnerLogo"
             label="Logo"
           />

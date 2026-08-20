@@ -11,6 +11,9 @@ export const NewsCard = ({ article }: { article: NewsArticle }) => (
           src={article.image.url}
           alt={article.image.altText?.fr || t(article.title)}
           loading="lazy"
+          decoding="async"
+          width={1200}
+          height={900}
           className="h-full w-full object-cover"
         />
       ) : (

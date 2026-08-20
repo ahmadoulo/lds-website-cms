@@ -82,6 +82,31 @@ export class MediaController {
     return this.mediaService.findAll(query);
   }
 
+  @Get('orphans')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('READ', 'Media')
+  @ApiOperation({ summary: 'Files no content references any more' })
+  findOrphans() {
+    return this.mediaService.findOrphans();
+  }
+
+  @Delete('orphans')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('DELETE', 'Media')
+  @ApiOperation({ summary: 'Delete every unreferenced file' })
+  async purgeOrphans(@CurrentUser() user: AuthenticatedUser) {
+    const result = await this.mediaService.purgeOrphans();
+    await this.audit.record({
+      action: 'DELETE',
+      resource: 'Media',
+      userId: user.id,
+      metadata: { orphansPurged: result.deleted, freedBytes: result.freedBytes },
+    });
+    return result;
+  }
+
   @Get('folders')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionsGuard)

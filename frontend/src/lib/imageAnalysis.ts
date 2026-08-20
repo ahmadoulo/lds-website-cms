@@ -9,20 +9,28 @@ export interface ImageSlot {
   ratio: number;
   /** Ratio written the way a person reads it. */
   ratioLabel: string;
-  /** Ideal source size in pixels. */
+  /** Ideal source size in pixels. Advisory, never enforced. */
   width: number;
   height: number;
+  /**
+   * Below this the image is genuinely unusable at the size it is displayed.
+   * Anything between this and the recommended size is accepted with a note.
+   */
+  minWidth: number;
   /** How the image is fitted: `cover` crops, `contain` never does. */
   fit: 'cover' | 'contain';
+  /** An icon slot also accepts .ico. */
+  allowIcon?: boolean;
   note?: string;
 }
 
-export const IMAGE_SLOTS = {
+const SLOTS = {
   heroPortrait: {
     ratio: 3 / 4,
     ratioLabel: '3:4 (portrait)',
     width: 900,
     height: 1200,
+    minWidth: 480,
     fit: 'cover',
     note: "Photo verticale du bandeau d'accueil.",
   },
@@ -31,6 +39,7 @@ export const IMAGE_SLOTS = {
     ratioLabel: '4:3 (paysage)',
     width: 1200,
     height: 900,
+    minWidth: 560,
     fit: 'cover',
     note: 'Photo de présentation de l’association.',
   },
@@ -39,6 +48,7 @@ export const IMAGE_SLOTS = {
     ratioLabel: '21:9 (bandeau large)',
     width: 1920,
     height: 823,
+    minWidth: 900,
     fit: 'cover',
     note: 'Image de fond, assombrie et recouverte de texte : évitez un sujet au centre.',
   },
@@ -47,6 +57,7 @@ export const IMAGE_SLOTS = {
     ratioLabel: '16:10',
     width: 1200,
     height: 750,
+    minWidth: 420,
     fit: 'cover',
     note: "Vignette d'un domaine d'action.",
   },
@@ -55,6 +66,7 @@ export const IMAGE_SLOTS = {
     ratioLabel: '4:3',
     width: 1200,
     height: 900,
+    minWidth: 420,
     fit: 'cover',
     note: "Couverture d'article. Recadrée en 16:9 sur la page de l'article.",
   },
@@ -63,6 +75,7 @@ export const IMAGE_SLOTS = {
     ratioLabel: '4:3',
     width: 1200,
     height: 900,
+    minWidth: 400,
     fit: 'cover',
   },
   partnerLogo: {
@@ -70,6 +83,7 @@ export const IMAGE_SLOTS = {
     ratioLabel: '3:2',
     width: 600,
     height: 400,
+    minWidth: 160,
     fit: 'contain',
     note: 'Affiché entier, jamais recadré. Fond transparent recommandé (PNG ou WebP).',
   },
@@ -78,6 +92,7 @@ export const IMAGE_SLOTS = {
     ratioLabel: '3:1 (horizontal)',
     width: 600,
     height: 200,
+    minWidth: 160,
     fit: 'contain',
     note: 'Affiché entier. Fond transparent recommandé.',
   },
@@ -86,20 +101,29 @@ export const IMAGE_SLOTS = {
     ratioLabel: '1:1 (carré)',
     width: 512,
     height: 512,
+    minWidth: 32,
     fit: 'contain',
-    note: "Icône de l'onglet du navigateur.",
+    allowIcon: true,
+    note: 'Icône de l’onglet du navigateur. Un .ico multi-tailles (16, 32, 48 px) ou un PNG carré de 512 px conviennent.',
   },
   ogImage: {
     ratio: 1.91,
     ratioLabel: '1.91:1',
     width: 1200,
     height: 630,
+    minWidth: 600,
     fit: 'cover',
     note: 'Aperçu lors des partages sur les réseaux sociaux.',
   },
 } as const satisfies Record<string, ImageSlot>;
 
-export type ImageSlotKey = keyof typeof IMAGE_SLOTS;
+export type ImageSlotKey = keyof typeof SLOTS;
+
+/**
+ * Widened to ImageSlot so optional fields such as `allowIcon` are readable on
+ * every entry, while the key union stays exact.
+ */
+export const IMAGE_SLOTS: Record<ImageSlotKey, ImageSlot> = SLOTS;
 
 export type IssueLevel = 'error' | 'warning' | 'info';
 
@@ -117,10 +141,9 @@ export interface ImageReport {
   issues: ImageIssue[];
 }
 
-const RATIO_TOLERANCE = 0.06;
-/** Below this share of the recommended size the image visibly softens. */
-const MIN_SCALE = 0.6;
-const OVERSIZED_SCALE = 2.5;
+/** Ratio differences under this are invisible once rendered. */
+const RATIO_TOLERANCE = 0.08;
+const OVERSIZED_SCALE = 3;
 
 export function formatRatio(ratio: number): string {
   if (!Number.isFinite(ratio) || ratio <= 0) return '—';
@@ -140,13 +163,16 @@ export function analyseImage(
   const height = image.height ?? 0;
   const issues: ImageIssue[] = [];
 
+  // An .ico holds several sizes at once, so there is nothing to compare.
   if (!width || !height) {
     return {
       width,
       height,
       ratio: 0,
       croppedAway: 0,
-      issues: [{ level: 'warning', message: "Les dimensions de cette image n'ont pas pu être lues." }],
+      issues: slot.allowIcon
+        ? []
+        : [{ level: 'info', message: "Les dimensions de cette image n'ont pas pu être lues." }],
     };
   }
 
@@ -159,27 +185,32 @@ export function analyseImage(
       ? 1 - Math.min(ratio, slot.ratio) / Math.max(ratio, slot.ratio)
       : 0;
 
+  // A crop is not a defect: it is simply something the administrator should see
+  // coming, so it is reported at the level of a remark.
   if (slot.fit === 'cover' && ratioGap > RATIO_TOLERANCE) {
     const side = ratio > slot.ratio ? 'sur les côtés' : 'en haut et en bas';
     issues.push({
-      level: 'warning',
+      level: 'info',
       message:
-        `Le format ne correspond pas : environ ${Math.round(croppedAway * 100)} % de l'image ` +
-        `sera masquée ${side}. Format attendu : ${slot.ratioLabel}.`,
+        `Format différent du cadrage (${slot.ratioLabel}) : environ ` +
+        `${Math.round(croppedAway * 100)} % de l'image sera masquée ${side}. ` +
+        "Utilisez « Voir l'image entière » pour vérifier ce qui reste visible.",
     });
   }
 
-  if (width < slot.width * MIN_SCALE || height < slot.height * MIN_SCALE) {
+  // Only a size that is genuinely unusable at the dimensions the slot renders at
+  // is reported as a problem. Everything above it is accepted.
+  if (width < slot.minWidth) {
     issues.push({
-      level: 'error',
+      level: 'warning',
       message:
-        `Image trop petite (${width}×${height} px). Elle apparaîtra floue. ` +
-        `Utilisez au minimum ${slot.width}×${slot.height} px.`,
+        `Image de ${width}×${height} px : elle risque d'apparaître floue à cet emplacement, ` +
+        `affiché jusqu'à ${slot.minWidth} px de large. Idéalement ${slot.width}×${slot.height} px.`,
     });
-  } else if (width < slot.width || height < slot.height) {
+  } else if (width < slot.width) {
     issues.push({
       level: 'info',
-      message: `Un peu en dessous de la taille conseillée (${slot.width}×${slot.height} px), mais exploitable.`,
+      message: `En dessous de la taille conseillée (${slot.width}×${slot.height} px), mais tout à fait utilisable.`,
     });
   }
 
@@ -188,14 +219,14 @@ export function analyseImage(
       level: 'info',
       message:
         `Image bien plus grande que nécessaire (${width}×${height} px). ` +
-        `La réduire vers ${slot.width}×${slot.height} px accélérera le chargement du site.`,
+        `La réduire vers ${slot.width}×${slot.height} px allégera le site.`,
     });
   }
 
-  if (image.size > 1_000_000) {
+  if (image.size > 1_500_000) {
     issues.push({
-      level: 'warning',
-      message: `Fichier lourd (${(image.size / 1_048_576).toFixed(1)} Mo). Compressez-le pour un site plus rapide.`,
+      level: 'info',
+      message: `Fichier de ${(image.size / 1_048_576).toFixed(1)} Mo. Le compresser accélérera le chargement.`,
     });
   }
 

@@ -14,6 +14,8 @@ export interface Media {
   /** Absolute URL to the streaming endpoint, added by the API. */
   url: string;
   createdAt: string;
+  /** Human-readable list of the places this file is used, added by the API. */
+  usedIn?: string[];
 }
 
 export interface Mission {
@@ -98,6 +100,11 @@ export interface DonationMethod {
   iconColor: 'orange' | 'blue' | 'green' | 'navy';
   order: number;
   isPublished: boolean;
+  /** Mobile money / bank provider, when this method is one. */
+  provider: string | null;
+  beneficiary: string | null;
+  /** Official payment link. Nothing is ever fabricated in its absence. */
+  paymentLink: string | null;
 }
 
 export interface ContactMessage {

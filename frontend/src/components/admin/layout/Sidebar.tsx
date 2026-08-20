@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { ExternalLink, X } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { NAV_GROUPS } from './navigation';
@@ -14,6 +14,7 @@ interface SidebarProps {
 
 export const Sidebar = ({ isOpen, onClose, unreadMessages = 0 }: SidebarProps) => {
   const { can } = useAuth();
+  const location = useLocation();
 
   const content = (
     <>
@@ -42,30 +43,50 @@ export const Sidebar = ({ isOpen, onClose, unreadMessages = 0 }: SidebarProps) =
                 {group.title}
               </p>
               <div className="space-y-0.5">
-                {visible.map((item) => (
-                  <NavLink
-                    key={item.href}
-                    to={item.href}
-                    end={item.href === '/admin'}
-                    onClick={onClose}
-                    className={({ isActive }) =>
-                      cn(
-                        'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                {visible.map((item) => {
+                  // Several entries point at the same page with a different
+                  // section, so activity is decided on the path alone.
+                  const path = item.href.split('?')[0];
+                  const isActive =
+                    path === '/admin'
+                      ? location.pathname === '/admin'
+                      : location.pathname.startsWith(path) &&
+                        location.search === (item.href.split('?')[1] ? `?${item.href.split('?')[1]}` : location.search);
+
+                  return (
+                    <NavLink
+                      key={item.href}
+                      to={item.href}
+                      onClick={onClose}
+                      className={cn(
+                        'group flex items-start gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                         isActive
                           ? 'bg-blue text-white'
                           : 'text-white/70 hover:bg-white/10 hover:text-white',
-                      )
-                    }
-                  >
-                    <item.icon className="h-[18px] w-[18px] shrink-0" />
-                    <span className="flex-1">{item.name}</span>
-                    {item.badge === 'unreadMessages' && unreadMessages > 0 && (
-                      <span className="rounded-full bg-orange px-2 py-0.5 text-[10px] font-bold text-white">
-                        {unreadMessages}
+                      )}
+                    >
+                      <item.icon className="mt-0.5 h-[18px] w-[18px] shrink-0" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate">{item.name}</span>
+                        {item.hint && (
+                          <span
+                            className={cn(
+                              'block truncate text-[11px] font-normal',
+                              isActive ? 'text-white/70' : 'text-white/40',
+                            )}
+                          >
+                            {item.hint}
+                          </span>
+                        )}
                       </span>
-                    )}
-                  </NavLink>
-                ))}
+                      {item.badge === 'unreadMessages' && unreadMessages > 0 && (
+                        <span className="mt-0.5 rounded-full bg-orange px-2 py-0.5 text-[10px] font-bold text-white">
+                          {unreadMessages}
+                        </span>
+                      )}
+                    </NavLink>
+                  );
+                })}
               </div>
             </div>
           );

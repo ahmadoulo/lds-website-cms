@@ -5,6 +5,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { Seo } from '../../components/seo/Seo';
 import { SectionHeading } from '../../components/public/SectionHeading';
 import { DonationCard } from '../../components/public/DonationCard';
+import { PaymentMethodCard } from '../../components/public/PaymentMethodCard';
 import { EmptyState, ErrorState, SkeletonCards } from '../../components/ui/States';
 
 export const SupportPage = () => {
@@ -12,6 +13,11 @@ export const SupportPage = () => {
   const { settings } = useSettings();
 
   const contact = settings?.global_contact;
+
+  // A method with a provider is a way to send money and gets the richer card;
+  // the rest keep the generic presentation.
+  const paymentMethods = (donations ?? []).filter((method) => Boolean(method.provider));
+  const otherWays = (donations ?? []).filter((method) => !method.provider);
 
   return (
     <>
@@ -41,11 +47,35 @@ export const SupportPage = () => {
               description="Contactez-nous directement pour savoir comment aider."
             />
           ) : (
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {donations.map((method) => (
-                <DonationCard key={method.id} method={method} />
-              ))}
-            </div>
+            <>
+              {paymentMethods.length > 0 && (
+                <section className="mb-14">
+                  <h2 className="mb-6 text-center text-[clamp(20px,2.4vw,26px)] font-extrabold text-navy">
+                    Envoyer un don
+                  </h2>
+                  <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                    {paymentMethods.map((method) => (
+                      <PaymentMethodCard key={method.id} method={method} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {otherWays.length > 0 && (
+                <section>
+                  {paymentMethods.length > 0 && (
+                    <h2 className="mb-6 text-center text-[clamp(20px,2.4vw,26px)] font-extrabold text-navy">
+                      Autres façons d'aider
+                    </h2>
+                  )}
+                  <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                    {otherWays.map((method) => (
+                      <DonationCard key={method.id} method={method} />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </>
           )}
 
           {contact && (

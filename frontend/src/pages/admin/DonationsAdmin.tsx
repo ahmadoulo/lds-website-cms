@@ -23,6 +23,9 @@ interface FormValues {
   actionLabel: string;
   iconColor: DonationMethod['iconColor'];
   isPublished: boolean;
+  provider: string;
+  beneficiary: string;
+  paymentLink: string;
 }
 
 const ACTION_TYPES = [
@@ -39,6 +42,15 @@ const COLORS = [
   { value: 'navy', label: 'Bleu nuit' },
 ] as const;
 
+const PROVIDERS = [
+  { value: '', label: 'Aucun (moyen générique)' },
+  { value: 'wave', label: 'Wave' },
+  { value: 'orange_money', label: 'Orange Money' },
+  { value: 'bank', label: 'Virement bancaire' },
+  { value: 'cash', label: 'Espèces' },
+  { value: 'other', label: 'Autre' },
+] as const;
+
 const EMPTY_FORM: FormValues = {
   title: '',
   description: '',
@@ -47,6 +59,9 @@ const EMPTY_FORM: FormValues = {
   actionLabel: '',
   iconColor: 'orange',
   isPublished: true,
+  provider: '',
+  beneficiary: '',
+  paymentLink: '',
 };
 
 export const DonationsAdmin = () => {
@@ -68,6 +83,8 @@ export const DonationsAdmin = () => {
   } = useForm<FormValues>({ defaultValues: EMPTY_FORM });
 
   const actionType = watch('actionType');
+  const provider = watch('provider');
+  const isPaymentProvider = provider === 'wave' || provider === 'orange_money' || provider === 'bank';
   const actionHint = ACTION_TYPES.find((type) => type.value === actionType)?.hint;
 
   const openCreate = () => {
@@ -86,6 +103,9 @@ export const DonationsAdmin = () => {
       actionLabel: t(method.actionLabel),
       iconColor: method.iconColor,
       isPublished: method.isPublished,
+      provider: method.provider ?? '',
+      beneficiary: method.beneficiary ?? '',
+      paymentLink: method.paymentLink ?? '',
     });
     setIsFormOpen(true);
   };
@@ -106,6 +126,10 @@ export const DonationsAdmin = () => {
         actionLabel: { fr: values.actionLabel },
         iconColor: values.iconColor,
         isPublished: values.isPublished,
+        // Empty means "not a payment provider"; null keeps the column clean.
+        provider: values.provider || null,
+        beneficiary: values.beneficiary.trim() || null,
+        paymentLink: values.paymentLink.trim() || null,
       };
 
       return editing
@@ -300,6 +324,56 @@ export const DonationsAdmin = () => {
               {...register('actionLabel', { required: 'Le libellé est obligatoire' })}
             />
           </Field>
+
+          <Field
+            label="Moyen de paiement"
+            htmlFor="donation-provider"
+            hint="Wave et Orange Money affichent une carte dédiée avec le numéro, la copie et l'appel."
+          >
+            <Select id="donation-provider" {...register('provider')}>
+              {PROVIDERS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          {isPaymentProvider && (
+            <>
+              <Field
+                label="Nom du bénéficiaire"
+                htmlFor="donation-beneficiary"
+                hint="Affiché au donateur pour qu'il vérifie avant d'envoyer."
+              >
+                <Input
+                  id="donation-beneficiary"
+                  placeholder="Louga Développement Solidaire"
+                  {...register('beneficiary')}
+                />
+              </Field>
+
+              <Field
+                label="Lien de paiement officiel"
+                htmlFor="donation-link"
+                hint="Facultatif. Uniquement un lien fourni par l'opérateur (ex. lien Wave Business). Sans lien, le site affiche le numéro à copier ou composer — aucun lien n'est inventé."
+                error={errors.paymentLink?.message}
+              >
+                <Input
+                  id="donation-link"
+                  type="url"
+                  placeholder="https://..."
+                  aria-invalid={Boolean(errors.paymentLink)}
+                  {...register('paymentLink', {
+                    pattern: {
+                      value: /^(https?:\/\/\S+)?$/,
+                      message: 'Doit commencer par https:// ou rester vide',
+                    },
+                  })}
+                />
+              </Field>
+            </>
+          )}
 
           <Field label="Couleur" htmlFor="donation-color">
             <Select id="donation-color" {...register('iconColor')}>

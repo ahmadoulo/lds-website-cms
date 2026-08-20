@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { Edit2, Eye, EyeOff, FileText, ImageIcon, Plus, ScanEye, Tag, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
+import { commitImage, type ImageSelection } from '../../lib/pendingImage';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
 import { PreviewButton, openPreview } from '../../components/admin/ui/PreviewButton';
 import { DataTable, IconButton, type Column } from '../../components/admin/ui/DataTable';
@@ -17,7 +18,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Badge } from '../../components/ui/Badge';
 import { Checkbox, Field, Input, Select, Textarea } from '../../components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
-import { t, type Media, type NewsArticle, type NewsCategory, type Paginated } from '../../lib/types';
+import { t, type NewsArticle, type NewsCategory, type Paginated } from '../../lib/types';
 
 interface FormValues {
   title: string;
@@ -44,7 +45,7 @@ export const NewsAdmin = () => {
   const [editing, setEditing] = useState<NewsArticle | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<NewsArticle | null>(null);
-  const [cover, setCover] = useState<Media | null>(null);
+  const [cover, setCover] = useState<ImageSelection>(null);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
   const listQuery = useQuery({
@@ -119,13 +120,16 @@ export const NewsAdmin = () => {
 
   const saveMutation = useAdminMutation<FormValues>({
     mutationFn: async (values) => {
+      // The picked file reaches MinIO here, when the administrator commits.
+      const uploaded = await commitImage(cover, 'news');
+
       const payload = {
         title: { fr: values.title },
         excerpt: { fr: values.excerpt },
         content: { fr: values.content },
         slug: values.slug || undefined,
         categoryId: values.categoryId || undefined,
-        imageId: cover?.id ?? null,
+        imageId: uploaded?.id ?? null,
         isPublished: values.isPublished,
       };
 
@@ -369,7 +373,6 @@ export const NewsAdmin = () => {
             <MediaPicker
               value={cover}
               onChange={setCover}
-              folder="news"
             slot="newsCover"
               label="Image de couverture"
             />

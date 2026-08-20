@@ -5,6 +5,7 @@ import { Edit2, Eye, EyeOff, ImageIcon, Plus, Target, Trash2 } from 'lucide-reac
 import api from '../../lib/api/axios';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { MISSION_ICON_OPTIONS, resolveIcon } from '../../lib/icons';
+import { commitImage, type ImageSelection } from '../../lib/pendingImage';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
 import { PreviewButton } from '../../components/admin/ui/PreviewButton';
 import { DataTable, IconButton, type Column } from '../../components/admin/ui/DataTable';
@@ -15,7 +16,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Badge } from '../../components/ui/Badge';
 import { Checkbox, Field, Input, Select, Textarea } from '../../components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
-import { t, type Media, type Mission } from '../../lib/types';
+import { t, type Mission } from '../../lib/types';
 
 interface FormValues {
   title: string;
@@ -35,7 +36,7 @@ export const MissionsAdmin = () => {
   const [editing, setEditing] = useState<Mission | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Mission | null>(null);
-  const [cover, setCover] = useState<Media | null>(null);
+  const [cover, setCover] = useState<ImageSelection>(null);
 
   const listQuery = useQuery({
     queryKey: ['admin', 'missions'],
@@ -77,11 +78,14 @@ export const MissionsAdmin = () => {
 
   const saveMutation = useAdminMutation<FormValues>({
     mutationFn: async (values) => {
+      // The picked file reaches MinIO here, when the administrator commits.
+      const uploaded = await commitImage(cover, 'missions');
+
       const payload = {
         title: { fr: values.title },
         description: { fr: values.description },
         icon: values.icon,
-        imageId: cover?.id ?? null,
+        imageId: uploaded?.id ?? null,
         isPublished: values.isPublished,
       };
 
@@ -258,8 +262,12 @@ export const MissionsAdmin = () => {
               </Field>
             </div>
 
-            <MediaPicker value={cover} onChange={setCover} folder="missions"
-            slot="missionCover" label="Illustration" />
+            <MediaPicker
+              value={cover}
+              onChange={setCover}
+              slot="missionCover"
+              label="Illustration"
+            />
           </div>
 
           <Field
