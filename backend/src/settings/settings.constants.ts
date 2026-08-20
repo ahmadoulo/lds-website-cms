@@ -4,6 +4,7 @@
  * authenticated caller from filling the table with arbitrary keys.
  */
 export const SETTING_KEYS = [
+  'branding',
   'organization',
   'global_contact',
   'global_social',
@@ -14,6 +15,17 @@ export const SETTING_KEYS = [
 export type SettingKey = (typeof SETTING_KEYS)[number];
 
 export const DEFAULT_SETTINGS: Record<SettingKey, Record<string, any>> = {
+  branding: {
+    // Uploaded logos. Empty means the site falls back to the wordmark below.
+    logoId: null,
+    // Version used on the dark navy backgrounds (footer, admin sidebar).
+    logoDarkId: null,
+    faviconId: null,
+    // Wordmark shown when no logo is uploaded, and used as the logo alt text.
+    wordmark: 'LDS',
+    wordmarkAccent: 'Louga',
+    logoHeight: 40,
+  },
   organization: {
     name: 'Louga Développement Solidaire',
     shortName: 'LDS',

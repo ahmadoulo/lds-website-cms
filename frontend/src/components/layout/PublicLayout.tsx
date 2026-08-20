@@ -9,6 +9,7 @@ import {
 } from '../public/SocialIcons';
 import { useSettings } from '../../context/SettingsContext';
 import { cn } from '../../lib/cn';
+import { SiteLogo } from '../public/SiteLogo';
 
 const NAV = [
   { label: 'Accueil', href: '/' },
@@ -38,7 +39,6 @@ export const PublicLayout = () => {
   const social = settings?.global_social;
   const organization = settings?.organization;
 
-  const shortName = organization?.shortName || 'LDS';
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 16);
@@ -106,8 +106,8 @@ export const PublicLayout = () => {
         )}
       >
         <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-6 px-6 py-4">
-          <Link to="/" className="text-2xl font-extrabold tracking-tight text-navy">
-            {shortName} <span className="text-green">Louga</span>
+          <Link to="/" className="flex items-center" aria-label="Accueil">
+            <SiteLogo />
           </Link>
 
           <nav className="hidden items-center gap-7 lg:flex" aria-label="Navigation principale">
@@ -180,8 +180,8 @@ export const PublicLayout = () => {
       <footer className="mt-auto bg-navy px-6 pb-10 pt-16 text-white">
         <div className="mx-auto grid max-w-[1280px] gap-10 md:grid-cols-3 lg:gap-12">
           <div>
-            <span className="mb-5 block text-2xl font-extrabold tracking-tight">
-              {shortName} <span className="text-green">Louga</span>
+            <span className="mb-5 block">
+              <SiteLogo variant="dark" />
             </span>
             <p className="mb-6 max-w-xs leading-relaxed text-white/65">
               {organization?.tagline ||

@@ -48,6 +48,16 @@ describe('Public API and media (e2e)', () => {
     expect(res.body.seo.description).toEqual(expect.any(String));
   });
 
+  it('exposes the branding section so the site can render a logo and favicon', async () => {
+    const res = await request(http).get('/api/v1/public/settings').expect(200);
+
+    expect(res.body.branding).toBeDefined();
+    // Nothing uploaded yet: the site falls back to the wordmark.
+    expect(res.body.branding.logoId).toBeNull();
+    expect(res.body.branding.faviconId).toBeNull();
+    expect(res.body.branding.wordmark).toEqual(expect.any(String));
+  });
+
   it('hides unpublished missions from anonymous visitors', async () => {
     const res = await request(http).get('/api/v1/public/missions').expect(200);
     expect(res.body.length).toBeGreaterThan(0);

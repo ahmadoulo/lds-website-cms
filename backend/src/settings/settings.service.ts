@@ -57,6 +57,9 @@ export class SettingsService {
     const config = await this.findAll();
 
     const ids = [
+      config.branding?.logoId,
+      config.branding?.logoDarkId,
+      config.branding?.faviconId,
       config.homepage?.heroImageId,
       config.homepage?.aboutImageId,
       config.homepage?.ctaImageId,
@@ -68,6 +71,12 @@ export class SettingsService {
     const media = await this.prisma.media.findMany({ where: { id: { in: ids } } });
     const byId = new Map(media.map((item) => [item.id, item]));
 
+    config.branding = {
+      ...config.branding,
+      logo: byId.get(config.branding?.logoId) ?? null,
+      logoDark: byId.get(config.branding?.logoDarkId) ?? null,
+      favicon: byId.get(config.branding?.faviconId) ?? null,
+    };
     config.homepage = {
       ...config.homepage,
       heroImage: byId.get(config.homepage?.heroImageId) ?? null,

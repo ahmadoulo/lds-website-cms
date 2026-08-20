@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { ToastProvider } from './components/ui/Toast';
 import { ScrollToTop } from './components/layout/ScrollToTop';
+import { Favicon } from './components/seo/Favicon';
 import { LoadingState } from './components/ui/States';
 
 import { PublicLayout } from './components/layout/PublicLayout';
@@ -99,6 +100,7 @@ function App() {
           <SettingsProvider>
             <AuthProvider>
               <ScrollToTop />
+              <Favicon />
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
                   {/* ------------------------------------------------ public */}

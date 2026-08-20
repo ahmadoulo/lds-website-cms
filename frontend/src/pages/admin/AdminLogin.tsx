@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { AlertCircle, HeartHandshake } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { apiErrorMessage } from '../../lib/api/axios';
 import { Button } from '../../components/ui/Button';
 import { Field, Input } from '../../components/ui/Field';
 import { LoadingState } from '../../components/ui/States';
+import { SiteLogo } from '../../components/public/SiteLogo';
 
 interface FormValues {
   email: string;
@@ -52,12 +53,10 @@ export const AdminLogin = () => {
     <div className="flex min-h-screen flex-col justify-center bg-warm px-4 py-12">
       <div className="mx-auto w-full max-w-md">
         <div className="mb-8 text-center">
-          <span className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-navy text-green">
-            <HeartHandshake className="h-7 w-7" />
+          <span className="mb-5 flex justify-center">
+            <SiteLogo />
           </span>
-          <h1 className="text-2xl font-extrabold text-navy">
-            LDS <span className="text-green">Administration</span>
-          </h1>
+          <h1 className="text-xl font-bold text-navy">Administration</h1>
           <p className="mt-2 text-sm text-navy/60">
             Connectez-vous pour gérer le contenu du site.
           </p>

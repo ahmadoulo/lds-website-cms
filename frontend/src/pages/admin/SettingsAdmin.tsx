@@ -12,9 +12,10 @@ import { ErrorState, LoadingState } from '../../components/ui/States';
 import { cn } from '../../lib/cn';
 import type { Media, SiteSettings } from '../../lib/types';
 
-type TabKey = 'organization' | 'global_contact' | 'global_social' | 'homepage' | 'seo';
+type TabKey = 'branding' | 'organization' | 'global_contact' | 'global_social' | 'homepage' | 'seo';
 
 const TABS: Array<{ key: TabKey; label: string }> = [
+  { key: 'branding', label: 'Identité visuelle' },
   { key: 'organization', label: 'Association' },
   { key: 'global_contact', label: 'Coordonnées' },
   { key: 'global_social', label: 'Réseaux sociaux' },
@@ -62,6 +63,7 @@ export const SettingsAdmin = () => {
         ))}
       </div>
 
+      {tab === 'branding' && <BrandingForm settings={settings} />}
       {tab === 'organization' && <OrganizationForm settings={settings} />}
       {tab === 'global_contact' && <ContactForm settings={settings} />}
       {tab === 'global_social' && <SocialForm settings={settings} />}
@@ -108,6 +110,117 @@ function useSettingsMutation(key: TabKey) {
     invalidate: [['admin', 'settings']],
   });
 }
+
+const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
+  const mutation = useSettingsMutation('branding');
+  const { register, handleSubmit } = useForm({ defaultValues: settings.branding });
+
+  const stored = useMediaById([
+    settings.branding.logoId,
+    settings.branding.logoDarkId,
+    settings.branding.faviconId,
+  ]);
+
+  const [logo, setLogo] = useState<Media | null>(null);
+  const [logoDark, setLogoDark] = useState<Media | null>(null);
+  const [favicon, setFavicon] = useState<Media | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    if (isHydrated || !Object.keys(stored).length) return;
+    setLogo(stored[settings.branding.logoId ?? ''] ?? null);
+    setLogoDark(stored[settings.branding.logoDarkId ?? ''] ?? null);
+    setFavicon(stored[settings.branding.faviconId ?? ''] ?? null);
+    setIsHydrated(true);
+  }, [stored, isHydrated, settings.branding]);
+
+  return (
+    <SettingsCard
+      title="Identité visuelle"
+      description="Le logo et l'icône du site. Sans logo téléversé, le nom court ci-dessous est affiché à la place."
+      isSaving={mutation.isPending}
+      onSubmit={handleSubmit((values) =>
+        mutation.mutate({
+          ...values,
+          logoHeight: Number(values.logoHeight) || 40,
+          logoId: logo?.id ?? null,
+          logoDarkId: logoDark?.id ?? null,
+          faviconId: favicon?.id ?? null,
+        }),
+      )}
+    >
+      <div className="grid gap-6 sm:grid-cols-2">
+        <div>
+          <MediaPicker
+            value={logo}
+            onChange={setLogo}
+            folder="branding"
+            label="Logo principal"
+            aspect="aspect-[3/1]"
+          />
+          <p className="mt-1 text-xs text-navy/50">
+            Affiché sur fond clair : en-tête du site et page de connexion.
+          </p>
+        </div>
+
+        <div>
+          <MediaPicker
+            value={logoDark}
+            onChange={setLogoDark}
+            folder="branding"
+            label="Logo sur fond sombre"
+            aspect="aspect-[3/1]"
+          />
+          <p className="mt-1 text-xs text-navy/50">
+            Facultatif. Utilisé dans le pied de page et l'administration, où le fond est
+            bleu nuit. Sans lui, le logo principal est repris.
+          </p>
+        </div>
+      </div>
+
+      <Field
+        label="Hauteur d'affichage du logo"
+        htmlFor="branding-height"
+        hint="En pixels. 40 convient à la plupart des logos ; augmentez pour un logo très large."
+      >
+        <Input
+          id="branding-height"
+          type="number"
+          min={16}
+          max={120}
+          {...register('logoHeight')}
+        />
+      </Field>
+
+      <div>
+        <MediaPicker
+          value={favicon}
+          onChange={setFavicon}
+          folder="branding"
+          label="Icône du site (favicon)"
+          aspect="aspect-square"
+        />
+        <p className="mt-1 text-xs text-navy/50">
+          Icône de l'onglet du navigateur. Utilisez une image carrée, idéalement 512×512,
+          au format PNG ou WebP.
+        </p>
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Field
+          label="Nom court"
+          htmlFor="branding-wordmark"
+          hint="Affiché si aucun logo n'est téléversé."
+        >
+          <Input id="branding-wordmark" placeholder="LDS" {...register('wordmark')} />
+        </Field>
+        <Field label="Complément en couleur" htmlFor="branding-accent">
+          <Input id="branding-accent" placeholder="Louga" {...register('wordmarkAccent')} />
+        </Field>
+      </div>
+    </SettingsCard>
+  );
+};
 
 const OrganizationForm = ({ settings }: { settings: SiteSettings }) => {
   const mutation = useSettingsMutation('organization');

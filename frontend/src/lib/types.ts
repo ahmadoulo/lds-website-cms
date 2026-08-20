@@ -144,6 +144,19 @@ export interface AuditLogEntry {
 }
 
 export interface SiteSettings {
+  branding: {
+    logoId: string | null;
+    logoDarkId: string | null;
+    faviconId: string | null;
+    /** Shown when no logo is uploaded. */
+    wordmark: string;
+    wordmarkAccent: string;
+    logoHeight: number;
+    /** Resolved by the public API from the ids above. */
+    logo?: Media | null;
+    logoDark?: Media | null;
+    favicon?: Media | null;
+  };
   organization: {
     name: string;
     shortName: string;

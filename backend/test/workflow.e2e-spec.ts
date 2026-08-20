@@ -302,6 +302,65 @@ describe('Content workflow (e2e)', () => {
     });
   });
 
+  describe('branding uploaded in the admin reaches the public site', () => {
+    const PNG = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    );
+
+    let logoId: string;
+    let faviconId: string;
+
+    it('starts with no logo, so the site uses the wordmark', async () => {
+      const res = await request(http).get('/api/v1/public/settings').expect(200);
+      expect(res.body.branding.logo).toBeFalsy();
+      expect(res.body.branding.wordmark).toEqual(expect.any(String));
+    });
+
+    it('uploads a logo and a favicon', async () => {
+      const logo = await request(http)
+        .post('/api/v1/media/upload')
+        .set(auth())
+        .field('folder', 'branding')
+        .attach('file', PNG, { filename: 'logo.png', contentType: 'image/png' })
+        .expect(201);
+
+      const favicon = await request(http)
+        .post('/api/v1/media/upload')
+        .set(auth())
+        .field('folder', 'branding')
+        .attach('file', PNG, { filename: 'favicon.png', contentType: 'image/png' })
+        .expect(201);
+
+      logoId = logo.body.id;
+      faviconId = favicon.body.id;
+    });
+
+    it('saves them in the branding settings', async () => {
+      await request(http)
+        .patch('/api/v1/settings/branding')
+        .set(auth())
+        .send({ value: { logoId, faviconId } })
+        .expect(200);
+    });
+
+    it('serves them resolved, with a URL the browser can fetch', async () => {
+      const res = await request(http).get('/api/v1/public/settings').expect(200);
+
+      expect(res.body.branding.logo.id).toBe(logoId);
+      expect(res.body.branding.logo.url).toBe(`http://api.test/api/v1/media/${logoId}/file`);
+      expect(res.body.branding.favicon.url).toBe(`http://api.test/api/v1/media/${faviconId}/file`);
+      // A separate dark variant was never uploaded.
+      expect(res.body.branding.logoDark).toBeNull();
+    });
+
+    it('keeps the other settings intact', async () => {
+      const res = await request(http).get('/api/v1/public/settings').expect(200);
+      expect(res.body.branding.wordmark).toEqual(expect.any(String));
+      expect(res.body.organization.name).toContain('Louga');
+    });
+  });
+
   describe('the public contact form reaches the inbox', () => {
     it('accepts a visitor message and lists it for the administrator', async () => {
       await request(http)

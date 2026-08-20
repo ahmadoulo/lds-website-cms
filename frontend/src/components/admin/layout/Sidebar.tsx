@@ -4,6 +4,7 @@ import { ExternalLink, X } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { NAV_GROUPS } from './navigation';
 import { cn } from '../../../lib/cn';
+import { SiteLogo } from '../../public/SiteLogo';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -17,8 +18,8 @@ export const Sidebar = ({ isOpen, onClose, unreadMessages = 0 }: SidebarProps) =
   const content = (
     <>
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
-        <NavLink to="/admin" className="text-lg font-bold tracking-wide text-white">
-          LDS <span className="text-green">Admin</span>
+        <NavLink to="/admin" className="flex min-w-0 items-center gap-2" aria-label="Tableau de bord">
+          <SiteLogo variant="dark" className="max-h-9" />
         </NavLink>
         <button
           type="button"
