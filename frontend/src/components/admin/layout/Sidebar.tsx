@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { ExternalLink, X } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { NAV_GROUPS } from './navigation';
+import { isNavActive } from './isNavActive';
 import { cn } from '../../../lib/cn';
 import { SiteLogo } from '../../public/SiteLogo';
 
@@ -32,26 +33,22 @@ export const Sidebar = ({ isOpen, onClose, unreadMessages = 0 }: SidebarProps) =
         </button>
       </div>
 
-      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5" aria-label="Navigation administration">
+      <nav
+        className="scrollbar-dark flex-1 space-y-5 overflow-y-auto px-3 py-4"
+        aria-label="Navigation administration"
+      >
         {NAV_GROUPS.map((group) => {
           const visible = group.items.filter((item) => can(item.minRole));
           if (!visible.length) return null;
 
           return (
             <div key={group.title}>
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-white/35">
+              <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-widest text-white/35">
                 {group.title}
               </p>
               <div className="space-y-0.5">
                 {visible.map((item) => {
-                  // Several entries point at the same page with a different
-                  // section, so activity is decided on the path alone.
-                  const path = item.href.split('?')[0];
-                  const isActive =
-                    path === '/admin'
-                      ? location.pathname === '/admin'
-                      : location.pathname.startsWith(path) &&
-                        location.search === (item.href.split('?')[1] ? `?${item.href.split('?')[1]}` : location.search);
+                  const isActive = isNavActive(item.href, location.pathname, location.search);
 
                   return (
                     <NavLink
@@ -59,7 +56,7 @@ export const Sidebar = ({ isOpen, onClose, unreadMessages = 0 }: SidebarProps) =
                       to={item.href}
                       onClick={onClose}
                       className={cn(
-                        'group flex items-start gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                        'group flex items-start gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                         isActive
                           ? 'bg-blue text-white'
                           : 'text-white/70 hover:bg-white/10 hover:text-white',

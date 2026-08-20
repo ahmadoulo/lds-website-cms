@@ -53,6 +53,45 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  /*
+    The admin sidebar scrolls on short screens. The platform scrollbar is drawn
+    light on a navy panel and cuts a bright strip down the edge, so it is
+    replaced by a thin one that only appears while pointing at the menu.
+  */
+  .scrollbar-dark {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.2s ease;
+  }
+
+  .scrollbar-dark:hover,
+  .scrollbar-dark:focus-within {
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 999px;
+    transition: background-color 0.2s ease;
+  }
+
+  .scrollbar-dark:hover::-webkit-scrollbar-thumb,
+  .scrollbar-dark:focus-within::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.25);
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.4);
+  }
 }
 
 /*

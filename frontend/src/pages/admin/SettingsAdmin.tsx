@@ -19,15 +19,41 @@ import type { Media, SiteSettings } from '../../lib/types';
 
 type TabKey = 'branding' | 'organization' | 'global_contact' | 'global_social' | 'homepage' | 'seo';
 
-/** Which public page shows each section, so "Preview" opens the right one. */
-const TABS: Array<{ key: TabKey; label: string; preview: string }> = [
-  { key: 'branding', label: 'Identité visuelle', preview: '/' },
-  { key: 'organization', label: 'Association', preview: '/a-propos' },
-  { key: 'global_contact', label: 'Coordonnées', preview: '/contact' },
-  { key: 'global_social', label: 'Réseaux sociaux', preview: '/' },
-  { key: 'homepage', label: "Page d'accueil", preview: '/' },
-  { key: 'seo', label: 'Référencement', preview: '/' },
+type GroupKey = 'accueil' | 'a-propos' | 'site';
+
+/**
+ * The sidebar has three entries pointing here. Without a grouping they all
+ * opened the same six tabs, so "Accueil" and "Paramètres du site" looked like
+ * the same screen. Each group is now its own page, and every tab belongs to
+ * exactly one of them, so nothing becomes unreachable.
+ */
+const TABS: Array<{ key: TabKey; label: string; preview: string; group: GroupKey }> = [
+  { key: 'homepage', label: "Page d'accueil", preview: '/', group: 'accueil' },
+  { key: 'organization', label: "L'association", preview: '/a-propos', group: 'a-propos' },
+  { key: 'branding', label: 'Identité visuelle', preview: '/', group: 'site' },
+  { key: 'global_contact', label: 'Coordonnées', preview: '/contact', group: 'site' },
+  { key: 'global_social', label: 'Réseaux sociaux', preview: '/', group: 'site' },
+  { key: 'seo', label: 'Référencement', preview: '/', group: 'site' },
 ];
+
+const GROUPS: Record<GroupKey, { title: string; description: string; fallback: TabKey }> = {
+  accueil: {
+    title: 'Accueil',
+    description:
+      "Le bandeau, l'illustration de présentation et l'appel à l'action de la page d'accueil.",
+    fallback: 'homepage',
+  },
+  'a-propos': {
+    title: 'À propos',
+    description: "Les textes de présentation de l'association.",
+    fallback: 'organization',
+  },
+  site: {
+    title: 'Paramètres du site',
+    description: 'Logo, coordonnées, réseaux sociaux et référencement.',
+    fallback: 'branding',
+  },
+};
 
 interface DraftStatus {
   hasUnpublishedChanges: boolean;
@@ -40,7 +66,11 @@ export const SettingsAdmin = () => {
 
   // The sidebar links straight to a section, e.g. /admin/parametres?section=organization.
   const requested = searchParams.get('section') as TabKey | null;
-  const tab: TabKey = TABS.some((item) => item.key === requested) ? requested! : 'homepage';
+  const tab: TabKey = TABS.some((item) => item.key === requested) ? requested! : 'branding';
+
+  const group = TABS.find((item) => item.key === tab)!.group;
+  const groupMeta = GROUPS[group];
+  const groupTabs = TABS.filter((item) => item.group === group);
 
   const setTab = (next: TabKey) => setSearchParams({ section: next }, { replace: true });
 
@@ -74,8 +104,8 @@ export const SettingsAdmin = () => {
   return (
     <div>
       <PageHeader
-        title="Informations du site"
-        description="Vos modifications sont enregistrées en brouillon. Elles n'apparaissent sur le site qu'une fois publiées."
+        title={groupMeta.title}
+        description={`${groupMeta.description} Vos modifications sont enregistrées en brouillon et n'apparaissent sur le site qu'une fois publiées.`}
         actions={
           <Button variant="outline" onClick={() => openPreview(current.preview)}>
             <Eye className="h-4 w-4" /> Prévisualiser
@@ -102,8 +132,10 @@ export const SettingsAdmin = () => {
         </div>
       )}
 
+      {/* A single-section group needs no tab strip. */}
+      {groupTabs.length > 1 && (
       <div className="mb-6 flex flex-wrap gap-2 border-b border-navy/10 pb-px">
-        {TABS.map((item) => (
+        {groupTabs.map((item) => (
           <button
             key={item.key}
             type="button"
@@ -122,6 +154,7 @@ export const SettingsAdmin = () => {
           </button>
         ))}
       </div>
+      )}
 
       {tab === 'branding' && <BrandingForm settings={settings} />}
       {tab === 'organization' && <OrganizationForm settings={settings} />}

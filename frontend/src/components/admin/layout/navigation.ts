@@ -55,7 +55,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         name: 'Accueil',
-        href: '/admin/parametres',
+        href: '/admin/parametres?section=homepage',
         icon: Home,
         minRole: 'ADMIN',
         publicPath: '/',
@@ -123,7 +123,7 @@ export const NAV_GROUPS: NavGroup[] = [
         minRole: 'ADMIN',
         publicPath: '/contact',
         badge: 'unreadMessages',
-        hint: 'Messages reçus et coordonnées',
+        hint: 'Messages reçus du formulaire',
       },
     ],
   },
@@ -142,7 +142,13 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Configuration',
     items: [
-      { name: 'Paramètres du site', href: '/admin/parametres', icon: Settings, minRole: 'ADMIN' },
+      {
+        name: 'Paramètres du site',
+        href: '/admin/parametres?section=branding',
+        icon: Settings,
+        minRole: 'ADMIN',
+        hint: 'Logo, coordonnées, réseaux, SEO',
+      },
       { name: 'Menu de navigation', href: '/admin/navigation', icon: Menu, minRole: 'ADMIN' },
       { name: 'Utilisateurs', href: '/admin/utilisateurs', icon: Users, minRole: 'SUPER_ADMIN' },
       {
