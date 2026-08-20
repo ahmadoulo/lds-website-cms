@@ -5,6 +5,7 @@ import { BarChart3, Edit2, Eye, EyeOff, Plus, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
+import { PreviewButton } from '../../components/admin/ui/PreviewButton';
 import { DataTable, IconButton, type Column } from '../../components/admin/ui/DataTable';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
@@ -151,9 +152,12 @@ export const ImpactAdmin = () => {
         title="Chiffres clés"
         description="Les indicateurs d'impact affichés sur la page d'accueil et la page « Impact »."
         actions={
-          <Button onClick={openCreate}>
+          <>
+            <PreviewButton path="/impact" />
+            <Button onClick={openCreate}>
             <Plus className="h-4 w-4" /> Ajouter un chiffre
-          </Button>
+            </Button>
+          </>
         }
       />
 

@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { Save } from 'lucide-react';
+import { CloudUpload, Eye, RotateCcw, Save } from 'lucide-react';
 import api from '../../lib/api/axios';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
 import { MediaPicker } from '../../components/admin/ui/MediaPicker';
+import { openPreview } from '../../components/admin/ui/PreviewButton';
 import { Button } from '../../components/ui/Button';
+import { Badge } from '../../components/ui/Badge';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Field, Input, Textarea } from '../../components/ui/Field';
 import { ErrorState, LoadingState } from '../../components/ui/States';
 import { cn } from '../../lib/cn';
@@ -14,21 +17,41 @@ import type { Media, SiteSettings } from '../../lib/types';
 
 type TabKey = 'branding' | 'organization' | 'global_contact' | 'global_social' | 'homepage' | 'seo';
 
-const TABS: Array<{ key: TabKey; label: string }> = [
-  { key: 'branding', label: 'Identité visuelle' },
-  { key: 'organization', label: 'Association' },
-  { key: 'global_contact', label: 'Coordonnées' },
-  { key: 'global_social', label: 'Réseaux sociaux' },
-  { key: 'homepage', label: "Page d'accueil" },
-  { key: 'seo', label: 'Référencement' },
+/** Which public page shows each section, so "Preview" opens the right one. */
+const TABS: Array<{ key: TabKey; label: string; preview: string }> = [
+  { key: 'branding', label: 'Identité visuelle', preview: '/' },
+  { key: 'organization', label: 'Association', preview: '/a-propos' },
+  { key: 'global_contact', label: 'Coordonnées', preview: '/contact' },
+  { key: 'global_social', label: 'Réseaux sociaux', preview: '/' },
+  { key: 'homepage', label: "Page d'accueil", preview: '/' },
+  { key: 'seo', label: 'Référencement', preview: '/' },
 ];
 
-export const SettingsAdmin = () => {
-  const [tab, setTab] = useState<TabKey>('organization');
+interface DraftStatus {
+  hasUnpublishedChanges: boolean;
+  keys: string[];
+  sections: Record<string, { hasDraft: boolean; draftUpdatedAt: string | null }>;
+}
 
+export const SettingsAdmin = () => {
+  const [tab, setTab] = useState<TabKey>('branding');
+
+  // The administration edits the draft; the public site keeps serving what was
+  // published until someone presses Publish.
   const settingsQuery = useQuery({
     queryKey: ['admin', 'settings'],
-    queryFn: async () => (await api.get<SiteSettings>('/settings')).data,
+    queryFn: async () => (await api.get<SiteSettings>('/settings/draft')).data,
+  });
+
+  const statusQuery = useQuery({
+    queryKey: ['admin', 'settings', 'status'],
+    queryFn: async () => (await api.get<DraftStatus>('/settings/draft/status')).data,
+  });
+
+  const publishAll = useAdminMutation<void>({
+    mutationFn: async () => (await api.post('/settings/publish')).data,
+    successMessage: 'Toutes les modifications sont maintenant en ligne.',
+    invalidate: [['admin', 'settings']],
   });
 
   if (settingsQuery.isLoading) return <LoadingState label="Chargement des paramètres…" />;
@@ -37,13 +60,39 @@ export const SettingsAdmin = () => {
   }
 
   const settings = settingsQuery.data;
+  const status = statusQuery.data;
+  const current = TABS.find((item) => item.key === tab)!;
 
   return (
     <div>
       <PageHeader
         title="Informations du site"
-        description="Les textes et coordonnées affichés sur le site public, modifiables sans toucher au code."
+        description="Vos modifications sont enregistrées en brouillon. Elles n'apparaissent sur le site qu'une fois publiées."
+        actions={
+          <Button variant="outline" onClick={() => openPreview(current.preview)}>
+            <Eye className="h-4 w-4" /> Prévisualiser
+          </Button>
+        }
       />
+
+      {status?.hasUnpublishedChanges && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-orange/30 bg-orange/5 px-4 py-3">
+          <p className="text-sm text-navy/80">
+            <span className="font-semibold text-navy">
+              {status.keys.length} section{status.keys.length > 1 ? 's' : ''} en attente
+            </span>{' '}
+            — ces modifications ne sont pas encore visibles par les visiteurs.
+          </p>
+          <Button
+            variant="secondary"
+            size="sm"
+            isLoading={publishAll.isPending}
+            onClick={() => publishAll.mutate()}
+          >
+            <CloudUpload className="h-4 w-4" /> Tout publier
+          </Button>
+        </div>
+      )}
 
       <div className="mb-6 flex flex-wrap gap-2 border-b border-navy/10 pb-px">
         {TABS.map((item) => (
@@ -52,13 +101,16 @@ export const SettingsAdmin = () => {
             type="button"
             onClick={() => setTab(item.key)}
             className={cn(
-              'rounded-t-lg border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors',
+              'flex items-center gap-2 rounded-t-lg border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors',
               tab === item.key
                 ? 'border-blue text-navy'
                 : 'border-transparent text-navy/50 hover:text-navy',
             )}
           >
             {item.label}
+            {status?.sections?.[item.key]?.hasDraft && (
+              <span className="h-1.5 w-1.5 rounded-full bg-orange" aria-label="modifications non publiées" />
+            )}
           </button>
         ))}
       </div>
@@ -73,44 +125,121 @@ export const SettingsAdmin = () => {
   );
 };
 
-/** Shared card + submit button used by every settings section. */
+/**
+ * Shared frame for every settings section. It carries the three-step workflow:
+ * save as a draft, look at the result on the real site, then publish.
+ */
 const SettingsCard = ({
+  settingKey,
   title,
   description,
   onSubmit,
   isSaving,
   children,
 }: {
+  settingKey: TabKey;
   title: string;
   description?: string;
   onSubmit: React.FormEventHandler;
   isSaving: boolean;
   children: React.ReactNode;
-}) => (
-  <form onSubmit={onSubmit} className="max-w-3xl rounded-xl border border-navy/8 bg-white p-5 sm:p-6">
-    <div className="mb-6">
-      <h2 className="text-base font-bold text-navy">{title}</h2>
-      {description && <p className="mt-1 text-sm text-navy/60">{description}</p>}
-    </div>
+}) => {
+  const [isDiscarding, setIsDiscarding] = useState(false);
+  const tab = TABS.find((item) => item.key === settingKey)!;
 
-    <div className="space-y-5">{children}</div>
+  const { data: status } = useQuery({
+    queryKey: ['admin', 'settings', 'status'],
+    queryFn: async () => (await api.get<DraftStatus>('/settings/draft/status')).data,
+  });
 
-    <div className="mt-7 flex justify-end border-t border-navy/8 pt-5">
-      <Button type="submit" isLoading={isSaving}>
-        <Save className="h-4 w-4" /> Enregistrer
-      </Button>
-    </div>
-  </form>
-);
+  const hasDraft = Boolean(status?.sections?.[settingKey]?.hasDraft);
 
+  const publish = useAdminMutation<void>({
+    mutationFn: async () => (await api.post(`/settings/${settingKey}/publish`)).data,
+    successMessage: 'Section publiée. Elle est maintenant visible sur le site.',
+    invalidate: [['admin', 'settings']],
+  });
+
+  const discard = useAdminMutation<void>({
+    mutationFn: async () => (await api.delete(`/settings/${settingKey}/draft`)).data,
+    successMessage: 'Modifications annulées. La version en ligne est restaurée.',
+    invalidate: [['admin', 'settings']],
+    onSuccess: () => setIsDiscarding(false),
+  });
+
+  return (
+    <form
+      onSubmit={onSubmit}
+      className="max-w-3xl rounded-xl border border-navy/8 bg-white p-5 sm:p-6"
+    >
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-bold text-navy">{title}</h2>
+          {description && <p className="mt-1 text-sm text-navy/60">{description}</p>}
+        </div>
+        <Badge tone={hasDraft ? 'orange' : 'green'}>
+          {hasDraft ? 'Brouillon non publié' : 'En ligne'}
+        </Badge>
+      </div>
+
+      <div className="space-y-5">{children}</div>
+
+      <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-navy/8 pt-5">
+        <div className="flex flex-wrap gap-2">
+          {hasDraft && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-red-600 hover:bg-red-50"
+              onClick={() => setIsDiscarding(true)}
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Annuler les modifications
+            </Button>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="ghost" onClick={() => openPreview(tab.preview)}>
+            <Eye className="h-4 w-4" /> Prévisualiser
+          </Button>
+          <Button type="submit" variant="outline" isLoading={isSaving}>
+            <Save className="h-4 w-4" /> Enregistrer le brouillon
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!hasDraft}
+            isLoading={publish.isPending}
+            onClick={() => publish.mutate()}
+            title={hasDraft ? undefined : 'Aucune modification à publier'}
+          >
+            <CloudUpload className="h-4 w-4" /> Publier
+          </Button>
+        </div>
+      </div>
+
+      <ConfirmDialog
+        isOpen={isDiscarding}
+        title="Annuler les modifications ?"
+        message="Le brouillon sera supprimé et la version actuellement en ligne restaurée. Cette action est irréversible."
+        confirmLabel="Annuler les modifications"
+        isLoading={discard.isPending}
+        onCancel={() => setIsDiscarding(false)}
+        onConfirm={() => discard.mutate()}
+      />
+    </form>
+  );
+};
+
+/** Saving writes a draft; the section reaches the site through Publish. */
 function useSettingsMutation(key: TabKey) {
   return useAdminMutation<Record<string, unknown>>({
     mutationFn: async (value) => (await api.patch(`/settings/${key}`, { value })).data,
-    successMessage: 'Paramètres enregistrés.',
+    successMessage: 'Brouillon enregistré. Prévisualisez, puis publiez pour mettre en ligne.',
     invalidate: [['admin', 'settings']],
   });
 }
-
 const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
   const mutation = useSettingsMutation('branding');
   const { register, handleSubmit } = useForm({ defaultValues: settings.branding });
@@ -136,6 +265,7 @@ const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
 
   return (
     <SettingsCard
+      settingKey="branding"
       title="Identité visuelle"
       description="Le logo et l'icône du site. Sans logo téléversé, le nom court ci-dessous est affiché à la place."
       isSaving={mutation.isPending}
@@ -156,7 +286,7 @@ const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
             onChange={setLogo}
             folder="branding"
             label="Logo principal"
-            aspect="aspect-[3/1]"
+            slot="siteLogo"
           />
           <p className="mt-1 text-xs text-navy/50">
             Affiché sur fond clair : en-tête du site et page de connexion.
@@ -169,7 +299,7 @@ const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
             onChange={setLogoDark}
             folder="branding"
             label="Logo sur fond sombre"
-            aspect="aspect-[3/1]"
+            slot="siteLogo"
           />
           <p className="mt-1 text-xs text-navy/50">
             Facultatif. Utilisé dans le pied de page et l'administration, où le fond est
@@ -198,7 +328,7 @@ const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
           onChange={setFavicon}
           folder="branding"
           label="Icône du site (favicon)"
-          aspect="aspect-square"
+            slot="favicon"
         />
         <p className="mt-1 text-xs text-navy/50">
           Icône de l'onglet du navigateur. Utilisez une image carrée, idéalement 512×512,
@@ -232,6 +362,7 @@ const OrganizationForm = ({ settings }: { settings: SiteSettings }) => {
 
   return (
     <SettingsCard
+      settingKey="organization"
       title="L'association"
       description="Ces textes alimentent la page « À propos » et la section de présentation de l'accueil."
       isSaving={mutation.isPending}
@@ -279,6 +410,7 @@ const ContactForm = ({ settings }: { settings: SiteSettings }) => {
 
   return (
     <SettingsCard
+      settingKey="global_contact"
       title="Coordonnées"
       description="Affichées dans la barre supérieure, le pied de page et la page Contact."
       isSaving={mutation.isPending}
@@ -330,6 +462,7 @@ const SocialForm = ({ settings }: { settings: SiteSettings }) => {
 
   return (
     <SettingsCard
+      settingKey="global_social"
       title="Réseaux sociaux"
       description="Laissez un champ vide pour masquer l'icône correspondante sur le site."
       isSaving={mutation.isPending}
@@ -407,6 +540,7 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
 
   return (
     <SettingsCard
+      settingKey="homepage"
       title="Page d'accueil"
       description="Le bandeau principal, l'illustration de présentation et l'appel à l'action."
       isSaving={mutation.isPending}
@@ -442,13 +576,14 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
           onChange={setHeroImage}
           folder="homepage"
           label="Photo du bandeau"
-          aspect="aspect-[3/4]"
+            slot="heroPortrait"
         />
         <MediaPicker
           value={aboutImage}
           onChange={setAboutImage}
           folder="homepage"
           label="Photo de présentation"
+            slot="aboutPhoto"
         />
       </div>
 
@@ -461,7 +596,7 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
         onChange={setCtaImage}
         folder="homepage"
         label="Image de fond de l'appel à l'action"
-        aspect="aspect-[21/9]"
+            slot="ctaBanner"
       />
     </SettingsCard>
   );
@@ -485,6 +620,7 @@ const SeoForm = ({ settings }: { settings: SiteSettings }) => {
 
   return (
     <SettingsCard
+      settingKey="seo"
       title="Référencement"
       description="Le titre et la description utilisés par Google et lors des partages sur les réseaux sociaux."
       isSaving={mutation.isPending}
@@ -511,7 +647,7 @@ const SeoForm = ({ settings }: { settings: SiteSettings }) => {
         onChange={setOgImage}
         folder="seo"
         label="Image de partage"
-        aspect="aspect-[1.91/1]"
+            slot="ogImage"
       />
     </SettingsCard>
   );

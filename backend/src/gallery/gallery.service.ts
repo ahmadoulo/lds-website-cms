@@ -61,10 +61,10 @@ export class GalleryService {
 
   // ---------------------------------------------------------------- images
 
-  /** Flat, chronological list of published images - what the public gallery renders. */
-  async findPublishedImages(limit?: number) {
+  /** Flat, chronological list of images - what the public gallery renders. */
+  async findPublishedImages(limit?: number, includeUnpublished = false) {
     return this.prisma.galleryImage.findMany({
-      where: { album: { isPublished: true } },
+      where: includeUnpublished ? undefined : { album: { isPublished: true } },
       orderBy: [{ album: { order: 'asc' } }, { order: 'asc' }, { createdAt: 'desc' }],
       take: limit,
       include: { media: true, album: { select: { id: true, title: true } } },

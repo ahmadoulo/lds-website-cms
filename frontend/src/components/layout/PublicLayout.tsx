@@ -10,6 +10,7 @@ import {
 import { useSettings } from '../../context/SettingsContext';
 import { cn } from '../../lib/cn';
 import { SiteLogo } from '../public/SiteLogo';
+import { PreviewBanner } from '../public/PreviewBanner';
 
 const NAV = [
   { label: 'Accueil', href: '/' },
@@ -53,6 +54,7 @@ export const PublicLayout = () => {
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-warm font-montserrat text-navy">
+      <PreviewBanner />
       <a
         href="#contenu"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-navy focus:px-4 focus:py-2 focus:text-white"

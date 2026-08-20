@@ -36,8 +36,19 @@ describe('Public API and media (e2e)', () => {
     const res = await request(http).get('/api/v1/public/homepage').expect(200);
 
     expect(Object.keys(res.body).sort()).toEqual(
-      ['donations', 'gallery', 'impact', 'missions', 'news', 'partners', 'settings'].sort(),
+      [
+        'donations',
+        'gallery',
+        'impact',
+        'isPreview',
+        'missions',
+        'news',
+        'partners',
+        'settings',
+      ].sort(),
     );
+    // A plain visitor is never in preview.
+    expect(res.body.isPreview).toBe(false);
   });
 
   it('falls back to default settings when nothing is stored yet', async () => {

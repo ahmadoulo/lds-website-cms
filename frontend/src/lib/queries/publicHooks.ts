@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '../api/axios';
+import { usePreview } from '../../context/PreviewContext';
 import type {
   DonationMethod,
   GalleryAlbum,
@@ -20,6 +21,16 @@ const get = async <T>(url: string, params?: Record<string, unknown>): Promise<T>
   return data;
 };
 
+/**
+ * Preview results are cached under their own key: a draft must never end up in
+ * the cache a normal visitor reads, and leaving preview must show the live site
+ * again without a reload.
+ */
+function usePreviewKey() {
+  const { isPreview, params } = usePreview();
+  return { scope: isPreview ? 'preview' : 'public', params };
+}
+
 export interface HomepagePayload {
   settings: SiteSettings;
   missions: Mission[];
@@ -31,72 +42,93 @@ export interface HomepagePayload {
 }
 
 /** One request that fills the entire homepage. */
-export const useHomepage = () =>
-  useQuery({
-    queryKey: ['public', 'homepage'],
-    queryFn: () => get<HomepagePayload>('/public/homepage'),
+export const useHomepage = () => {
+  const { scope, params } = usePreviewKey();
+  return useQuery({
+    queryKey: ['public', scope, 'homepage'],
+    queryFn: () => get<HomepagePayload>('/public/homepage', params),
     staleTime: PUBLIC_STALE_TIME,
   });
+};
 
-export const useSiteSettings = () =>
-  useQuery({
-    queryKey: ['public', 'settings'],
-    queryFn: () => get<SiteSettings>('/public/settings'),
+export const useSiteSettings = () => {
+  const { scope, params } = usePreviewKey();
+  return useQuery({
+    queryKey: ['public', scope, 'settings'],
+    queryFn: () => get<SiteSettings>('/public/settings', params),
     staleTime: 1000 * 60 * 10,
   });
+};
 
-export const useMissions = () =>
-  useQuery({
-    queryKey: ['public', 'missions'],
-    queryFn: () => get<Mission[]>('/public/missions'),
+export const useMissions = () => {
+  const { scope, params } = usePreviewKey();
+  return useQuery({
+    queryKey: ['public', scope, 'missions'],
+    queryFn: () => get<Mission[]>('/public/missions', params),
     staleTime: PUBLIC_STALE_TIME,
   });
+};
 
-export const useNews = (page = 1, limit = 9) =>
-  useQuery({
-    queryKey: ['public', 'news', page, limit],
-    queryFn: () => get<Paginated<NewsArticle>>('/public/news', { page, limit }),
+export const useNews = (page = 1, limit = 9) => {
+  const { scope, params } = usePreviewKey();
+  return useQuery({
+    queryKey: ['public', scope, 'news', page, limit],
+    queryFn: () => get<Paginated<NewsArticle>>('/public/news', { page, limit, ...params }),
     staleTime: PUBLIC_STALE_TIME,
   });
+};
 
-export const useNewsArticle = (slug: string | undefined) =>
-  useQuery({
-    queryKey: ['public', 'news', 'detail', slug],
-    queryFn: () => get<{ article: NewsArticle; related: NewsArticle[] }>(`/public/news/${slug}`),
+export const useNewsArticle = (slug: string | undefined) => {
+  const { scope, params } = usePreviewKey();
+  return useQuery({
+    queryKey: ['public', scope, 'news', 'detail', slug],
+    queryFn: () =>
+      get<{ article: NewsArticle; related: NewsArticle[] }>(`/public/news/${slug}`, params),
     enabled: Boolean(slug),
   });
+};
 
-export const usePartners = () =>
-  useQuery({
-    queryKey: ['public', 'partners'],
-    queryFn: () => get<Partner[]>('/public/partners'),
+export const usePartners = () => {
+  const { scope, params } = usePreviewKey();
+  return useQuery({
+    queryKey: ['public', scope, 'partners'],
+    queryFn: () => get<Partner[]>('/public/partners', params),
     staleTime: PUBLIC_STALE_TIME,
   });
+};
 
-export const useImpactStats = () =>
-  useQuery({
-    queryKey: ['public', 'impact'],
-    queryFn: () => get<ImpactStat[]>('/public/impact'),
+export const useImpactStats = () => {
+  const { scope, params } = usePreviewKey();
+  return useQuery({
+    queryKey: ['public', scope, 'impact'],
+    queryFn: () => get<ImpactStat[]>('/public/impact', params),
     staleTime: PUBLIC_STALE_TIME,
   });
+};
 
-export const useDonations = () =>
-  useQuery({
-    queryKey: ['public', 'donations'],
-    queryFn: () => get<DonationMethod[]>('/public/donations'),
+export const useDonations = () => {
+  const { scope, params } = usePreviewKey();
+  return useQuery({
+    queryKey: ['public', scope, 'donations'],
+    queryFn: () => get<DonationMethod[]>('/public/donations', params),
     staleTime: PUBLIC_STALE_TIME,
   });
+};
 
-export const useGalleryAlbums = () =>
-  useQuery({
-    queryKey: ['public', 'gallery', 'albums'],
-    queryFn: () => get<GalleryAlbum[]>('/public/gallery'),
+export const useGalleryAlbums = () => {
+  const { scope, params } = usePreviewKey();
+  return useQuery({
+    queryKey: ['public', scope, 'gallery', 'albums'],
+    queryFn: () => get<GalleryAlbum[]>('/public/gallery', params),
     staleTime: PUBLIC_STALE_TIME,
   });
+};
 
-export const useGalleryImages = () =>
-  useQuery({
-    queryKey: ['public', 'gallery', 'images'],
-    queryFn: () => get<GalleryImage[]>('/public/gallery/images'),
+export const useGalleryImages = () => {
+  const { scope, params } = usePreviewKey();
+  return useQuery({
+    queryKey: ['public', scope, 'gallery', 'images'],
+    queryFn: () => get<GalleryImage[]>('/public/gallery/images', params),
     staleTime: PUBLIC_STALE_TIME,
   });
+};

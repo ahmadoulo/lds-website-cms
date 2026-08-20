@@ -100,6 +100,22 @@ function applyDefaults(table: string, data: any) {
   return { ...(COLUMN_DEFAULTS[table] ?? {}), ...data };
 }
 
+/**
+ * Prisma represents "set this JSON column to SQL NULL" with the Prisma.DbNull
+ * sentinel rather than a plain null. Storing the sentinel as-is would leave a
+ * truthy object where the database would hold NULL.
+ */
+function normalizeWrite(data: any) {
+  if (!data || typeof data !== 'object') return data;
+
+  const out: any = {};
+  for (const [key, value] of Object.entries(data)) {
+    const tag = value?.constructor?.name;
+    out[key] = tag === 'DbNull' || tag === 'JsonNull' || tag === 'AnyNull' ? null : value;
+  }
+  return out;
+}
+
 function project(row: any, select?: Record<string, boolean>) {
   if (!row || !select) return row;
   const keys = Object.keys(select).filter((k) => select[k]);
@@ -179,7 +195,7 @@ export function createStatefulPrisma() {
         id: randomUUID(),
         createdAt: new Date(),
         updatedAt: new Date(),
-        ...applyDefaults(table, data),
+        ...applyDefaults(table, normalizeWrite(data)),
       };
       store[table].push(row);
       return project(hydrate(table, row, include), select);
@@ -188,17 +204,22 @@ export function createStatefulPrisma() {
     update: async ({ where, data, include, select }: any) => {
       const row = store[table].find((item) => item.id === where.id || item.key === where.key);
       if (!row) throw Object.assign(new Error('Record not found'), { code: 'P2025' });
-      Object.assign(row, data, { updatedAt: new Date() });
+      Object.assign(row, normalizeWrite(data), { updatedAt: new Date() });
       return project(hydrate(table, row, include), select);
     },
 
     upsert: async ({ where, create, update }: any) => {
       const row = store[table].find((item) => item.id === where.id || item.key === where.key);
       if (row) {
-        Object.assign(row, update, { updatedAt: new Date() });
+        Object.assign(row, normalizeWrite(update), { updatedAt: new Date() });
         return row;
       }
-      const created = { id: randomUUID(), createdAt: new Date(), updatedAt: new Date(), ...create };
+      const created = {
+        id: randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        ...normalizeWrite(create),
+      };
       store[table].push(created);
       return created;
     },

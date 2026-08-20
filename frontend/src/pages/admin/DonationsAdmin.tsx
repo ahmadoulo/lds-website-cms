@@ -5,6 +5,7 @@ import { Edit2, Eye, EyeOff, HeartHandshake, Plus, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
+import { PreviewButton } from '../../components/admin/ui/PreviewButton';
 import { DataTable, IconButton, type Column } from '../../components/admin/ui/DataTable';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
@@ -169,9 +170,12 @@ export const DonationsAdmin = () => {
         title="Nous soutenir"
         description="Les différentes façons pour un visiteur de soutenir l'association."
         actions={
-          <Button onClick={openCreate}>
+          <>
+            <PreviewButton path="/nous-soutenir" />
+            <Button onClick={openCreate}>
             <Plus className="h-4 w-4" /> Ajouter un moyen
-          </Button>
+            </Button>
+          </>
         }
       />
 

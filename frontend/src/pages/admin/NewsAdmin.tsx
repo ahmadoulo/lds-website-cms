@@ -2,10 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { Edit2, Eye, EyeOff, FileText, ImageIcon, Plus, Tag, Trash2 } from 'lucide-react';
+import { Edit2, Eye, EyeOff, FileText, ImageIcon, Plus, ScanEye, Tag, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
+import { PreviewButton, openPreview } from '../../components/admin/ui/PreviewButton';
 import { DataTable, IconButton, type Column } from '../../components/admin/ui/DataTable';
 import { SearchInput } from '../../components/admin/ui/SearchInput';
 import { Pagination } from '../../components/admin/ui/Pagination';
@@ -214,6 +215,7 @@ export const NewsAdmin = () => {
         description="Articles, événements et bilans publiés sur le site."
         actions={
           <>
+            <PreviewButton path="/actualites" />
             <Button variant="outline" onClick={() => setIsCategoryOpen(true)}>
               <Tag className="h-4 w-4" /> Catégories
             </Button>
@@ -265,6 +267,11 @@ export const NewsAdmin = () => {
             mobileTitle={(article) => t(article.title, 'Sans titre')}
             actions={(article) => (
               <>
+                <IconButton
+                  label="Prévisualiser cet article"
+                  icon={ScanEye}
+                  onClick={() => openPreview(`/actualites/${article.slug}`)}
+                />
                 <IconButton
                   label={article.isPublished ? 'Dépublier' : 'Publier'}
                   icon={article.isPublished ? EyeOff : Eye}
@@ -363,6 +370,7 @@ export const NewsAdmin = () => {
               value={cover}
               onChange={setCover}
               folder="news"
+            slot="newsCover"
               label="Image de couverture"
             />
           </div>

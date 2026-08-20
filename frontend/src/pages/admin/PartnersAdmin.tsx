@@ -6,6 +6,7 @@ import api from '../../lib/api/axios';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PARTNER_ICON_OPTIONS, resolveIcon } from '../../lib/icons';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
+import { PreviewButton } from '../../components/admin/ui/PreviewButton';
 import { DataTable, IconButton, type Column } from '../../components/admin/ui/DataTable';
 import { MediaPicker } from '../../components/admin/ui/MediaPicker';
 import { Modal } from '../../components/ui/Modal';
@@ -172,9 +173,12 @@ export const PartnersAdmin = () => {
         title="Partenaires"
         description="Les organisations qui soutiennent et accompagnent l'association."
         actions={
-          <Button onClick={openCreate}>
+          <>
+            <PreviewButton path="/partenaires" />
+            <Button onClick={openCreate}>
             <Plus className="h-4 w-4" /> Ajouter un partenaire
-          </Button>
+            </Button>
+          </>
         }
       />
 
@@ -288,8 +292,8 @@ export const PartnersAdmin = () => {
             value={logo}
             onChange={setLogo}
             folder="partners"
+            slot="partnerLogo"
             label="Logo"
-            aspect="aspect-[3/2]"
           />
 
           <Checkbox

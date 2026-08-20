@@ -6,6 +6,7 @@ import api, { apiErrorMessage } from '../../lib/api/axios';
 import { useAdminMutation, uploadMedia, validateImageFile } from '../../lib/queries/adminHooks';
 import { useToast } from '../../components/ui/Toast';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
+import { PreviewButton } from '../../components/admin/ui/PreviewButton';
 import { MediaLibraryModal } from '../../components/admin/ui/MediaPicker';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
@@ -142,9 +143,12 @@ export const GalleryAdmin = () => {
         title="Galerie"
         description="Organisez vos photos en albums. Seuls les albums publiés apparaissent sur le site."
         actions={
-          <Button onClick={openCreate}>
+          <>
+            <PreviewButton path="/galerie" />
+            <Button onClick={openCreate}>
             <Plus className="h-4 w-4" /> Nouvel album
-          </Button>
+            </Button>
+          </>
         }
       />
 

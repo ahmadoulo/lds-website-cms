@@ -7,6 +7,7 @@ import { SettingsProvider } from './context/SettingsContext';
 import { ToastProvider } from './components/ui/Toast';
 import { ScrollToTop } from './components/layout/ScrollToTop';
 import { Favicon } from './components/seo/Favicon';
+import { PreviewProvider } from './context/PreviewContext';
 import { LoadingState } from './components/ui/States';
 
 import { PublicLayout } from './components/layout/PublicLayout';
@@ -97,7 +98,8 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ToastProvider>
-          <SettingsProvider>
+          <PreviewProvider>
+            <SettingsProvider>
             <AuthProvider>
               <ScrollToTop />
               <Favicon />
@@ -153,7 +155,8 @@ function App() {
                 </Routes>
               </Suspense>
             </AuthProvider>
-          </SettingsProvider>
+            </SettingsProvider>
+          </PreviewProvider>
         </ToastProvider>
       </BrowserRouter>
     </QueryClientProvider>

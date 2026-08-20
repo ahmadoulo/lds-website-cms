@@ -6,6 +6,7 @@ import api from '../../lib/api/axios';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { MISSION_ICON_OPTIONS, resolveIcon } from '../../lib/icons';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
+import { PreviewButton } from '../../components/admin/ui/PreviewButton';
 import { DataTable, IconButton, type Column } from '../../components/admin/ui/DataTable';
 import { MediaPicker } from '../../components/admin/ui/MediaPicker';
 import { Modal } from '../../components/ui/Modal';
@@ -161,9 +162,12 @@ export const MissionsAdmin = () => {
         title="Domaines d'action"
         description="Les piliers d'intervention présentés sur la page d'accueil et la page « Nos actions »."
         actions={
-          <Button onClick={openCreate}>
+          <>
+            <PreviewButton path="/nos-actions" />
+            <Button onClick={openCreate}>
             <Plus className="h-4 w-4" /> Ajouter un domaine
-          </Button>
+            </Button>
+          </>
         }
       />
 
@@ -254,7 +258,8 @@ export const MissionsAdmin = () => {
               </Field>
             </div>
 
-            <MediaPicker value={cover} onChange={setCover} folder="missions" label="Illustration" />
+            <MediaPicker value={cover} onChange={setCover} folder="missions"
+            slot="missionCover" label="Illustration" />
           </div>
 
           <Field

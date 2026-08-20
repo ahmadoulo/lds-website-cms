@@ -1,41 +1,42 @@
 import React, { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Image as ImageIcon, Search, Trash2, Upload } from 'lucide-react';
+import { Crop, Image as ImageIcon, Maximize2, Search, Trash2, Upload } from 'lucide-react';
 import api, { apiErrorMessage } from '../../../lib/api/axios';
 import { formatBytes, uploadMedia, validateImageFile } from '../../../lib/queries/adminHooks';
+import { IMAGE_SLOTS, type ImageSlotKey } from '../../../lib/imageAnalysis';
 import { useToast } from '../../ui/Toast';
 import { Modal } from '../../ui/Modal';
 import { Button } from '../../ui/Button';
 import { Input } from '../../ui/Field';
 import { EmptyState, LoadingState, Spinner } from '../../ui/States';
+import { ImageReportPanel } from './ImageReportPanel';
 import type { Media, Paginated } from '../../../lib/types';
 import { cn } from '../../../lib/cn';
 
 interface MediaPickerProps {
-  /** Currently selected media, if any. */
   value: Media | null;
   onChange: (media: Media | null) => void;
   /** Logical MinIO folder new uploads land in. */
   folder: string;
+  /** Where this image is rendered, which sets the crop and the recommended size. */
+  slot: ImageSlotKey;
   label?: string;
-  aspect?: string;
 }
 
 /**
- * Uploads to MinIO through the API, or picks a file already in the library so the
- * same image can be reused without storing it twice.
+ * Uploads to MinIO through the API, or reuses a file already in the library.
+ *
+ * The preview is deliberately shown at the ratio the public site crops to, so a
+ * mismatch is visible here rather than discovered after publishing.
  */
-export const MediaPicker = ({
-  value,
-  onChange,
-  folder,
-  label = 'Image',
-  aspect = 'aspect-[16/10]',
-}: MediaPickerProps) => {
+export const MediaPicker = ({ value, onChange, folder, slot, label = 'Image' }: MediaPickerProps) => {
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [showWholeImage, setShowWholeImage] = useState(false);
+
+  const spec = IMAGE_SLOTS[slot];
 
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
@@ -50,7 +51,9 @@ export const MediaPicker = ({
     try {
       const media = await uploadMedia(file, folder);
       onChange(media);
-      toast.success('Image téléversée.');
+      // Uploading only stores the file; it reaches the site when the form is
+      // saved and the section published.
+      toast.success('Image ajoutée au brouillon. Elle sera visible après publication.');
     } catch (error) {
       toast.error(apiErrorMessage(error, "Échec du téléversement de l'image."));
     } finally {
@@ -61,13 +64,19 @@ export const MediaPicker = ({
 
   return (
     <div className="space-y-2">
-      <span className="block text-sm font-semibold text-navy">{label}</span>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-sm font-semibold text-navy">{label}</span>
+        <span className="text-[11px] text-navy/45">
+          {spec.width}×{spec.height} · {spec.ratioLabel}
+        </span>
+      </div>
 
       <div
         className={cn(
           'relative overflow-hidden rounded-xl border-2 border-dashed border-navy/15 bg-warm-muted/40 transition-colors',
           !value && 'hover:border-blue/50',
         )}
+        style={{ aspectRatio: String(spec.ratio) }}
         onDragOver={(event) => event.preventDefault()}
         onDrop={(event) => {
           event.preventDefault();
@@ -75,7 +84,7 @@ export const MediaPicker = ({
         }}
       >
         {isUploading ? (
-          <div className={cn('flex flex-col items-center justify-center gap-2', aspect)}>
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2">
             <Spinner className="h-6 w-6 text-blue" />
             <span className="text-xs font-medium text-navy/60">Téléversement…</span>
           </div>
@@ -83,19 +92,42 @@ export const MediaPicker = ({
           <img
             src={value.url}
             alt={value.altText?.fr || value.originalName}
-            className={cn('w-full object-cover', aspect)}
+            className={cn(
+              'h-full w-full',
+              // `cover` reproduces the crop the site applies; `contain` reveals
+              // the parts that crop would hide.
+              showWholeImage || spec.fit === 'contain' ? 'object-contain' : 'object-cover',
+            )}
           />
         ) : (
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className={cn('flex w-full flex-col items-center justify-center gap-2 px-4 text-center', aspect)}
+            className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center"
           >
             <ImageIcon className="h-7 w-7 text-navy/30" />
             <span className="text-xs font-medium text-navy/60">
               Glissez une image ici ou cliquez pour parcourir
             </span>
             <span className="text-[11px] text-navy/40">JPG, PNG, WebP · 5 Mo maximum</span>
+          </button>
+        )}
+
+        {value && spec.fit === 'cover' && (
+          <button
+            type="button"
+            onClick={() => setShowWholeImage((shown) => !shown)}
+            className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-lg bg-white/90 px-2 py-1 text-[11px] font-semibold text-navy shadow transition-colors hover:bg-white"
+          >
+            {showWholeImage ? (
+              <>
+                <Crop className="h-3 w-3" /> Voir le cadrage du site
+              </>
+            ) : (
+              <>
+                <Maximize2 className="h-3 w-3" /> Voir l'image entière
+              </>
+            )}
           </button>
         )}
 
@@ -107,6 +139,12 @@ export const MediaPicker = ({
           onChange={(event) => void handleFile(event.target.files?.[0])}
         />
       </div>
+
+      {value && showWholeImage && spec.fit === 'cover' && (
+        <p className="text-[11px] font-medium text-blue">
+          Image entière. Seule la zone visible dans le cadrage sera affichée sur le site.
+        </p>
+      )}
 
       <div className="flex flex-wrap gap-2">
         <Button
@@ -140,11 +178,7 @@ export const MediaPicker = ({
         )}
       </div>
 
-      {value && (
-        <p className="text-[11px] text-navy/45">
-          {value.originalName} · {value.width}×{value.height} · {formatBytes(value.size)}
-        </p>
-      )}
+      {value && <ImageReportPanel media={value} slot={spec} />}
 
       <MediaLibraryModal
         isOpen={isLibraryOpen}
@@ -218,7 +252,9 @@ export const MediaLibraryModal = ({ isOpen, onClose, onSelect }: MediaLibraryMod
               />
               <div className="px-2 py-1.5">
                 <p className="truncate text-[11px] font-medium text-navy">{media.originalName}</p>
-                <p className="text-[10px] text-navy/45">{formatBytes(media.size)}</p>
+                <p className="text-[10px] text-navy/45">
+                  {media.width}×{media.height} · {formatBytes(media.size)}
+                </p>
               </div>
             </button>
           ))}

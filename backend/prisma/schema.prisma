@@ -45,10 +45,18 @@ model User {
 // -----------------------------------------------------------------------------
 
 model SiteSettings {
-  id        String   @id @default(uuid())
-  key       String   @unique
-  value     Json // Flexible storage for varied settings
-  type      String // 'string', 'boolean', 'json', 'number'
+  id    String @id @default(uuid())
+  key   String @unique
+  /// What the public site serves.
+  value Json
+  type  String // 'string', 'boolean', 'json', 'number'
+
+  /// Pending edits, invisible to visitors until published. NULL means the
+  /// published value is the current one and there is nothing awaiting review.
+  draftValue     Json?
+  draftUpdatedAt DateTime?
+  publishedAt    DateTime?
+
   updatedAt DateTime @updatedAt
 }
 

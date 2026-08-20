@@ -279,12 +279,21 @@ describe('Content workflow (e2e)', () => {
       expect(res.body.global_contact.email).toEqual(expect.any(String));
     });
 
-    it('saves a partial change without wiping the rest of the section', async () => {
+    it('keeps a saved change off the site until it is published', async () => {
+      const before = await request(http).get('/api/v1/public/settings').expect(200);
+
       await request(http)
         .patch('/api/v1/settings/global_contact')
         .set(auth())
         .send({ value: { email: 'nouveau@lougasolidaire.org' } })
         .expect(200);
+
+      const during = await request(http).get('/api/v1/public/settings').expect(200);
+      expect(during.body.global_contact.email).toBe(before.body.global_contact.email);
+    });
+
+    it('publishes a partial change without wiping the rest of the section', async () => {
+      await request(http).post('/api/v1/settings/global_contact/publish').set(auth()).expect(201);
 
       const res = await request(http).get('/api/v1/public/settings').expect(200);
       expect(res.body.global_contact.email).toBe('nouveau@lougasolidaire.org');
@@ -336,12 +345,19 @@ describe('Content workflow (e2e)', () => {
       faviconId = favicon.body.id;
     });
 
-    it('saves them in the branding settings', async () => {
+    it('saves them as a draft, invisible to visitors', async () => {
       await request(http)
         .patch('/api/v1/settings/branding')
         .set(auth())
         .send({ value: { logoId, faviconId } })
         .expect(200);
+
+      const stillPublic = await request(http).get('/api/v1/public/settings').expect(200);
+      expect(stillPublic.body.branding.logo).toBeFalsy();
+    });
+
+    it('shows them once published', async () => {
+      await request(http).post('/api/v1/settings/branding/publish').set(auth()).expect(201);
     });
 
     it('serves them resolved, with a URL the browser can fetch', async () => {

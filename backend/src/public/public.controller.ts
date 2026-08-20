@@ -1,5 +1,7 @@
-import { Controller, Get, Param, Query, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, DefaultValuePipe, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
+import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
+import { PreviewMode } from './preview.decorator';
 import { MissionsService } from '../missions/missions.service';
 import { NewsService } from '../news/news.service';
 import { GalleryService } from '../gallery/gallery.service';
@@ -15,6 +17,10 @@ import { NavigationService } from '../navigation/navigation.service';
  * implementation of every rule.
  */
 @ApiTags('public')
+// Reads the session when there is one so `?preview=true` can serve drafts to a
+// signed-in editor; anonymous visitors always get the published site.
+@UseGuards(OptionalJwtAuthGuard)
+@ApiQuery({ name: 'preview', required: false, type: Boolean })
 @Controller('public')
 export class PublicController {
   constructor(
@@ -34,15 +40,15 @@ export class PublicController {
    */
   @Get('homepage')
   @ApiOperation({ summary: 'Everything the homepage needs, in one payload' })
-  async getHomepage() {
+  async getHomepage(@PreviewMode() preview: boolean) {
     const [settings, missions, impact, news, gallery, partners, donations] = await Promise.all([
-      this.settings.findAllWithMedia(),
-      this.missions.findAll(false),
-      this.impact.findAll(false),
-      this.news.findAll({ page: 1, limit: 3 }, false),
-      this.gallery.findPublishedImages(6),
-      this.partners.findAll(false),
-      this.donations.findAll(false),
+      this.settings.findAllWithMedia(preview ? 'draft' : 'published'),
+      this.missions.findAll(preview),
+      this.impact.findAll(preview),
+      this.news.findAll({ page: 1, limit: 3 }, preview),
+      this.gallery.findPublishedImages(6, preview),
+      this.partners.findAll(preview),
+      this.donations.findAll(preview),
     ]);
 
     return {
@@ -53,13 +59,14 @@ export class PublicController {
       gallery,
       partners,
       donations,
+      isPreview: preview,
     };
   }
 
   @Get('settings')
   @ApiOperation({ summary: 'Public site settings, with images resolved' })
-  getSettings() {
-    return this.settings.findAllWithMedia();
+  getSettings(@PreviewMode() preview: boolean) {
+    return this.settings.findAllWithMedia(preview ? 'draft' : 'published');
   }
 
   @Get('navigation')
@@ -70,8 +77,8 @@ export class PublicController {
 
   @Get('missions')
   @ApiOperation({ summary: 'Published missions' })
-  getMissions() {
-    return this.missions.findAll(false);
+  getMissions(@PreviewMode() preview: boolean) {
+    return this.missions.findAll(preview);
   }
 
   @Get('news')
@@ -79,8 +86,9 @@ export class PublicController {
   getNews(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(9), ParseIntPipe) limit: number,
+    @PreviewMode() preview: boolean,
   ) {
-    return this.news.findAll({ page, limit: Math.min(limit, 50) }, false);
+    return this.news.findAll({ page, limit: Math.min(limit, 50) }, preview);
   }
 
   @Get('news/categories')
@@ -91,39 +99,39 @@ export class PublicController {
 
   @Get('news/:slug')
   @ApiOperation({ summary: 'One published article with its suggestions' })
-  async getNewsBySlug(@Param('slug') slug: string) {
-    const article = await this.news.findOne(slug, false);
+  async getNewsBySlug(@Param('slug') slug: string, @PreviewMode() preview: boolean) {
+    const article = await this.news.findOne(slug, preview);
     const related = await this.news.findRelated(article.id, 3);
     return { article, related };
   }
 
   @Get('gallery')
   @ApiOperation({ summary: 'Published gallery albums with their images' })
-  getGallery() {
-    return this.gallery.findAllAlbums(false);
+  getGallery(@PreviewMode() preview: boolean) {
+    return this.gallery.findAllAlbums(preview);
   }
 
   @Get('gallery/images')
   @ApiOperation({ summary: 'Flat list of published gallery images' })
-  getGalleryImages() {
-    return this.gallery.findPublishedImages();
+  getGalleryImages(@PreviewMode() preview: boolean) {
+    return this.gallery.findPublishedImages(undefined, preview);
   }
 
   @Get('impact')
   @ApiOperation({ summary: 'Published impact statistics' })
-  getImpact() {
-    return this.impact.findAll(false);
+  getImpact(@PreviewMode() preview: boolean) {
+    return this.impact.findAll(preview);
   }
 
   @Get('partners')
   @ApiOperation({ summary: 'Published partners' })
-  getPartners() {
-    return this.partners.findAll(false);
+  getPartners(@PreviewMode() preview: boolean) {
+    return this.partners.findAll(preview);
   }
 
   @Get('donations')
   @ApiOperation({ summary: 'Published ways to support the association' })
-  getDonations() {
-    return this.donations.findAll(false);
+  getDonations(@PreviewMode() preview: boolean) {
+    return this.donations.findAll(preview);
   }
 }
