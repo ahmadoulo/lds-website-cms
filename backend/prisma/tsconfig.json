@@ -1,0 +1,12 @@
+{
+  "//": "The standalone Prisma scripts (seed, admin reset) are executed by ts-node, which needs CommonJS. Passing this inline as --compiler-options is fragile: npm strips the quotes around the JSON on Windows shells.",
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "resolvePackageJsonExports": false,
+    "isolatedModules": false,
+    "declaration": false,
+    "sourceMap": false
+  }
+}
