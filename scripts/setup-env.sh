@@ -100,26 +100,95 @@ set_if_empty() {
   return 1
 }
 
+# ------------------------------------------------- existing deployment lookup
+# Before the .env file existed, docker-compose.yml carried hardcoded defaults, so
+# the volumes on an already-deployed server were initialised with those. Making
+# up new credentials here would lock the API out of its own database, so the ones
+# actually in use are recovered first.
+LEGACY_POSTGRES_PASSWORD='postgres'
+LEGACY_MINIO_PASSWORD='SuperSecretPassword123!'
+
+has_docker() {
+  command -v docker >/dev/null 2>&1
+}
+
+# Reads a variable from a container that already exists, running or stopped.
+from_container() {
+  container=$1
+  var=$2
+  has_docker || return 1
+  docker inspect "$container" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null     | grep "^${var}=" | head -n 1 | cut -d= -f2- | tr -d '
+'
+}
+
+volume_exists() {
+  has_docker || return 1
+  docker volume ls --format '{{.Name}}' 2>/dev/null | grep -q "_$1\$"
+}
+
+RECOVERED_DB=$(from_container lds-postgres POSTGRES_PASSWORD || true)
+RECOVERED_STORAGE=$(from_container lds-minio MINIO_ROOT_PASSWORD || true)
+RECOVERED_JWT=$(from_container lds-backend JWT_SECRET || true)
+RECOVERED_JWT_REFRESH=$(from_container lds-backend JWT_REFRESH_SECRET || true)
+
+EXISTING_DEPLOYMENT=0
+if [ -n "$RECOVERED_DB" ] || [ -n "$RECOVERED_STORAGE" ]; then
+  EXISTING_DEPLOYMENT=1
+  echo "Existing containers found - reusing the credentials they were started with."
+elif volume_exists postgres_data || volume_exists minio_data; then
+  EXISTING_DEPLOYMENT=1
+  RECOVERED_DB="$LEGACY_POSTGRES_PASSWORD"
+  RECOVERED_STORAGE="$LEGACY_MINIO_PASSWORD"
+  echo "Existing data volumes found but no container to read from."
+  echo "Assuming the defaults this project used before .env existed."
+fi
+
+# Overwrites unconditionally. Only used for values that MUST match what an
+# existing volume was created with, where a stale .env would break the stack.
+force_set() {
+  key=$1
+  value=$2
+  current=$(grep "^${key}=" "$ENV_FILE" | head -n 1 | cut -d= -f2-)
+  [ "$current" = "$value" ] && return 0
+
+  tmp="${ENV_FILE}.tmp"
+  awk -v k="$key" -v v="$value"     'index($0, k "=") == 1 { print k "=" v; next } { print }'     "$ENV_FILE" > "$tmp"
+  mv "$tmp" "$ENV_FILE"
+  echo "  ! aligned ${key} on the existing deployment"
+}
+
 echo "Secrets:"
-DB_PASSWORD=$(random_string 32)
-STORAGE_PASSWORD=$(random_string 32)
 ADMIN_PASSWORD=$(random_password)
 
-set_if_empty POSTGRES_PASSWORD "$DB_PASSWORD" || true
-set_if_empty MINIO_ROOT_PASSWORD "$STORAGE_PASSWORD" || true
-set_if_empty JWT_SECRET "$(random_string 64)" || true
-set_if_empty JWT_REFRESH_SECRET "$(random_string 64)" || true
+# A recovered value is reused; otherwise a fresh strong secret is generated.
+set_if_empty POSTGRES_PASSWORD "${RECOVERED_DB:-$(random_string 32)}" || true
+set_if_empty MINIO_ROOT_PASSWORD "${RECOVERED_STORAGE:-$(random_string 32)}" || true
+set_if_empty JWT_SECRET "${RECOVERED_JWT:-$(random_string 64)}" || true
+set_if_empty JWT_REFRESH_SECRET "${RECOVERED_JWT_REFRESH:-$(random_string 64)}" || true
+
+# The database name and user are part of the volume too.
+if [ "$EXISTING_DEPLOYMENT" -eq 1 ]; then
+  RECOVERED_DB_USER=$(from_container lds-postgres POSTGRES_USER || true)
+  RECOVERED_DB_NAME=$(from_container lds-postgres POSTGRES_DB || true)
+  RECOVERED_STORAGE_USER=$(from_container lds-minio MINIO_ROOT_USER || true)
+  [ -n "$RECOVERED_DB_USER" ] && force_set POSTGRES_USER "$RECOVERED_DB_USER"
+  [ -n "$RECOVERED_DB_NAME" ] && force_set POSTGRES_DB "$RECOVERED_DB_NAME"
+  [ -n "$RECOVERED_STORAGE_USER" ] && force_set MINIO_ROOT_USER "$RECOVERED_STORAGE_USER"
+fi
 
 admin_generated=0
 if set_if_empty ADMIN_SEED_PASSWORD "$ADMIN_PASSWORD"; then
   admin_generated=1
 fi
 
-# MinIO uses one credential pair; the API must be given the same secret.
+# MinIO has a single credential pair. In Docker these two are derived from
+# MINIO_ROOT_* by docker-compose.yml and the values below are only read when
+# running the API outside Docker - but a .env that contradicts itself is a trap,
+# so they are kept in step.
 storage_secret=$(grep '^MINIO_ROOT_PASSWORD=' "$ENV_FILE" | head -n 1 | cut -d= -f2-)
 storage_user=$(grep '^MINIO_ROOT_USER=' "$ENV_FILE" | head -n 1 | cut -d= -f2-)
-set_if_empty MINIO_SECRET_KEY "$storage_secret" || true
-set_if_empty MINIO_ACCESS_KEY "$storage_user" || true
+force_set MINIO_SECRET_KEY "$storage_secret"
+force_set MINIO_ACCESS_KEY "$storage_user"
 
 chmod 600 "$ENV_FILE" 2>/dev/null || true
 
