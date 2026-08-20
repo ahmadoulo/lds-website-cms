@@ -48,13 +48,30 @@ else
   npx prisma migrate resolve --applied "$BASELINE"
   npx prisma migrate deploy
 
-  # Recording the baseline does not create anything: a schema pushed before the
-  # baseline was written can still be missing its newer columns. This adds them.
-  # Without --accept-data-loss, Prisma refuses any destructive change, so an
-  # unexpected difference stops the deployment instead of dropping data.
-  echo "[startup] reconciling the schema with prisma/schema.prisma..."
-  npx prisma db push --skip-generate
 fi
+
+# Recording a baseline creates nothing, so a database adopted from `prisma db
+# push` keeps missing every column added after that baseline was written. The
+# comparison below runs on every start, which also means the reconciliation is
+# not lost once the baseline is recorded and `migrate deploy` starts succeeding.
+echo "[startup] comparing the database with prisma/schema.prisma..."
+drift=0
+npx prisma migrate diff   --from-url "$DATABASE_URL"   --to-schema-datamodel prisma/schema.prisma   --exit-code >/dev/null 2>&1 || drift=$?
+
+case "$drift" in
+  0)
+    echo "[startup] schema is up to date."
+    ;;
+  2)
+    # Without --accept-data-loss Prisma refuses any destructive change, so an
+    # unexpected difference stops the deployment instead of dropping data.
+    echo "[startup] schema drift detected; reconciling..."
+    npx prisma db push --skip-generate
+    ;;
+  *)
+    echo "[startup] could not compare the schema (exit $drift); continuing."
+    ;;
+esac
 
 echo "[startup] seeding reference data (idempotent)..."
 npx prisma db seed
