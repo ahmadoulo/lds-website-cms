@@ -192,6 +192,52 @@ force_set MINIO_ACCESS_KEY "$storage_user"
 
 chmod 600 "$ENV_FILE" 2>/dev/null || true
 
+# ------------------------------------------------------- verify against the DB
+# PostgreSQL only reads POSTGRES_PASSWORD when it creates its data directory. On
+# an existing volume the stored password wins, so a value in .env that no longer
+# matches authenticates nowhere - and the API crash-loops with P1000. Catching it
+# here is far cheaper than reading it out of container logs later.
+verify_postgres() {
+  has_docker || return 0
+  docker compose version >/dev/null 2>&1 || return 0
+  docker compose ps --format '{{.Name}} {{.State}}' 2>/dev/null     | grep -q 'lds-postgres running' || return 0
+
+  pw=$(grep '^POSTGRES_PASSWORD=' "$ENV_FILE" | head -n 1 | cut -d= -f2-)
+  user=$(grep '^POSTGRES_USER=' "$ENV_FILE" | head -n 1 | cut -d= -f2-)
+  db=$(grep '^POSTGRES_DB=' "$ENV_FILE" | head -n 1 | cut -d= -f2-)
+  [ -n "$pw" ] && [ -n "$user" ] || return 0
+
+  echo
+  echo "Checking the database password against the running container..."
+
+  # -h forces password authentication; the unix socket would be trusted.
+  if docker compose exec -T -e PGPASSWORD="$pw" postgres        psql -h 127.0.0.1 -U "$user" -d "${db:-lds_db}" -c 'SELECT 1' >/dev/null 2>&1; then
+    echo "  OK - the password in .env authenticates."
+    return 0
+  fi
+
+  cat <<MSG
+
+  ----------------------------------------------------------------
+   WARNING: the database rejects the password in .env.
+
+   The volume was created with a different one, and PostgreSQL keeps
+   the password inside the database, not in the environment.
+
+   Either restore the original value in .env, or align the database
+   on the current one:
+
+     docker compose exec -T postgres psql -U ${user} -d ${db:-lds_db} -c "ALTER USER ${user} WITH PASSWORD '${pw}';"
+
+   Then:  docker compose up -d
+  ----------------------------------------------------------------
+MSG
+  return 1
+}
+
+DB_CHECK_FAILED=0
+verify_postgres || DB_CHECK_FAILED=1
+
 echo
 echo "Done. .env is ready (permissions 600)."
 
@@ -211,4 +257,8 @@ if [ "$admin_generated" -eq 1 ]; then
 fi
 
 echo
-echo "Next:  docker compose build && docker compose up -d"
+if [ "$DB_CHECK_FAILED" -eq 1 ]; then
+  echo "Next:  resolve the database password warning above first."
+else
+  echo "Next:  docker compose build && docker compose up -d"
+fi
