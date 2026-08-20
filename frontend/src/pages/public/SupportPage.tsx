@@ -1,76 +1,83 @@
 import React from 'react';
+import { HeartHandshake } from 'lucide-react';
 import { useDonations } from '../../lib/queries/publicHooks';
-import { Heart, Copy, ArrowRight, Mail } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useSettings } from '../../context/SettingsContext';
+import { Seo } from '../../components/seo/Seo';
+import { SectionHeading } from '../../components/public/SectionHeading';
+import { DonationCard } from '../../components/public/DonationCard';
+import { EmptyState, ErrorState, SkeletonCards } from '../../components/ui/States';
 
 export const SupportPage = () => {
-  const { data: donations, isLoading } = useDonations();
+  const { data: donations, isLoading, isError, refetch } = useDonations();
+  const { settings } = useSettings();
 
-  if (isLoading) {
-    return (
-      <div className="py-[110px] px-6 min-h-[60vh]">
-        <div className="max-w-[1280px] mx-auto animate-pulse">
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-             {[1,2,3].map(i => <div key={i} className="h-64 bg-gray-100 rounded-3xl"></div>)}
-           </div>
-        </div>
-      </div>
-    );
-  }
+  const contact = settings?.global_contact;
 
   return (
-    <div className="py-[110px] px-6 min-h-[60vh] flex flex-col justify-center">
-      <div className="max-w-[1280px] mx-auto w-full">
-        <div className="text-center max-w-[640px] mx-auto mb-16">
-          <div className="text-[#EE7900] font-bold tracking-wider uppercase text-[13px] mb-3.5">Agir avec nous</div>
-          <h1 className="text-[clamp(32px,4vw,44px)] font-extrabold mb-6 leading-[1.15]">Soutenez nos actions</h1>
-          <p className="text-[17px] text-[#172642]/70 leading-[1.6]">Chaque contribution, qu'elle soit financière, matérielle ou humaine, nous permet d'étendre notre impact.</p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {donations?.map((method: any) => {
-            const isOrange = method.iconColor === 'orange';
-            const isBlue = method.iconColor === 'blue';
-            
-            const bgClass = isOrange ? 'bg-[#EE7900]' : isBlue ? 'bg-[#00A4DE]' : 'bg-[#87CE18]';
-            const textClass = isOrange ? 'text-[#EE7900]' : isBlue ? 'text-[#00A4DE]' : 'text-[#87CE18]';
-            const hoverBgClass = isOrange ? 'hover:bg-[#EE7900]/10' : isBlue ? 'hover:bg-[#00A4DE]/10' : 'hover:bg-[#87CE18]/10';
+    <>
+      <Seo
+        title="Nous soutenir"
+        description="Don financier, bénévolat ou matériel : découvrez comment soutenir les actions de Louga Développement Solidaire."
+      />
 
-            return (
-              <div key={method.id} className="bg-white border border-gray-100 rounded-[28px] p-8 shadow-[0_12px_30px_-14px_rgba(23,38,66,0.08)] hover:-translate-y-2 hover:shadow-[0_24px_50px_-14px_rgba(23,38,66,0.15)] transition-all duration-300 flex flex-col">
-                <div className={`w-14 h-14 rounded-2xl ${bgClass} text-white flex items-center justify-center mb-6 shadow-lg`}>
-                  <Heart className="w-6 h-6" />
-                </div>
-                <h3 className="text-[22px] font-extrabold text-[#172642] mb-3">{method.title?.fr}</h3>
-                <p className="text-[#172642]/70 leading-[1.6] mb-8 flex-1">{method.description?.fr}</p>
-                
-                {method.actionType === 'phone' ? (
-                  <button 
-                    onClick={() => navigator.clipboard.writeText(method.actionData)}
-                    className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 border-2 border-gray-100 ${textClass} ${hoverBgClass} transition-colors`}
+      <div className="min-h-[60vh] px-6 py-[90px]">
+        <div className="mx-auto w-full max-w-[1280px]">
+          <SectionHeading
+            eyebrow="Agir avec nous"
+            title="Soutenez nos actions"
+            description="Chaque contribution — financière, matérielle ou humaine — nous permet d'étendre notre impact à Louga."
+            accent="orange"
+            as="h1"
+          />
+
+          {isLoading ? (
+            <SkeletonCards count={3} />
+          ) : isError ? (
+            <ErrorState onRetry={() => void refetch()} />
+          ) : !donations?.length ? (
+            <EmptyState
+              icon={HeartHandshake}
+              title="Aucun moyen de soutien publié"
+              description="Contactez-nous directement pour savoir comment aider."
+            />
+          ) : (
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {donations.map((method) => (
+                <DonationCard key={method.id} method={method} />
+              ))}
+            </div>
+          )}
+
+          {contact && (
+            <div className="mt-16 rounded-2xl border border-navy/8 bg-white px-6 py-10 text-center">
+              <h2 className="mb-3 text-[clamp(20px,2.4vw,26px)] font-extrabold text-navy">
+                Une autre idée pour nous aider ?
+              </h2>
+              <p className="mx-auto mb-6 max-w-xl text-navy/70">
+                Écrivez-nous ou appelez-nous, nous étudions toutes les propositions.
+              </p>
+              <div className="flex flex-wrap justify-center gap-4">
+                {contact.email && (
+                  <a
+                    href={`mailto:${contact.email}`}
+                    className="rounded-full bg-navy px-7 py-3 font-bold text-white transition-colors hover:bg-blue"
                   >
-                    <Copy className="w-4 h-4" /> {method.actionLabel?.fr} : {method.actionData}
-                  </button>
-                ) : method.actionType === 'link' ? (
-                  <Link 
-                    to={method.actionData}
-                    className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 ${bgClass} text-white shadow-lg hover:brightness-110 transition-all`}
+                    {contact.email}
+                  </a>
+                )}
+                {contact.phone && (
+                  <a
+                    href={`tel:${contact.phone.replace(/\s+/g, '')}`}
+                    className="rounded-full border-[1.5px] border-navy/15 px-7 py-3 font-bold text-navy transition-colors hover:border-navy"
                   >
-                    {method.actionLabel?.fr} <ArrowRight className="w-4 h-4" />
-                  </Link>
-                ) : (
-                  <a 
-                    href="mailto:contact@lougasolidaire.org"
-                    className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 border-2 border-gray-100 ${textClass} ${hoverBgClass} transition-colors`}
-                  >
-                    <Mail className="w-4 h-4" /> {method.actionLabel?.fr}
+                    {contact.phone}
                   </a>
                 )}
               </div>
-            );
-          })}
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </>
   );
 };

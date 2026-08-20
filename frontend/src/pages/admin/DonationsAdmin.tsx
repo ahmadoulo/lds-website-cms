@@ -1,207 +1,328 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
+import { Edit2, Eye, EyeOff, HeartHandshake, Plus, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
-import { Edit2, Trash2, Plus, X, Save, Eye, EyeOff } from 'lucide-react';
+import { useAdminMutation } from '../../lib/queries/adminHooks';
+import { PageHeader } from '../../components/admin/ui/PageHeader';
+import { DataTable, IconButton, type Column } from '../../components/admin/ui/DataTable';
+import { Modal } from '../../components/ui/Modal';
+import { Button } from '../../components/ui/Button';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { Badge } from '../../components/ui/Badge';
+import { Checkbox, Field, Input, Select, Textarea } from '../../components/ui/Field';
+import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
+import { t, type DonationMethod } from '../../lib/types';
+
+interface FormValues {
+  title: string;
+  description: string;
+  actionType: DonationMethod['actionType'];
+  actionData: string;
+  actionLabel: string;
+  iconColor: DonationMethod['iconColor'];
+  isPublished: boolean;
+}
+
+const ACTION_TYPES = [
+  { value: 'phone', label: 'Numéro à copier (Orange Money, Wave…)', hint: '+221 77 000 00 00' },
+  { value: 'link', label: 'Lien interne du site', hint: '/contact' },
+  { value: 'email', label: 'Adresse email', hint: 'contact@exemple.org' },
+  { value: 'contact', label: 'Renvoi vers le formulaire de contact', hint: '/contact' },
+] as const;
+
+const COLORS = [
+  { value: 'orange', label: 'Orange' },
+  { value: 'blue', label: 'Bleu' },
+  { value: 'green', label: 'Vert' },
+  { value: 'navy', label: 'Bleu nuit' },
+] as const;
+
+const EMPTY_FORM: FormValues = {
+  title: '',
+  description: '',
+  actionType: 'phone',
+  actionData: '',
+  actionLabel: '',
+  iconColor: 'orange',
+  isPublished: true,
+};
 
 export const DonationsAdmin = () => {
-  const queryClient = useQueryClient();
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editing, setEditing] = useState<DonationMethod | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<DonationMethod | null>(null);
 
-  const { data: donations, isLoading } = useQuery({
+  const listQuery = useQuery({
     queryKey: ['admin', 'donations'],
-    queryFn: async () => {
-      const { data } = await api.get('/donations?admin=true');
-      return data;
-    }
+    queryFn: async () => (await api.get<DonationMethod[]>('/donations')).data,
   });
 
-  const { register, handleSubmit, reset } = useForm();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<FormValues>({ defaultValues: EMPTY_FORM });
 
-  const createMutation = useMutation({
-    mutationFn: async (data: any) => api.post('/donations', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'donations'] });
-      queryClient.invalidateQueries({ queryKey: ['public', 'donations'] });
-      setIsModalOpen(false);
-      reset();
-    }
-  });
+  const actionType = watch('actionType');
+  const actionHint = ACTION_TYPES.find((type) => type.value === actionType)?.hint;
 
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string, data: any }) => api.patch(`/donations/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'donations'] });
-      queryClient.invalidateQueries({ queryKey: ['public', 'donations'] });
-      setEditingId(null);
-      setIsModalOpen(false);
-      reset();
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => api.delete(`/donations/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'donations'] });
-      queryClient.invalidateQueries({ queryKey: ['public', 'donations'] });
-    }
-  });
-
-  const onSubmit = (data: any) => {
-    // Transform flat inputs into the expected JSON structure
-    const payload = {
-      title: { fr: data.title_fr },
-      description: { fr: data.description_fr },
-      actionType: data.actionType,
-      actionData: data.actionData,
-      actionLabel: { fr: data.actionLabel_fr },
-      iconColor: data.iconColor,
-      isPublished: data.isPublished
-    };
-
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, data: payload });
-    } else {
-      createMutation.mutate(payload);
-    }
+  const openCreate = () => {
+    setEditing(null);
+    reset(EMPTY_FORM);
+    setIsFormOpen(true);
   };
 
-  const openEdit = (donation: any) => {
-    setEditingId(donation.id);
+  const openEdit = (method: DonationMethod) => {
+    setEditing(method);
     reset({
-      title_fr: donation.title.fr,
-      description_fr: donation.description.fr,
-      actionType: donation.actionType,
-      actionData: donation.actionData,
-      actionLabel_fr: donation.actionLabel.fr,
-      iconColor: donation.iconColor,
-      isPublished: donation.isPublished
+      title: t(method.title),
+      description: t(method.description),
+      actionType: method.actionType,
+      actionData: method.actionData,
+      actionLabel: t(method.actionLabel),
+      iconColor: method.iconColor,
+      isPublished: method.isPublished,
     });
-    setIsModalOpen(true);
+    setIsFormOpen(true);
   };
 
-  const togglePublish = (donation: any) => {
-    updateMutation.mutate({ id: donation.id, data: { isPublished: !donation.isPublished } });
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setEditing(null);
+    reset(EMPTY_FORM);
   };
+
+  const saveMutation = useAdminMutation<FormValues>({
+    mutationFn: async (values) => {
+      const payload = {
+        title: { fr: values.title },
+        description: { fr: values.description },
+        actionType: values.actionType,
+        actionData: values.actionData,
+        actionLabel: { fr: values.actionLabel },
+        iconColor: values.iconColor,
+        isPublished: values.isPublished,
+      };
+
+      return editing
+        ? (await api.patch(`/donations/${editing.id}`, payload)).data
+        : (await api.post('/donations', payload)).data;
+    },
+    successMessage: editing ? 'Moyen de soutien mis à jour.' : 'Moyen de soutien ajouté.',
+    invalidate: [['admin', 'donations']],
+    onSuccess: closeForm,
+  });
+
+  const togglePublish = useAdminMutation<DonationMethod>({
+    mutationFn: async (method) =>
+      (await api.patch(`/donations/${method.id}`, { isPublished: !method.isPublished })).data,
+    successMessage: 'Statut mis à jour.',
+    invalidate: [['admin', 'donations']],
+  });
+
+  const deleteMutation = useAdminMutation<string>({
+    mutationFn: async (id) => (await api.delete(`/donations/${id}`)).data,
+    successMessage: 'Moyen de soutien supprimé.',
+    invalidate: [['admin', 'donations']],
+    onSuccess: () => setPendingDelete(null),
+  });
+
+  const columns: Array<Column<DonationMethod>> = [
+    {
+      key: 'title',
+      header: 'Intitulé',
+      render: (method) => (
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-navy">{t(method.title)}</p>
+          <p className="line-clamp-1 text-xs text-navy/50">{t(method.description)}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'action',
+      header: 'Action',
+      render: (method) => (
+        <span className="text-navy/70">
+          {ACTION_TYPES.find((type) => type.value === method.actionType)?.value ?? method.actionType}
+          {' · '}
+          <span className="text-navy/50">{method.actionData}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Statut',
+      render: (method) => (
+        <Badge tone={method.isPublished ? 'green' : 'neutral'}>
+          {method.isPublished ? 'Affiché' : 'Masqué'}
+        </Badge>
+      ),
+    },
+  ];
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-[#172642]">Méthodes de don</h1>
-          <p className="text-gray-500 mt-1">Gérez les moyens par lesquels les utilisateurs peuvent vous soutenir.</p>
-        </div>
-        <button 
-          onClick={() => { setEditingId(null); reset(); setIsModalOpen(true); }}
-          className="bg-[#EE7900] text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center hover:bg-[#d66d00]"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Ajouter une méthode
-        </button>
-      </div>
+      <PageHeader
+        title="Nous soutenir"
+        description="Les différentes façons pour un visiteur de soutenir l'association."
+        actions={
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4" /> Ajouter un moyen
+          </Button>
+        }
+      />
 
-      {isLoading ? (
-        <div>Chargement...</div>
+      {listQuery.isLoading ? (
+        <LoadingState />
+      ) : listQuery.isError ? (
+        <ErrorState onRetry={() => void listQuery.refetch()} />
+      ) : !listQuery.data?.length ? (
+        <EmptyState
+          icon={HeartHandshake}
+          title="Aucun moyen de soutien"
+          description="Expliquez comment les visiteurs peuvent aider : don, bénévolat, matériel…"
+          action={
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" /> Ajouter un moyen de soutien
+            </Button>
+          }
+        />
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-100">
-              <tr>
-                <th className="px-6 py-4">Titre</th>
-                <th className="px-6 py-4">Données (Numéro/Lien)</th>
-                <th className="px-6 py-4">Statut</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {donations?.map((d: any) => (
-                <tr key={d.id} className="hover:bg-gray-50/50">
-                  <td className="px-6 py-4 font-semibold text-[#172642]">{d.title?.fr}</td>
-                  <td className="px-6 py-4 text-gray-600">{d.actionData}</td>
-                  <td className="px-6 py-4">
-                    <button 
-                      onClick={() => togglePublish(d)}
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${d.isPublished ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
-                    >
-                      {d.isPublished ? <><Eye className="w-3 h-3 mr-1" /> Publié</> : <><EyeOff className="w-3 h-3 mr-1" /> Brouillon</>}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button onClick={() => openEdit(d)} className="text-blue-600 hover:text-blue-800 p-2"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => deleteMutation.mutate(d.id)} className="text-red-500 hover:text-red-700 p-2 ml-2"><Trash2 className="w-4 h-4" /></button>
-                  </td>
-                </tr>
+        <DataTable
+          columns={columns}
+          rows={listQuery.data}
+          rowKey={(method) => method.id}
+          mobileTitle={(method) => t(method.title)}
+          actions={(method) => (
+            <>
+              <IconButton
+                label={method.isPublished ? 'Masquer' : 'Afficher'}
+                icon={method.isPublished ? EyeOff : Eye}
+                onClick={() => togglePublish.mutate(method)}
+                disabled={togglePublish.isPending}
+              />
+              <IconButton label="Modifier" icon={Edit2} onClick={() => openEdit(method)} />
+              <IconButton
+                label="Supprimer"
+                icon={Trash2}
+                tone="danger"
+                onClick={() => setPendingDelete(method)}
+              />
+            </>
+          )}
+        />
+      )}
+
+      <Modal
+        isOpen={isFormOpen}
+        onClose={closeForm}
+        title={editing ? 'Modifier le moyen de soutien' : 'Nouveau moyen de soutien'}
+        footer={
+          <>
+            <Button variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>
+              Annuler
+            </Button>
+            <Button form="donation-form" type="submit" isLoading={saveMutation.isPending}>
+              {editing ? 'Enregistrer' : 'Ajouter'}
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="donation-form"
+          onSubmit={handleSubmit((values) => saveMutation.mutate(values))}
+          className="space-y-5"
+        >
+          <Field label="Intitulé" htmlFor="donation-title" required error={errors.title?.message}>
+            <Input
+              id="donation-title"
+              placeholder="Faire un don financier"
+              aria-invalid={Boolean(errors.title)}
+              {...register('title', { required: "L'intitulé est obligatoire" })}
+            />
+          </Field>
+
+          <Field
+            label="Description"
+            htmlFor="donation-description"
+            required
+            error={errors.description?.message}
+          >
+            <Textarea
+              id="donation-description"
+              rows={3}
+              aria-invalid={Boolean(errors.description)}
+              {...register('description', { required: 'La description est obligatoire' })}
+            />
+          </Field>
+
+          <Field label="Type d'action" htmlFor="donation-type">
+            <Select id="donation-type" {...register('actionType')}>
+              {ACTION_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            </Select>
+          </Field>
 
-      {/* Modal Form */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-900/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-6 border-b border-gray-100">
-              <h2 className="text-xl font-bold text-[#172642]">{editingId ? 'Modifier' : 'Ajouter'} une méthode de don</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
-            </div>
-            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Titre (ex: Faire un don financier)</label>
-                <input {...register('title_fr')} required className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea {...register('description_fr')} required rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
-              </div>
+          <Field
+            label="Valeur de l'action"
+            htmlFor="donation-data"
+            required
+            hint={actionHint ? `Exemple : ${actionHint}` : undefined}
+            error={errors.actionData?.message}
+          >
+            <Input
+              id="donation-data"
+              aria-invalid={Boolean(errors.actionData)}
+              {...register('actionData', { required: 'Cette valeur est obligatoire' })}
+            />
+          </Field>
 
-              <div className="grid grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type d'action</label>
-                  <select {...register('actionType')} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
-                    <option value="phone">Numéro (Orange Money/Wave)</option>
-                    <option value="link">Lien web (GoFundMe, etc)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Données (Numéro ou URL)</label>
-                  <input {...register('actionData')} required className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                </div>
-              </div>
+          <Field
+            label="Libellé du bouton"
+            htmlFor="donation-label"
+            required
+            error={errors.actionLabel?.message}
+          >
+            <Input
+              id="donation-label"
+              placeholder="Copier le numéro"
+              aria-invalid={Boolean(errors.actionLabel)}
+              {...register('actionLabel', { required: 'Le libellé est obligatoire' })}
+            />
+          </Field>
 
-              <div className="grid grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Sous-titre de l'action</label>
-                  <input {...register('actionLabel_fr')} placeholder="Via Orange Money / Wave" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Couleur de l'icône</label>
-                  <select {...register('iconColor')} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
-                    <option value="orange">Orange</option>
-                    <option value="blue">Bleu</option>
-                    <option value="green">Vert</option>
-                  </select>
-                </div>
-              </div>
+          <Field label="Couleur" htmlFor="donation-color">
+            <Select id="donation-color" {...register('iconColor')}>
+              {COLORS.map((color) => (
+                <option key={color.value} value={color.value}>
+                  {color.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
 
-              <div className="flex items-center mt-4">
-                <input type="checkbox" {...register('isPublished')} id="isPublished" className="w-4 h-4 text-[#EE7900] rounded border-gray-300" />
-                <label htmlFor="isPublished" className="ml-2 text-sm text-gray-700 font-medium">Publier immédiatement</label>
-              </div>
+          <Checkbox
+            id="donation-published"
+            label="Afficher sur le site public"
+            {...register('isPublished')}
+          />
+        </form>
+      </Modal>
 
-              <div className="pt-6 flex justify-end gap-3 border-t border-gray-100">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 border border-gray-200">Annuler</button>
-                <button type="submit" className="bg-[#EE7900] text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-[#d66d00]">
-                  Enregistrer
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={Boolean(pendingDelete)}
+        title="Supprimer ce moyen de soutien ?"
+        message={`« ${t(pendingDelete?.title, '')} » ne sera plus proposé aux visiteurs.`}
+        isLoading={deleteMutation.isPending}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
+      />
     </div>
   );
 };

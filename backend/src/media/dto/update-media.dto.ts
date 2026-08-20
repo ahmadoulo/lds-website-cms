@@ -1,4 +1,10 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateMediaDto } from './create-media.dto';
+import { IsOptional } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsLocalizedText } from '../../common/dto/localized';
 
-export class UpdateMediaDto extends PartialType(CreateMediaDto) {}
+export class UpdateMediaDto {
+  @ApiPropertyOptional({ description: 'Accessible description of the image' })
+  @IsLocalizedText({ requireFr: false, maxLength: 300 })
+  @IsOptional()
+  altText?: Record<string, string>;
+}

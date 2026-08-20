@@ -1,240 +1,296 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
+import { Edit2, Eye, EyeOff, ImageIcon, Plus, Target, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
-import { Edit2, Trash2, Plus, X, Eye, EyeOff, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { useAdminMutation } from '../../lib/queries/adminHooks';
+import { MISSION_ICON_OPTIONS, resolveIcon } from '../../lib/icons';
+import { PageHeader } from '../../components/admin/ui/PageHeader';
+import { DataTable, IconButton, type Column } from '../../components/admin/ui/DataTable';
+import { MediaPicker } from '../../components/admin/ui/MediaPicker';
+import { Modal } from '../../components/ui/Modal';
+import { Button } from '../../components/ui/Button';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { Badge } from '../../components/ui/Badge';
+import { Checkbox, Field, Input, Select, Textarea } from '../../components/ui/Field';
+import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
+import { t, type Media, type Mission } from '../../lib/types';
+
+interface FormValues {
+  title: string;
+  description: string;
+  icon: string;
+  isPublished: boolean;
+}
+
+const EMPTY_FORM: FormValues = {
+  title: '',
+  description: '',
+  icon: MISSION_ICON_OPTIONS[0].value,
+  isPublished: true,
+};
 
 export const MissionsAdmin = () => {
-  const queryClient = useQueryClient();
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Mission | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Mission | null>(null);
+  const [cover, setCover] = useState<Media | null>(null);
 
-  const { data: missions, isLoading } = useQuery({
+  const listQuery = useQuery({
     queryKey: ['admin', 'missions'],
-    queryFn: async () => {
-      const { data } = await api.get('/missions?admin=true');
-      return data;
-    }
+    queryFn: async () => (await api.get<Mission[]>('/missions')).data,
   });
 
-  const { register, handleSubmit, reset, setValue } = useForm();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormValues>({ defaultValues: EMPTY_FORM });
 
-  const createMutation = useMutation({
-    mutationFn: async (data: any) => api.post('/missions', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'missions'] });
-      queryClient.invalidateQueries({ queryKey: ['public', 'missions'] });
-      closeModal();
-    }
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string, data: any }) => api.patch(`/missions/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'missions'] });
-      queryClient.invalidateQueries({ queryKey: ['public', 'missions'] });
-      closeModal();
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => api.delete(`/missions/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'missions'] });
-      queryClient.invalidateQueries({ queryKey: ['public', 'missions'] });
-    }
-  });
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('folder', 'missions');
-
-    try {
-      const { data } = await api.post('/media/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setValue('imageId', data.id);
-      setCoverUrl(data.url);
-    } catch (error) {
-      console.error('Upload failed', error);
-      alert('Erreur lors du téléchargement de l\'image');
-    } finally {
-      setIsUploading(false);
-    }
+  const openCreate = () => {
+    setEditing(null);
+    setCover(null);
+    reset(EMPTY_FORM);
+    setIsFormOpen(true);
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingId(null);
-    setCoverUrl(null);
-    reset();
-  };
-
-  const openEdit = (item: any) => {
-    setEditingId(item.id);
-    setCoverUrl(item.image?.url || null);
+  const openEdit = (mission: Mission) => {
+    setEditing(mission);
+    setCover(mission.image);
     reset({
-      title_fr: item.title.fr,
-      description_fr: item.description.fr,
-      icon: item.icon,
-      imageId: item.imageId,
-      isPublished: item.isPublished
+      title: t(mission.title),
+      description: t(mission.description),
+      icon: mission.icon ?? MISSION_ICON_OPTIONS[0].value,
+      isPublished: mission.isPublished,
     });
-    setIsModalOpen(true);
+    setIsFormOpen(true);
   };
 
-  const onSubmit = (data: any) => {
-    const payload = {
-      title: { fr: data.title_fr },
-      description: { fr: data.description_fr },
-      icon: data.icon,
-      imageId: data.imageId,
-      isPublished: data.isPublished
-    };
-
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, data: payload });
-    } else {
-      createMutation.mutate(payload);
-    }
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setEditing(null);
+    setCover(null);
+    reset(EMPTY_FORM);
   };
 
-  const togglePublish = (item: any) => {
-    updateMutation.mutate({ id: item.id, data: { isPublished: !item.isPublished } });
-  };
+  const saveMutation = useAdminMutation<FormValues>({
+    mutationFn: async (values) => {
+      const payload = {
+        title: { fr: values.title },
+        description: { fr: values.description },
+        icon: values.icon,
+        imageId: cover?.id ?? null,
+        isPublished: values.isPublished,
+      };
+
+      return editing
+        ? (await api.patch(`/missions/${editing.id}`, payload)).data
+        : (await api.post('/missions', payload)).data;
+    },
+    successMessage: editing ? "Domaine d'action mis à jour." : "Domaine d'action créé.",
+    invalidate: [['admin', 'missions']],
+    onSuccess: closeForm,
+  });
+
+  const togglePublish = useAdminMutation<Mission>({
+    mutationFn: async (mission) =>
+      (await api.patch(`/missions/${mission.id}`, { isPublished: !mission.isPublished })).data,
+    successMessage: 'Statut de publication mis à jour.',
+    invalidate: [['admin', 'missions']],
+  });
+
+  const deleteMutation = useAdminMutation<string>({
+    mutationFn: async (id) => (await api.delete(`/missions/${id}`)).data,
+    successMessage: "Domaine d'action supprimé.",
+    invalidate: [['admin', 'missions']],
+    onSuccess: () => setPendingDelete(null),
+  });
+
+  const columns: Array<Column<Mission>> = [
+    {
+      key: 'image',
+      header: 'Visuel',
+      hideOnMobile: true,
+      render: (mission) =>
+        mission.image ? (
+          <img src={mission.image.url} alt="" className="h-11 w-16 rounded-lg object-cover" loading="lazy" />
+        ) : (
+          <div className="flex h-11 w-16 items-center justify-center rounded-lg bg-warm-muted">
+            <ImageIcon className="h-4 w-4 text-navy/30" />
+          </div>
+        ),
+    },
+    {
+      key: 'title',
+      header: 'Domaine',
+      render: (mission) => (
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-navy">{t(mission.title, 'Sans titre')}</p>
+          <p className="line-clamp-1 text-xs text-navy/50">{t(mission.description)}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'icon',
+      header: 'Icône',
+      render: (mission) => {
+        const Icon = resolveIcon(mission.icon);
+        return (
+          <span className="inline-flex items-center gap-2 text-navy/70">
+            <Icon className="h-4 w-4" />
+            <span className="text-xs">{mission.icon ?? '—'}</span>
+          </span>
+        );
+      },
+    },
+    {
+      key: 'status',
+      header: 'Statut',
+      render: (mission) => (
+        <Badge tone={mission.isPublished ? 'green' : 'neutral'}>
+          {mission.isPublished ? 'Publié' : 'Brouillon'}
+        </Badge>
+      ),
+    },
+  ];
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-[#172642]">Missions</h1>
-          <p className="text-gray-500 mt-1">Gérez les piliers d'action affichés sur la page d'accueil.</p>
-        </div>
-        <button 
-          onClick={() => { closeModal(); setIsModalOpen(true); }}
-          className="bg-[#172642] text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center hover:bg-[#111c30]"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Ajouter une mission
-        </button>
-      </div>
+      <PageHeader
+        title="Domaines d'action"
+        description="Les piliers d'intervention présentés sur la page d'accueil et la page « Nos actions »."
+        actions={
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4" /> Ajouter un domaine
+          </Button>
+        }
+      />
 
-      {isLoading ? (
-        <div>Chargement...</div>
+      {listQuery.isLoading ? (
+        <LoadingState />
+      ) : listQuery.isError ? (
+        <ErrorState onRetry={() => void listQuery.refetch()} />
+      ) : !listQuery.data?.length ? (
+        <EmptyState
+          icon={Target}
+          title="Vous n'avez encore aucun domaine d'action"
+          description="Décrivez les grands axes de votre association pour les présenter aux visiteurs."
+          action={
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" /> Créer un domaine d'action
+            </Button>
+          }
+        />
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-100">
-              <tr>
-                <th className="px-6 py-4 w-20">Image</th>
-                <th className="px-6 py-4">Titre</th>
-                <th className="px-6 py-4">Icône</th>
-                <th className="px-6 py-4">Statut</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {missions?.map((m: any) => (
-                <tr key={m.id} className="hover:bg-gray-50/50">
-                  <td className="px-6 py-4">
-                    {m.image ? (
-                      <img src={m.image.url} className="w-12 h-12 object-cover rounded-lg" alt="" />
-                    ) : (
-                      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center"><ImageIcon className="w-5 h-5 text-gray-400" /></div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 font-semibold text-[#172642]">{m.title?.fr}</td>
-                  <td className="px-6 py-4 text-gray-600">{m.icon}</td>
-                  <td className="px-6 py-4">
-                    <button 
-                      onClick={() => togglePublish(m)}
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${m.isPublished ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
-                    >
-                      {m.isPublished ? <><Eye className="w-3 h-3 mr-1" /> Publié</> : <><EyeOff className="w-3 h-3 mr-1" /> Brouillon</>}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button onClick={() => openEdit(m)} className="text-blue-600 hover:text-blue-800 p-2"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => deleteMutation.mutate(m.id)} className="text-red-500 hover:text-red-700 p-2 ml-2"><Trash2 className="w-4 h-4" /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={columns}
+          rows={listQuery.data}
+          rowKey={(mission) => mission.id}
+          mobileTitle={(mission) => t(mission.title, 'Sans titre')}
+          actions={(mission) => (
+            <>
+              <IconButton
+                label={mission.isPublished ? 'Dépublier' : 'Publier'}
+                icon={mission.isPublished ? EyeOff : Eye}
+                onClick={() => togglePublish.mutate(mission)}
+                disabled={togglePublish.isPending}
+              />
+              <IconButton label="Modifier" icon={Edit2} onClick={() => openEdit(mission)} />
+              <IconButton
+                label="Supprimer"
+                icon={Trash2}
+                tone="danger"
+                onClick={() => setPendingDelete(mission)}
+              />
+            </>
+          )}
+        />
       )}
 
-      {/* Modal Form */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-900/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-6 border-b border-gray-100">
-              <h2 className="text-xl font-bold text-[#172642]">{editingId ? 'Modifier' : 'Ajouter'} une mission</h2>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
+      <Modal
+        isOpen={isFormOpen}
+        onClose={closeForm}
+        title={editing ? "Modifier le domaine d'action" : "Nouveau domaine d'action"}
+        size="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>
+              Annuler
+            </Button>
+            <Button form="mission-form" type="submit" isLoading={saveMutation.isPending}>
+              {editing ? 'Enregistrer' : 'Créer'}
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="mission-form"
+          onSubmit={handleSubmit((values) => saveMutation.mutate(values))}
+          className="space-y-5"
+        >
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-5">
+              <Field label="Intitulé" htmlFor="mission-title" required error={errors.title?.message}>
+                <Input
+                  id="mission-title"
+                  placeholder="Éducation"
+                  aria-invalid={Boolean(errors.title)}
+                  {...register('title', {
+                    required: "L'intitulé est obligatoire",
+                    minLength: { value: 2, message: "L'intitulé est trop court" },
+                  })}
+                />
+              </Field>
+
+              <Field label="Icône" htmlFor="mission-icon">
+                <Select id="mission-icon" {...register('icon')}>
+                  {MISSION_ICON_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
             </div>
-            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Titre de la mission</label>
-                    <input {...register('title_fr')} required className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Icône (Lucide-react)</label>
-                    <select {...register('icon')} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
-                      <option value="GraduationCap">Éducation (GraduationCap)</option>
-                      <option value="HeartPulse">Santé (HeartPulse)</option>
-                      <option value="TreePine">Environnement (TreePine)</option>
-                      <option value="Briefcase">Insertion (Briefcase)</option>
-                      <option value="HandHeart">Solidarité (HandHeart)</option>
-                    </select>
-                  </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Image de couverture</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:bg-gray-50 transition-colors relative">
-                    <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                    {isUploading ? (
-                      <div className="py-6 flex flex-col items-center text-[#172642]"><Loader2 className="w-8 h-8 animate-spin mb-2" /><span>Upload...</span></div>
-                    ) : coverUrl ? (
-                      <img src={coverUrl} alt="Cover" className="h-24 w-full object-cover rounded-lg" />
-                    ) : (
-                      <div className="py-6 flex flex-col items-center text-gray-500"><ImageIcon className="w-8 h-8 mb-2 text-gray-400" /><span>Uploader une image</span></div>
-                    )}
-                    <input type="hidden" {...register('imageId')} />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description courte</label>
-                <textarea {...register('description_fr')} required rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
-              </div>
-
-              <div className="flex items-center mt-4">
-                <input type="checkbox" {...register('isPublished')} id="isPublished" className="w-4 h-4 text-[#172642] rounded border-gray-300" />
-                <label htmlFor="isPublished" className="ml-2 text-sm text-gray-700 font-medium">Publier sur l'accueil</label>
-              </div>
-
-              <div className="pt-6 flex justify-end gap-3 border-t border-gray-100">
-                <button type="button" onClick={closeModal} className="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 border border-gray-200">Annuler</button>
-                <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="bg-[#172642] text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-[#111c30]">
-                  Enregistrer
-                </button>
-              </div>
-            </form>
+            <MediaPicker value={cover} onChange={setCover} folder="missions" label="Illustration" />
           </div>
-        </div>
-      )}
+
+          <Field
+            label="Description"
+            htmlFor="mission-description"
+            required
+            hint="Deux à trois phrases décrivant concrètement les actions menées."
+            error={errors.description?.message}
+          >
+            <Textarea
+              id="mission-description"
+              rows={4}
+              aria-invalid={Boolean(errors.description)}
+              {...register('description', {
+                required: 'La description est obligatoire',
+                maxLength: { value: 1200, message: '1200 caractères maximum' },
+              })}
+            />
+          </Field>
+
+          <Checkbox
+            id="mission-published"
+            label="Afficher sur le site public"
+            {...register('isPublished')}
+          />
+        </form>
+      </Modal>
+
+      <ConfirmDialog
+        isOpen={Boolean(pendingDelete)}
+        title="Supprimer ce domaine d'action ?"
+        message={`« ${t(pendingDelete?.title, '')} » disparaîtra du site public. Cette action est irréversible.`}
+        isLoading={deleteMutation.isPending}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
+      />
     </div>
   );
 };

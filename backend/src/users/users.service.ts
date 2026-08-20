@@ -1,79 +1,136 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+
+const BCRYPT_ROUNDS = 12;
+
+/** Columns safe to return to a client. `passwordHash` is deliberately absent. */
+const SAFE_SELECT = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  role: true,
+  isActive: true,
+  mustChangePassword: true,
+  lastLoginAt: true,
+  createdAt: true,
+} as const;
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createUserDto: CreateUserDto) {
-    const existing = await this.prisma.user.findUnique({ where: { email: createUserDto.email } });
+  async create(dto: CreateUserDto) {
+    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) {
-      throw new ConflictException('Email already in use');
+      throw new ConflictException('Cette adresse email est déjà utilisée');
     }
 
-    const passwordHash = await bcrypt.hash(createUserDto.password, 10);
-    
-    const user = await this.prisma.user.create({
+    const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
+
+    return this.prisma.user.create({
       data: {
-        email: createUserDto.email,
+        email: dto.email,
         passwordHash,
-        firstName: createUserDto.firstName,
-        lastName: createUserDto.lastName,
-        role: createUserDto.role as any,
-        isActive: createUserDto.isActive ?? true,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        role: dto.role as any,
+        isActive: dto.isActive ?? true,
+        // A newly created account always picks its own password on first login.
+        mustChangePassword: true,
       },
-      select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true, createdAt: true }
+      select: SAFE_SELECT,
     });
-    
-    return user;
   }
 
+  /** Includes deactivated accounts so an administrator can reactivate them. */
   async findAll() {
     return this.prisma.user.findMany({
-      select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true, createdAt: true },
-      where: { isActive: true },
-      orderBy: { createdAt: 'desc' }
+      select: SAFE_SELECT,
+      orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
     });
   }
 
   async findOne(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true, createdAt: true }
-    });
-    if (!user) throw new NotFoundException('User not found');
+    const user = await this.prisma.user.findUnique({ where: { id }, select: SAFE_SELECT });
+    if (!user) throw new NotFoundException('Utilisateur introuvable');
     return user;
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto) {
-    let data: any = { ...updateUserDto };
-    
-    if (updateUserDto.password) {
-      data.passwordHash = await bcrypt.hash(updateUserDto.password, 10);
-      delete data.password;
+  async update(id: string, dto: UpdateUserDto, actingUserId: string) {
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) throw new NotFoundException('Utilisateur introuvable');
+
+    // Guard rails so an administrator cannot lock themselves - or everyone - out.
+    if (id === actingUserId) {
+      if (dto.isActive === false) {
+        throw new BadRequestException('Vous ne pouvez pas désactiver votre propre compte');
+      }
+      if (dto.role && dto.role !== target.role) {
+        throw new BadRequestException('Vous ne pouvez pas modifier votre propre rôle');
+      }
     }
 
-    try {
-      const user = await this.prisma.user.update({
-        where: { id },
-        data,
-        select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true, createdAt: true }
-      });
-      return user;
-    } catch (e) {
-      throw new NotFoundException('User not found or update failed');
+    if (dto.email && dto.email !== target.email) {
+      const clash = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      if (clash) throw new ConflictException('Cette adresse email est déjà utilisée');
     }
+
+    if (target.role === 'SUPER_ADMIN' && (dto.role !== undefined || dto.isActive === false)) {
+      await this.assertNotLastSuperAdmin(id);
+    }
+
+    const data: any = {
+      email: dto.email,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      role: dto.role,
+      isActive: dto.isActive,
+    };
+
+    if (dto.password) {
+      data.passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
+      // A password set by an administrator must be replaced by its owner.
+      data.mustChangePassword = true;
+    }
+
+    // Strip undefined so a partial update never nulls untouched columns.
+    Object.keys(data).forEach((k) => data[k] === undefined && delete data[k]);
+
+    return this.prisma.user.update({ where: { id }, data, select: SAFE_SELECT });
   }
 
-  async remove(id: string) {
-    // Soft delete
+  /** Soft delete: the account is deactivated so its audit trail stays intact. */
+  async remove(id: string, actingUserId: string) {
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) throw new NotFoundException('Utilisateur introuvable');
+
+    if (id === actingUserId) {
+      throw new BadRequestException('Vous ne pouvez pas supprimer votre propre compte');
+    }
+
+    if (target.role === 'SUPER_ADMIN') {
+      await this.assertNotLastSuperAdmin(id);
+    }
+
     return this.prisma.user.update({
       where: { id },
       data: { isActive: false },
-      select: { id: true, email: true }
+      select: SAFE_SELECT,
     });
+  }
+
+  private async assertNotLastSuperAdmin(excludingId: string) {
+    const others = await this.prisma.user.count({
+      where: { role: 'SUPER_ADMIN', isActive: true, NOT: { id: excludingId } },
+    });
+    if (others === 0) {
+      throw new BadRequestException(
+        'Impossible : ce compte est le dernier super administrateur actif.',
+      );
+    }
   }
 }

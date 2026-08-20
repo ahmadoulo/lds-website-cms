@@ -1,76 +1,112 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Settings, 
-  Menu, 
-  Target, 
-  Images, 
-  Newspaper, 
-  Users, 
-  BarChart, 
-  HeartHandshake, 
-  Image as ImageIcon,
-  ShieldCheck,
-  Building
-} from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { NavLink } from 'react-router-dom';
+import { ExternalLink, X } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
+import { NAV_GROUPS } from './navigation';
+import { cn } from '../../../lib/cn';
 
-const cn = (...inputs: (string | undefined | null | false)[]) => twMerge(clsx(inputs));
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+  unreadMessages?: number;
+}
 
-export const Sidebar = () => {
-  const location = useLocation();
+export const Sidebar = ({ isOpen, onClose, unreadMessages = 0 }: SidebarProps) => {
+  const { can } = useAuth();
 
-  const navigation = [
-    { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { name: 'Missions', href: '/admin/missions', icon: Target },
-    { name: 'News', href: '/admin/news', icon: Newspaper },
-    { name: 'Gallery', href: '/admin/gallery', icon: Images },
-    { name: 'Media Library', href: '/admin/media', icon: ImageIcon },
-    { name: 'Impact Stats', href: '/admin/impact', icon: BarChart },
-    { name: 'Partners', href: '/admin/partners', icon: Building },
-    { name: 'Donations', href: '/admin/donations', icon: HeartHandshake },
-    { name: 'Navigation', href: '/admin/navigation', icon: Menu },
-    { name: 'Users', href: '/admin/users', icon: Users },
-    { name: 'Audit Logs', href: '/admin/audit-logs', icon: ShieldCheck },
-    { name: 'Settings', href: '/admin/settings', icon: Settings },
-  ];
-
-  return (
-    <aside className="w-64 bg-[#172642] text-white flex-shrink-0 flex flex-col">
-      <div className="h-16 flex items-center px-6 border-b border-white/10">
-        <span className="text-lg font-bold font-montserrat text-white tracking-wide">
-          LDS <span className="text-[#87CE18]">CMS</span>
-        </span>
+  const content = (
+    <>
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
+        <NavLink to="/admin" className="text-lg font-bold tracking-wide text-white">
+          LDS <span className="text-green">Admin</span>
+        </NavLink>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-lg p-1 text-white/60 hover:bg-white/10 hover:text-white lg:hidden"
+          aria-label="Fermer le menu"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
-      
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        {navigation.map((item) => {
-          const isActive = location.pathname === item.href || (item.href !== '/admin' && location.pathname.startsWith(item.href));
-          
+
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5" aria-label="Navigation administration">
+        {NAV_GROUPS.map((group) => {
+          const visible = group.items.filter((item) => can(item.minRole));
+          if (!visible.length) return null;
+
           return (
-            <Link
-              key={item.name}
-              to={item.href}
-              className={cn(
-                "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
-                isActive 
-                  ? "bg-[#00A4DE] text-white shadow-sm" 
-                  : "text-gray-300 hover:bg-white/10 hover:text-white"
-              )}
-            >
-              <item.icon 
-                className={cn(
-                  "mr-3 flex-shrink-0 h-5 w-5 transition-colors",
-                  isActive ? "text-white" : "text-gray-400 group-hover:text-white"
-                )} 
-              />
-              {item.name}
-            </Link>
+            <div key={group.title}>
+              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-white/35">
+                {group.title}
+              </p>
+              <div className="space-y-0.5">
+                {visible.map((item) => (
+                  <NavLink
+                    key={item.href}
+                    to={item.href}
+                    end={item.href === '/admin'}
+                    onClick={onClose}
+                    className={({ isActive }) =>
+                      cn(
+                        'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                        isActive
+                          ? 'bg-blue text-white'
+                          : 'text-white/70 hover:bg-white/10 hover:text-white',
+                      )
+                    }
+                  >
+                    <item.icon className="h-[18px] w-[18px] shrink-0" />
+                    <span className="flex-1">{item.name}</span>
+                    {item.badge === 'unreadMessages' && unreadMessages > 0 && (
+                      <span className="rounded-full bg-orange px-2 py-0.5 text-[10px] font-bold text-white">
+                        {unreadMessages}
+                      </span>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           );
         })}
       </nav>
-    </aside>
+
+      <div className="shrink-0 border-t border-white/10 p-3">
+        <a
+          href="/"
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          <ExternalLink className="h-[18px] w-[18px]" />
+          Voir le site public
+        </a>
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile drawer */}
+      <div
+        className={cn(
+          'fixed inset-0 z-40 bg-navy/50 transition-opacity lg:hidden',
+          isOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
+        )}
+        onClick={onClose}
+        aria-hidden
+      />
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-navy transition-transform lg:hidden',
+          isOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
+      >
+        {content}
+      </aside>
+
+      {/* Desktop rail */}
+      <aside className="hidden w-64 shrink-0 flex-col bg-navy lg:flex">{content}</aside>
+    </>
   );
 };

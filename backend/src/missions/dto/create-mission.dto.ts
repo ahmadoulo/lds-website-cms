@@ -1,32 +1,34 @@
-import { IsNotEmpty, IsOptional, IsBoolean, IsNumber, IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsBoolean, IsInt, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsLocalizedText } from '../../common/dto/localized';
 
 export class CreateMissionDto {
-  @ApiProperty({ description: 'JSON object with translations (fr, en)' })
-  @IsNotEmpty()
-  title: any;
+  @ApiProperty({ example: { fr: 'Education' } })
+  @IsLocalizedText({ maxLength: 160 })
+  title: Record<string, string>;
 
-  @ApiProperty({ description: 'JSON object with translations (fr, en)' })
-  @IsNotEmpty()
-  description: any;
+  @ApiProperty()
+  @IsLocalizedText({ maxLength: 1200 })
+  description: Record<string, string>;
 
-  @ApiProperty({ required: false })
+  @ApiPropertyOptional({ description: 'lucide-react icon name' })
   @IsString()
+  @MaxLength(64)
   @IsOptional()
   icon?: string;
 
-  @ApiProperty({ required: false })
-  @IsNumber()
+  @ApiPropertyOptional()
+  @IsInt()
   @IsOptional()
   order?: number;
 
-  @ApiProperty({ required: false })
+  @ApiPropertyOptional()
   @IsBoolean()
   @IsOptional()
   isPublished?: boolean;
 
-  @ApiProperty({ required: false })
-  @IsString()
+  @ApiPropertyOptional()
+  @IsUUID()
   @IsOptional()
   imageId?: string;
 }

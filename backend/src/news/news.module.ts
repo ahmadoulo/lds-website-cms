@@ -5,5 +5,6 @@ import { NewsController } from './news.controller';
 @Module({
   controllers: [NewsController],
   providers: [NewsService],
+  exports: [NewsService],
 })
 export class NewsModule {}

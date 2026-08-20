@@ -1,9 +1,9 @@
-import { IsString, IsObject, IsNotEmpty } from 'class-validator';
+import { IsNotEmpty, IsObject } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateSettingDto {
-  @ApiProperty()
-  @IsObject()
+  @ApiProperty({ description: 'Arbitrary JSON payload for this settings key' })
+  @IsObject({ message: 'La valeur doit être un objet JSON' })
   @IsNotEmpty()
-  value: any;
+  value: Record<string, any>;
 }

@@ -1,27 +1,20 @@
 import React, { createContext, useContext } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import api from '../lib/api/axios';
+import { useSiteSettings } from '../lib/queries/publicHooks';
+import type { SiteSettings } from '../lib/types';
 
 interface SettingsContextType {
-  settings: Record<string, any>;
+  settings: SiteSettings | undefined;
   isLoading: boolean;
-  error: any;
+  error: unknown;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
-  const { data: settings, isLoading, error } = useQuery({
-    queryKey: ['public', 'settings'],
-    queryFn: async () => {
-      const { data } = await api.get('/settings');
-      return data;
-    },
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-  });
+  const { data, isLoading, error } = useSiteSettings();
 
   return (
-    <SettingsContext.Provider value={{ settings: settings || {}, isLoading, error }}>
+    <SettingsContext.Provider value={{ settings: data, isLoading, error }}>
       {children}
     </SettingsContext.Provider>
   );

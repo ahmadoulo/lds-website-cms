@@ -5,5 +5,6 @@ import { ImpactController } from './impact.controller';
 @Module({
   controllers: [ImpactController],
   providers: [ImpactService],
+  exports: [ImpactService],
 })
 export class ImpactModule {}

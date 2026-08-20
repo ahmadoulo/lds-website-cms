@@ -1,4 +1,8 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateContactDto } from './create-contact.dto';
+import { IsBoolean } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
-export class UpdateContactDto extends PartialType(CreateContactDto) {}
+export class UpdateContactDto {
+  @ApiProperty()
+  @IsBoolean()
+  isRead: boolean;
+}

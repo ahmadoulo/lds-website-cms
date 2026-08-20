@@ -1,108 +1,121 @@
 import React, { useState } from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { AlertCircle, HeartHandshake } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../lib/api/axios';
-import { HeartPulse, Loader2, AlertCircle } from 'lucide-react';
+import { apiErrorMessage } from '../../lib/api/axios';
+import { Button } from '../../components/ui/Button';
+import { Field, Input } from '../../components/ui/Field';
+import { LoadingState } from '../../components/ui/States';
 
-const loginSchema = z.object({
-  email: z.string().email('Format email invalide'),
-  password: z.string().min(6, 'Mot de passe trop court'),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
+interface FormValues {
+  email: string;
+  password: string;
+}
 
 export const AdminLogin = () => {
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, isBootstrapping } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-  });
+  } = useForm<FormValues>({ defaultValues: { email: '', password: '' } });
 
-  if (isAuthenticated) {
-    return <Navigate to="/admin" replace />;
+  if (isBootstrapping) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-warm">
+        <LoadingState label="Vérification de la session…" />
+      </div>
+    );
   }
 
-  const onSubmit = async (data: LoginFormValues) => {
+  if (isAuthenticated) {
+    const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname;
+    return <Navigate to={from ?? '/admin'} replace />;
+  }
+
+  const onSubmit = async (values: FormValues) => {
+    setError(null);
     try {
-      setError(null);
-      const response = await api.post('/auth/login', data);
-      login(response.data.access_token, response.data.user);
-      navigate('/admin');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur de connexion. Vérifiez vos identifiants.');
+      const user = await login(values.email, values.password);
+      navigate(user.mustChangePassword ? '/admin/mot-de-passe' : '/admin', { replace: true });
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Connexion impossible. Vérifiez vos identifiants.'));
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#FBF9F5] flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-montserrat">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center text-[#87CE18]">
-          <HeartPulse size={48} />
+    <div className="flex min-h-screen flex-col justify-center bg-warm px-4 py-12">
+      <div className="mx-auto w-full max-w-md">
+        <div className="mb-8 text-center">
+          <span className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-navy text-green">
+            <HeartHandshake className="h-7 w-7" />
+          </span>
+          <h1 className="text-2xl font-extrabold text-navy">
+            LDS <span className="text-green">Administration</span>
+          </h1>
+          <p className="mt-2 text-sm text-navy/60">
+            Connectez-vous pour gérer le contenu du site.
+          </p>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-[#172642]">
-          LDS <span className="text-[#87CE18]">CMS</span>
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Connectez-vous pour gérer le contenu
-        </p>
-      </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-sm sm:rounded-2xl sm:px-10 border border-gray-100">
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            
+        <div className="rounded-2xl border border-navy/8 bg-white p-6 shadow-sm sm:p-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
             {error && (
-              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md flex">
-                <AlertCircle className="h-5 w-5 text-red-400 mr-3" />
+              <div
+                role="alert"
+                className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
                 <p className="text-sm text-red-700">{error}</p>
               </div>
             )}
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  {...register('email')}
-                  type="email"
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#00A4DE] focus:border-[#00A4DE] sm:text-sm"
-                  placeholder="admin@lds-louga.org"
-                />
-                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
-              </div>
-            </div>
+            <Field label="Adresse email" htmlFor="login-email" required error={errors.email?.message}>
+              <Input
+                id="login-email"
+                type="email"
+                autoComplete="username"
+                autoFocus
+                placeholder="admin@lougasolidaire.org"
+                aria-invalid={Boolean(errors.email)}
+                {...register('email', {
+                  required: "L'adresse email est obligatoire",
+                  pattern: { value: /^\S+@\S+\.\S+$/, message: 'Adresse email invalide' },
+                })}
+              />
+            </Field>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Mot de passe</label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  {...register('password')}
-                  type="password"
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#00A4DE] focus:border-[#00A4DE] sm:text-sm"
-                />
-                {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-[#00A4DE] hover:bg-[#0092c7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00A4DE] transition-colors disabled:opacity-50"
+            <Field
+              label="Mot de passe"
+              htmlFor="login-password"
+              required
+              error={errors.password?.message}
             >
-              {isSubmitting ? <Loader2 className="animate-spin w-5 h-5" /> : 'Se connecter'}
-            </button>
+              <Input
+                id="login-password"
+                type="password"
+                autoComplete="current-password"
+                aria-invalid={Boolean(errors.password)}
+                {...register('password', { required: 'Le mot de passe est obligatoire' })}
+              />
+            </Field>
+
+            <Button type="submit" variant="secondary" fullWidth size="lg" isLoading={isSubmitting}>
+              Se connecter
+            </Button>
           </form>
         </div>
+
+        <p className="mt-6 text-center text-xs text-navy/45">
+          <a href="/" className="hover:text-navy hover:underline">
+            Retour au site public
+          </a>
+        </p>
       </div>
     </div>
   );

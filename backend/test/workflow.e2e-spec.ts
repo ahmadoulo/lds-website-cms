@@ -1,0 +1,339 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import request from 'supertest';
+import { AppModule } from './../src/app.module';
+import { PrismaService } from './../src/prisma/prisma.service';
+import { MinioService } from './../src/common/minio.service';
+import { createFakeMinio } from './fake-prisma';
+import { ADMIN, SEED_PASSWORD, createStatefulPrisma } from './stateful-prisma';
+
+/**
+ * Follows content through the whole system: an administrator creates it, the
+ * public API only exposes it once published, editing is persisted, and deleting
+ * removes it from the site. Writes are stored in memory, so this exercises the
+ * real controllers, services, guards and interceptors.
+ */
+describe('Content workflow (e2e)', () => {
+  let app: INestApplication;
+  let http: any;
+  let prisma: any;
+  let token: string;
+
+  beforeAll(async () => {
+    process.env.JWT_SECRET = 'workflow-access-secret';
+    process.env.JWT_REFRESH_SECRET = 'workflow-refresh-secret';
+    process.env.PUBLIC_API_URL = 'http://api.test';
+
+    prisma = createStatefulPrisma();
+
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .overrideProvider(MinioService)
+      .useValue(createFakeMinio())
+      .compile();
+
+    app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
+    );
+    app.setGlobalPrefix('api/v1');
+    await app.init();
+    http = app.getHttpServer();
+
+    const login = await request(http)
+      .post('/api/v1/auth/login')
+      .send({ email: ADMIN.email, password: SEED_PASSWORD })
+      .expect(200);
+
+    token = login.body.access_token;
+  });
+
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  const auth = () => ({ Authorization: `Bearer ${token}` });
+
+  describe('an article, from the admin to the public site', () => {
+    let articleId: string;
+    let slug: string;
+
+    it('creates it as a draft', async () => {
+      const res = await request(http)
+        .post('/api/v1/news')
+        .set(auth())
+        .send({
+          title: { fr: 'Rétrospective 2026' },
+          excerpt: { fr: 'Un résumé de nos actions.' },
+          content: { fr: '<p>Contenu de la rétrospective.</p><script>alert(1)</script>' },
+        })
+        .expect(201);
+
+      articleId = res.body.id;
+      slug = res.body.slug;
+
+      expect(slug).toBe('retrospective-2026');
+      expect(res.body.isPublished).toBe(false);
+      expect(res.body.publishedAt).toBeNull();
+      // The body is sanitised on the way in, not on the way out.
+      expect(res.body.content.fr).toBe('<p>Contenu de la rétrospective.</p>');
+      // A category is assigned even though none was supplied.
+      expect(res.body.categoryId).toEqual(expect.any(String));
+    });
+
+    it('keeps the draft off the public site', async () => {
+      const list = await request(http).get('/api/v1/public/news').expect(200);
+      expect(list.body.data).toHaveLength(0);
+
+      await request(http).get(`/api/v1/public/news/${slug}`).expect(404);
+    });
+
+    it('shows the draft to the signed-in administrator', async () => {
+      const res = await request(http).get('/api/v1/news').set(auth()).expect(200);
+      expect(res.body.data).toHaveLength(1);
+      expect(res.body.data[0].id).toBe(articleId);
+    });
+
+    it('publishes it and stamps the publication date', async () => {
+      const res = await request(http)
+        .patch(`/api/v1/news/${articleId}`)
+        .set(auth())
+        .send({ isPublished: true })
+        .expect(200);
+
+      expect(res.body.isPublished).toBe(true);
+      expect(res.body.publishedAt).not.toBeNull();
+    });
+
+    it('makes it visible to an anonymous visitor', async () => {
+      const list = await request(http).get('/api/v1/public/news').expect(200);
+      expect(list.body.data).toHaveLength(1);
+      expect(list.body.meta.total).toBe(1);
+
+      const detail = await request(http).get(`/api/v1/public/news/${slug}`).expect(200);
+      expect(detail.body.article.title.fr).toBe('Rétrospective 2026');
+      expect(detail.body.related).toEqual([]);
+    });
+
+    it('includes it in the homepage payload', async () => {
+      const res = await request(http).get('/api/v1/public/homepage').expect(200);
+      expect(res.body.news).toHaveLength(1);
+    });
+
+    it('persists an edit', async () => {
+      await request(http)
+        .patch(`/api/v1/news/${articleId}`)
+        .set(auth())
+        .send({ title: { fr: 'Rétrospective 2026 — mise à jour' } })
+        .expect(200);
+
+      const detail = await request(http).get(`/api/v1/public/news/${slug}`).expect(200);
+      expect(detail.body.article.title.fr).toBe('Rétrospective 2026 — mise à jour');
+    });
+
+    it('unpublishes it and clears the publication date', async () => {
+      const res = await request(http)
+        .patch(`/api/v1/news/${articleId}`)
+        .set(auth())
+        .send({ isPublished: false })
+        .expect(200);
+
+      expect(res.body.publishedAt).toBeNull();
+
+      const list = await request(http).get('/api/v1/public/news').expect(200);
+      expect(list.body.data).toHaveLength(0);
+    });
+
+    it('deletes it for good', async () => {
+      await request(http).delete(`/api/v1/news/${articleId}`).set(auth()).expect(200);
+
+      const list = await request(http).get('/api/v1/news').set(auth()).expect(200);
+      expect(list.body.data).toHaveLength(0);
+    });
+
+    it('recorded every step in the audit trail', async () => {
+      const res = await request(http).get('/api/v1/audit').set(auth()).expect(200);
+      const actions = res.body.data.map((entry: any) => `${entry.action}:${entry.resource}`);
+
+      expect(actions).toContain('LOGIN:User');
+      expect(actions).toContain('CREATE:News');
+      expect(actions).toContain('UPDATE:News');
+      expect(actions).toContain('DELETE:News');
+    });
+  });
+
+  describe('an image, from upload to the public page', () => {
+    let mediaId: string;
+    let missionId: string;
+
+    // A 1x1 PNG: real bytes, so the image decoder in MediaService accepts it.
+    const PNG = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    );
+
+    it('rejects a file that is not an image', async () => {
+      await request(http)
+        .post('/api/v1/media/upload')
+        .set(auth())
+        .attach('file', Buffer.from('%PDF-1.4 not an image'), {
+          filename: 'document.pdf',
+          contentType: 'application/pdf',
+        })
+        .expect(400);
+    });
+
+    it('rejects a file whose bytes do not match its declared type', async () => {
+      await request(http)
+        .post('/api/v1/media/upload')
+        .set(auth())
+        .attach('file', Buffer.from('this is plain text'), {
+          filename: 'fake.png',
+          contentType: 'image/png',
+        })
+        .expect(400);
+    });
+
+    it('uploads an image and stores only its metadata in the database', async () => {
+      const res = await request(http)
+        .post('/api/v1/media/upload')
+        .set(auth())
+        .field('folder', 'missions')
+        .attach('file', PNG, { filename: 'photo de louga.png', contentType: 'image/png' })
+        .expect(201);
+
+      mediaId = res.body.id;
+
+      expect(res.body.storageKey).toMatch(/^missions\//);
+      // The original name is never used as a key.
+      expect(res.body.storageKey).not.toContain('photo de louga');
+      expect(res.body.width).toBe(1);
+      expect(res.body.height).toBe(1);
+      expect(res.body.url).toBe(`http://api.test/api/v1/media/${mediaId}/file`);
+      // No binary is kept in PostgreSQL.
+      expect(res.body.data).toBeUndefined();
+      expect(res.body.buffer).toBeUndefined();
+    });
+
+    it('serves the file publicly through the API', async () => {
+      await request(http)
+        .get(`/api/v1/media/${mediaId}/file`)
+        .expect(200)
+        .expect('Content-Type', 'image/png');
+    });
+
+    it('attaches the image to a published domain of action', async () => {
+      const mission = await request(http)
+        .post('/api/v1/missions')
+        .set(auth())
+        .send({
+          title: { fr: 'Éducation' },
+          description: { fr: 'Distribution de kits scolaires.' },
+          icon: 'GraduationCap',
+          imageId: mediaId,
+          isPublished: true,
+        })
+        .expect(201);
+
+      missionId = mission.body.id;
+      expect(mission.body.image.url).toBe(`http://api.test/api/v1/media/${mediaId}/file`);
+    });
+
+    it('exposes the image URL on the public site, never the storage host', async () => {
+      const res = await request(http).get('/api/v1/public/missions').expect(200);
+
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0].image.url).toBe(`http://api.test/api/v1/media/${mediaId}/file`);
+      expect(JSON.stringify(res.body)).not.toContain('minio');
+    });
+
+    it('refuses to delete a file that content still points at', async () => {
+      const res = await request(http).delete(`/api/v1/media/${mediaId}`).set(auth()).expect(409);
+      expect(res.body.message).toMatch(/utilisé/i);
+    });
+
+    it('reports where the file is used', async () => {
+      const res = await request(http).get(`/api/v1/media/${mediaId}/usage`).set(auth()).expect(200);
+      expect(res.body.total).toBe(1);
+      expect(res.body.missions).toBe(1);
+    });
+
+    it('allows deletion once nothing references it', async () => {
+      await request(http)
+        .patch(`/api/v1/missions/${missionId}`)
+        .set(auth())
+        .send({ imageId: null })
+        .expect(200);
+
+      await request(http).delete(`/api/v1/media/${mediaId}`).set(auth()).expect(200);
+      await request(http).get(`/api/v1/media/${mediaId}`).set(auth()).expect(404);
+    });
+  });
+
+  describe('site settings drive the public pages', () => {
+    it('serves the defaults before anything is saved', async () => {
+      const res = await request(http).get('/api/v1/public/settings').expect(200);
+      expect(res.body.global_contact.email).toEqual(expect.any(String));
+    });
+
+    it('saves a partial change without wiping the rest of the section', async () => {
+      await request(http)
+        .patch('/api/v1/settings/global_contact')
+        .set(auth())
+        .send({ value: { email: 'nouveau@lougasolidaire.org' } })
+        .expect(200);
+
+      const res = await request(http).get('/api/v1/public/settings').expect(200);
+      expect(res.body.global_contact.email).toBe('nouveau@lougasolidaire.org');
+      // The phone number was not part of the payload and must survive.
+      expect(res.body.global_contact.phone).toEqual(expect.any(String));
+      expect(res.body.global_contact.phone.length).toBeGreaterThan(0);
+    });
+
+    it('rejects an unknown settings key', async () => {
+      await request(http)
+        .patch('/api/v1/settings/anything_goes')
+        .set(auth())
+        .send({ value: { a: 1 } })
+        .expect(400);
+    });
+  });
+
+  describe('the public contact form reaches the inbox', () => {
+    it('accepts a visitor message and lists it for the administrator', async () => {
+      await request(http)
+        .post('/api/v1/contact')
+        .send({
+          name: 'Aissatou Diop',
+          email: 'aissatou@example.com',
+          subject: 'Bénévolat',
+          message: 'Je souhaite rejoindre votre équipe de bénévoles à Louga.',
+        })
+        .expect(201);
+
+      const inbox = await request(http).get('/api/v1/contact').set(auth()).expect(200);
+      expect(inbox.body.data).toHaveLength(1);
+      expect(inbox.body.data[0].isRead).toBe(false);
+
+      const stats = await request(http).get('/api/v1/dashboard/stats').set(auth()).expect(200);
+      expect(stats.body.messages.unread).toBe(1);
+    });
+
+    it('marks a message as read', async () => {
+      const inbox = await request(http).get('/api/v1/contact').set(auth()).expect(200);
+      const messageId = inbox.body.data[0].id;
+
+      await request(http)
+        .patch(`/api/v1/contact/${messageId}`)
+        .set(auth())
+        .send({ isRead: true })
+        .expect(200);
+
+      const stats = await request(http).get('/api/v1/dashboard/stats').set(auth()).expect(200);
+      expect(stats.body.messages.unread).toBe(0);
+    });
+  });
+});

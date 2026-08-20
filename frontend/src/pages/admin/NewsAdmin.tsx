@@ -1,247 +1,506 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
+import { Edit2, Eye, EyeOff, FileText, ImageIcon, Plus, Tag, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
-import { Edit2, Trash2, Plus, X, Eye, EyeOff, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { useAdminMutation } from '../../lib/queries/adminHooks';
+import { PageHeader } from '../../components/admin/ui/PageHeader';
+import { DataTable, IconButton, type Column } from '../../components/admin/ui/DataTable';
+import { SearchInput } from '../../components/admin/ui/SearchInput';
+import { Pagination } from '../../components/admin/ui/Pagination';
+import { MediaPicker } from '../../components/admin/ui/MediaPicker';
+import { Modal } from '../../components/ui/Modal';
+import { Button } from '../../components/ui/Button';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { Badge } from '../../components/ui/Badge';
+import { Checkbox, Field, Input, Select, Textarea } from '../../components/ui/Field';
+import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
+import { t, type Media, type NewsArticle, type NewsCategory, type Paginated } from '../../lib/types';
+
+interface FormValues {
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  categoryId: string;
+  isPublished: boolean;
+}
+
+const EMPTY_FORM: FormValues = {
+  title: '',
+  slug: '',
+  excerpt: '',
+  content: '',
+  categoryId: '',
+  isPublished: false,
+};
 
 export const NewsAdmin = () => {
-  const queryClient = useQueryClient();
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [editing, setEditing] = useState<NewsArticle | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<NewsArticle | null>(null);
+  const [cover, setCover] = useState<Media | null>(null);
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
-  const { data: news, isLoading } = useQuery({
-    queryKey: ['admin', 'news'],
-    queryFn: async () => {
-      const { data } = await api.get('/news?admin=true');
-      return data;
-    }
+  const listQuery = useQuery({
+    queryKey: ['admin', 'news', page, search],
+    queryFn: async () =>
+      (
+        await api.get<Paginated<NewsArticle>>('/news', {
+          params: { page, limit: 10, search: search || undefined },
+        })
+      ).data,
   });
 
-  const { register, handleSubmit, reset, setValue } = useForm();
-
-  const createMutation = useMutation({
-    mutationFn: async (data: any) => api.post('/news', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'news'] });
-      queryClient.invalidateQueries({ queryKey: ['public', 'news'] });
-      closeModal();
-    }
+  const categoriesQuery = useQuery({
+    queryKey: ['admin', 'news', 'categories'],
+    queryFn: async () => (await api.get<NewsCategory[]>('/news/categories')).data,
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string, data: any }) => api.patch(`/news/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'news'] });
-      queryClient.invalidateQueries({ queryKey: ['public', 'news'] });
-      closeModal();
-    }
-  });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormValues>({ defaultValues: EMPTY_FORM });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => api.delete(`/news/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'news'] });
-      queryClient.invalidateQueries({ queryKey: ['public', 'news'] });
-    }
-  });
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('folder', 'news');
-
-    try {
-      const { data } = await api.post('/media/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setValue('imageId', data.id);
-      setCoverUrl(data.url);
-    } catch (error) {
-      console.error('Upload failed', error);
-      alert('Erreur lors du téléchargement de l\'image');
-    } finally {
-      setIsUploading(false);
-    }
+  const openCreate = () => {
+    setEditing(null);
+    setCover(null);
+    reset(EMPTY_FORM);
+    setIsFormOpen(true);
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingId(null);
-    setCoverUrl(null);
-    reset();
-  };
-
-  const openEdit = (item: any) => {
-    setEditingId(item.id);
-    setCoverUrl(item.image?.url || null);
+  const openEdit = (article: NewsArticle) => {
+    setEditing(article);
+    setCover(article.image);
     reset({
-      title_fr: item.title.fr,
-      slug: item.slug,
-      excerpt_fr: item.excerpt.fr,
-      content_fr: item.content.fr,
-      categoryId: item.categoryId || '00000000-0000-0000-0000-000000000000', // Placeholder
-      imageId: item.imageId,
-      isPublished: item.isPublished
+      title: t(article.title),
+      slug: article.slug,
+      excerpt: t(article.excerpt),
+      content: t(article.content),
+      categoryId: article.categoryId ?? '',
+      isPublished: article.isPublished,
     });
-    setIsModalOpen(true);
+    setIsFormOpen(true);
   };
 
-  const onSubmit = (data: any) => {
-    // Generate a simple slug if empty
-    const slug = data.slug || data.title_fr.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+  // Deep link from the dashboard (?edit=<id>): open the editor once the row is
+  // loaded, then drop the parameter so a refresh does not reopen the dialog.
+  const editParam = searchParams.get('edit');
+  const handledEditParam = useRef<string | null>(null);
 
-    const payload = {
-      title: { fr: data.title_fr },
-      slug,
-      excerpt: { fr: data.excerpt_fr },
-      content: { fr: data.content_fr },
-      categoryId: data.categoryId || '00000000-0000-0000-0000-000000000000', // Note: in reality, fetch categories and pick one
-      imageId: data.imageId,
-      isPublished: data.isPublished
-    };
+  useEffect(() => {
+    if (!editParam || !listQuery.data || handledEditParam.current === editParam) return;
 
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, data: payload });
-    } else {
-      createMutation.mutate(payload);
-    }
+    const article = listQuery.data.data.find((item) => item.id === editParam);
+    if (!article) return;
+
+    handledEditParam.current = editParam;
+    openEdit(article);
+
+    const next = new URLSearchParams(searchParams);
+    next.delete('edit');
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editParam, listQuery.data]);
+
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setEditing(null);
+    setCover(null);
+    reset(EMPTY_FORM);
   };
 
-  const togglePublish = (item: any) => {
-    updateMutation.mutate({ id: item.id, data: { isPublished: !item.isPublished } });
-  };
+  const saveMutation = useAdminMutation<FormValues>({
+    mutationFn: async (values) => {
+      const payload = {
+        title: { fr: values.title },
+        excerpt: { fr: values.excerpt },
+        content: { fr: values.content },
+        slug: values.slug || undefined,
+        categoryId: values.categoryId || undefined,
+        imageId: cover?.id ?? null,
+        isPublished: values.isPublished,
+      };
+
+      return editing
+        ? (await api.patch(`/news/${editing.id}`, payload)).data
+        : (await api.post('/news', payload)).data;
+    },
+    successMessage: editing ? 'Actualité mise à jour.' : 'Actualité créée.',
+    invalidate: [['admin', 'news']],
+    onSuccess: closeForm,
+  });
+
+  const togglePublish = useAdminMutation<NewsArticle>({
+    mutationFn: async (article) =>
+      (await api.patch(`/news/${article.id}`, { isPublished: !article.isPublished })).data,
+    successMessage: 'Statut de publication mis à jour.',
+    invalidate: [['admin', 'news']],
+  });
+
+  const deleteMutation = useAdminMutation<string>({
+    mutationFn: async (id) => (await api.delete(`/news/${id}`)).data,
+    successMessage: 'Actualité supprimée.',
+    invalidate: [['admin', 'news']],
+    onSuccess: () => setPendingDelete(null),
+  });
+
+  const columns: Array<Column<NewsArticle>> = [
+    {
+      key: 'image',
+      header: 'Visuel',
+      hideOnMobile: true,
+      render: (article) =>
+        article.image ? (
+          <img
+            src={article.image.url}
+            alt=""
+            className="h-11 w-16 rounded-lg object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-11 w-16 items-center justify-center rounded-lg bg-warm-muted">
+            <ImageIcon className="h-4 w-4 text-navy/30" />
+          </div>
+        ),
+    },
+    {
+      key: 'title',
+      header: 'Titre',
+      render: (article) => (
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-navy">{t(article.title, 'Sans titre')}</p>
+          <p className="truncate text-xs text-navy/45">/{article.slug}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'category',
+      header: 'Catégorie',
+      render: (article) => (
+        <span className="text-navy/70">{t(article.category?.name, '—')}</span>
+      ),
+    },
+    {
+      key: 'date',
+      header: 'Date',
+      render: (article) => (
+        <span className="text-navy/60">
+          {new Date(article.publishedAt ?? article.createdAt).toLocaleDateString('fr-FR')}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Statut',
+      render: (article) => (
+        <Badge tone={article.isPublished ? 'green' : 'neutral'}>
+          {article.isPublished ? 'Publié' : 'Brouillon'}
+        </Badge>
+      ),
+    },
+  ];
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-[#172642]">Actualités</h1>
-          <p className="text-gray-500 mt-1">Gérez les articles et annonces du site.</p>
-        </div>
-        <button 
-          onClick={() => { closeModal(); setIsModalOpen(true); }}
-          className="bg-[#00A4DE] text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center hover:bg-[#0092c7]"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Créer un article
-        </button>
+      <PageHeader
+        title="Actualités"
+        description="Articles, événements et bilans publiés sur le site."
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setIsCategoryOpen(true)}>
+              <Tag className="h-4 w-4" /> Catégories
+            </Button>
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" /> Nouvelle actualité
+            </Button>
+          </>
+        }
+      />
+
+      <div className="mb-4">
+        <SearchInput
+          value={search}
+          onChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+          placeholder="Rechercher un article…"
+        />
       </div>
 
-      {isLoading ? (
-        <div>Chargement...</div>
+      {listQuery.isLoading ? (
+        <LoadingState />
+      ) : listQuery.isError ? (
+        <ErrorState onRetry={() => void listQuery.refetch()} />
+      ) : !listQuery.data?.data.length ? (
+        <EmptyState
+          icon={FileText}
+          title={search ? 'Aucun résultat' : "Vous n'avez encore aucune actualité"}
+          description={
+            search
+              ? 'Aucun article ne correspond à votre recherche.'
+              : 'Publiez votre première actualité pour la faire apparaître sur le site.'
+          }
+          action={
+            !search && (
+              <Button onClick={openCreate}>
+                <Plus className="h-4 w-4" /> Créer une actualité
+              </Button>
+            )
+          }
+        />
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-100">
-              <tr>
-                <th className="px-6 py-4 w-20">Image</th>
-                <th className="px-6 py-4">Titre</th>
-                <th className="px-6 py-4">Date</th>
-                <th className="px-6 py-4">Statut</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {news?.map((n: any) => (
-                <tr key={n.id} className="hover:bg-gray-50/50">
-                  <td className="px-6 py-4">
-                    {n.image ? (
-                      <img src={n.image.url} className="w-12 h-12 object-cover rounded-lg" alt="" />
-                    ) : (
-                      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center"><ImageIcon className="w-5 h-5 text-gray-400" /></div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 font-semibold text-[#172642]">{n.title?.fr}</td>
-                  <td className="px-6 py-4 text-gray-600">{new Date(n.createdAt).toLocaleDateString('fr-FR')}</td>
-                  <td className="px-6 py-4">
-                    <button 
-                      onClick={() => togglePublish(n)}
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${n.isPublished ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
-                    >
-                      {n.isPublished ? <><Eye className="w-3 h-3 mr-1" /> Publié</> : <><EyeOff className="w-3 h-3 mr-1" /> Brouillon</>}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button onClick={() => openEdit(n)} className="text-blue-600 hover:text-blue-800 p-2"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => deleteMutation.mutate(n.id)} className="text-red-500 hover:text-red-700 p-2 ml-2"><Trash2 className="w-4 h-4" /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <DataTable
+            columns={columns}
+            rows={listQuery.data.data}
+            rowKey={(article) => article.id}
+            mobileTitle={(article) => t(article.title, 'Sans titre')}
+            actions={(article) => (
+              <>
+                <IconButton
+                  label={article.isPublished ? 'Dépublier' : 'Publier'}
+                  icon={article.isPublished ? EyeOff : Eye}
+                  onClick={() => togglePublish.mutate(article)}
+                  disabled={togglePublish.isPending}
+                />
+                <IconButton label="Modifier" icon={Edit2} onClick={() => openEdit(article)} />
+                <IconButton
+                  label="Supprimer"
+                  icon={Trash2}
+                  tone="danger"
+                  onClick={() => setPendingDelete(article)}
+                />
+              </>
+            )}
+          />
+          <Pagination
+            page={listQuery.data.meta.page}
+            totalPages={listQuery.data.meta.totalPages}
+            total={listQuery.data.meta.total}
+            onPageChange={setPage}
+          />
+        </>
       )}
 
-      {/* Modal Form */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-900/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-6 border-b border-gray-100">
-              <h2 className="text-xl font-bold text-[#172642]">{editingId ? 'Modifier' : 'Créer'} un article</h2>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
+      <Modal
+        isOpen={isFormOpen}
+        onClose={closeForm}
+        title={editing ? "Modifier l'actualité" : 'Nouvelle actualité'}
+        size="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>
+              Annuler
+            </Button>
+            <Button
+              form="news-form"
+              type="submit"
+              isLoading={saveMutation.isPending}
+            >
+              {editing ? 'Enregistrer' : "Créer l'actualité"}
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="news-form"
+          onSubmit={handleSubmit((values) => saveMutation.mutate(values))}
+          className="space-y-5"
+        >
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-5">
+              <Field label="Titre" htmlFor="news-title" required error={errors.title?.message}>
+                <Input
+                  id="news-title"
+                  aria-invalid={Boolean(errors.title)}
+                  {...register('title', {
+                    required: 'Le titre est obligatoire',
+                    minLength: { value: 3, message: 'Le titre est trop court' },
+                  })}
+                />
+              </Field>
+
+              <Field
+                label="Slug (adresse de la page)"
+                htmlFor="news-slug"
+                hint="Laissez vide pour le générer automatiquement à partir du titre."
+                error={errors.slug?.message}
+              >
+                <Input
+                  id="news-slug"
+                  placeholder="retrospective-2026"
+                  aria-invalid={Boolean(errors.slug)}
+                  {...register('slug', {
+                    pattern: {
+                      value: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+                      message: 'Minuscules, chiffres et tirets uniquement',
+                    },
+                  })}
+                />
+              </Field>
+
+              <Field label="Catégorie" htmlFor="news-category">
+                <Select id="news-category" {...register('categoryId')}>
+                  <option value="">Catégorie par défaut</option>
+                  {categoriesQuery.data?.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {t(category.name)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
             </div>
-            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Titre de l'article</label>
-                    <input {...register('title_fr')} required className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Slug (URL)</label>
-                    <input {...register('slug')} placeholder="genere-automatiquement" className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50" />
-                  </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Image de couverture</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:bg-gray-50 transition-colors relative">
-                    <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                    {isUploading ? (
-                      <div className="py-8 flex flex-col items-center text-[#00A4DE]"><Loader2 className="w-8 h-8 animate-spin mb-2" /><span>Upload...</span></div>
-                    ) : coverUrl ? (
-                      <img src={coverUrl} alt="Cover" className="h-32 w-full object-cover rounded-lg" />
-                    ) : (
-                      <div className="py-8 flex flex-col items-center text-gray-500"><ImageIcon className="w-8 h-8 mb-2 text-gray-400" /><span>Cliquez pour uploader une image</span></div>
-                    )}
-                    {/* Hidden input to hold the media ID */}
-                    <input type="hidden" {...register('imageId')} />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Extrait court</label>
-                <textarea {...register('excerpt_fr')} required rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contenu complet (HTML/Texte)</label>
-                <textarea {...register('content_fr')} required rows={6} className="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
-              </div>
-
-              <div className="flex items-center mt-4">
-                <input type="checkbox" {...register('isPublished')} id="isPublished" className="w-4 h-4 text-[#00A4DE] rounded border-gray-300" />
-                <label htmlFor="isPublished" className="ml-2 text-sm text-gray-700 font-medium">Publier immédiatement</label>
-              </div>
-
-              <div className="pt-6 flex justify-end gap-3 border-t border-gray-100">
-                <button type="button" onClick={closeModal} className="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 border border-gray-200">Annuler</button>
-                <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="bg-[#00A4DE] text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-[#0092c7]">
-                  Enregistrer
-                </button>
-              </div>
-            </form>
+            <MediaPicker
+              value={cover}
+              onChange={setCover}
+              folder="news"
+              label="Image de couverture"
+            />
           </div>
-        </div>
-      )}
+
+          <Field
+            label="Extrait"
+            htmlFor="news-excerpt"
+            required
+            hint="Résumé affiché sur les cartes et dans les résultats de recherche."
+            error={errors.excerpt?.message}
+          >
+            <Textarea
+              id="news-excerpt"
+              rows={2}
+              aria-invalid={Boolean(errors.excerpt)}
+              {...register('excerpt', {
+                required: "L'extrait est obligatoire",
+                maxLength: { value: 600, message: '600 caractères maximum' },
+              })}
+            />
+          </Field>
+
+          <Field
+            label="Contenu"
+            htmlFor="news-content"
+            required
+            hint="Le HTML simple est accepté (paragraphes, gras, listes, liens, images)."
+            error={errors.content?.message}
+          >
+            <Textarea
+              id="news-content"
+              rows={10}
+              aria-invalid={Boolean(errors.content)}
+              {...register('content', { required: 'Le contenu est obligatoire' })}
+            />
+          </Field>
+
+          <Checkbox
+            id="news-published"
+            label="Publier cette actualité"
+            hint="Une actualité non publiée reste visible uniquement dans l'administration."
+            {...register('isPublished')}
+          />
+        </form>
+      </Modal>
+
+      <CategoriesModal isOpen={isCategoryOpen} onClose={() => setIsCategoryOpen(false)} />
+
+      <ConfirmDialog
+        isOpen={Boolean(pendingDelete)}
+        title="Supprimer cette actualité ?"
+        message={`« ${t(pendingDelete?.title, '')} » sera définitivement supprimée du site. Cette action est irréversible.`}
+        isLoading={deleteMutation.isPending}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
+      />
     </div>
+  );
+};
+
+/** Small inline manager for the article categories. */
+const CategoriesModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const [name, setName] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<NewsCategory | null>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'news', 'categories'],
+    queryFn: async () => (await api.get<NewsCategory[]>('/news/categories')).data,
+    enabled: isOpen,
+  });
+
+  const createMutation = useAdminMutation<string>({
+    mutationFn: async (value) => (await api.post('/news/categories', { name: { fr: value } })).data,
+    successMessage: 'Catégorie créée.',
+    invalidate: [['admin', 'news']],
+    onSuccess: () => setName(''),
+  });
+
+  const deleteMutation = useAdminMutation<string>({
+    mutationFn: async (id) => (await api.delete(`/news/categories/${id}`)).data,
+    successMessage: 'Catégorie supprimée.',
+    invalidate: [['admin', 'news']],
+    onSuccess: () => setPendingDelete(null),
+  });
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Catégories d'actualités" size="md">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (name.trim().length >= 2) createMutation.mutate(name.trim());
+        }}
+        className="mb-6 flex gap-2"
+      >
+        <Input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="Nom de la catégorie"
+          aria-label="Nom de la nouvelle catégorie"
+        />
+        <Button type="submit" isLoading={createMutation.isPending} disabled={name.trim().length < 2}>
+          <Plus className="h-4 w-4" /> Ajouter
+        </Button>
+      </form>
+
+      {isLoading ? (
+        <LoadingState />
+      ) : !data?.length ? (
+        <EmptyState title="Aucune catégorie" icon={Tag} className="border-0 py-8" />
+      ) : (
+        <ul className="divide-y divide-navy/8 rounded-xl border border-navy/8">
+          {data.map((category) => (
+            <li key={category.id} className="flex items-center justify-between gap-3 px-4 py-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-navy">{t(category.name)}</p>
+                <p className="text-xs text-navy/45">
+                  /{category.slug} · {category._count?.news ?? 0} article(s)
+                </p>
+              </div>
+              <IconButton
+                label="Supprimer"
+                icon={Trash2}
+                tone="danger"
+                onClick={() => setPendingDelete(category)}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <ConfirmDialog
+        isOpen={Boolean(pendingDelete)}
+        title="Supprimer cette catégorie ?"
+        message="Les articles rattachés à cette catégorie seront conservés mais n'auront plus de catégorie."
+        isLoading={deleteMutation.isPending}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
+      />
+    </Modal>
   );
 };

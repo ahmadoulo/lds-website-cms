@@ -1,101 +1,157 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, KeyRound, Save } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { AlertCircle, KeyRound, ShieldAlert } from 'lucide-react';
+import api, { apiErrorMessage } from '../../lib/api/axios';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../lib/api/axios';
+import { useToast } from '../../components/ui/Toast';
+import { Button } from '../../components/ui/Button';
+import { Field, Input } from '../../components/ui/Field';
+
+interface FormValues {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
 
 export const ChangePasswordAdmin = () => {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const { token, updateUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password !== confirmPassword) {
-      setError('Les mots de passe ne correspondent pas.');
-      return;
-    }
-    if (password.length < 8) {
-      setError('Le mot de passe doit contenir au moins 8 caractères.');
-      return;
-    }
+  const isForced = Boolean(user?.mustChangePassword);
 
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<FormValues>({
+    defaultValues: { currentPassword: '', newPassword: '', confirmPassword: '' },
+  });
+
+  const newPassword = watch('newPassword');
+
+  const onSubmit = async (values: FormValues) => {
+    setError(null);
     try {
-      setIsLoading(true);
-      setError('');
-      
-      await api.post('/auth/change-password', { newPassword: password });
-
-      // Update local context
-      updateUser({ mustChangePassword: false });
-      navigate('/admin');
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Une erreur est survenue');
-    } finally {
-      setIsLoading(false);
+      await api.post('/auth/change-password', {
+        // On a forced first change the API does not ask for the old password.
+        currentPassword: isForced ? undefined : values.currentPassword,
+        newPassword: values.newPassword,
+      });
+      await refreshUser();
+      toast.success('Mot de passe mis à jour.');
+      navigate('/admin', { replace: true });
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Impossible de modifier le mot de passe.'));
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F2EC] flex items-center justify-center p-6 font-montserrat">
-      <div className="bg-white p-8 rounded-3xl shadow-[0_24px_50px_-18px_rgba(23,38,66,0.1)] w-full max-w-[480px]">
-        <div className="w-16 h-16 bg-[#EE7900]/10 text-[#EE7900] rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-          <ShieldAlert className="w-8 h-8" />
+    <div className="flex min-h-screen flex-col justify-center bg-warm px-4 py-12">
+      <div className="mx-auto w-full max-w-md">
+        <div className="mb-8 text-center">
+          <span className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-navy text-green">
+            <KeyRound className="h-7 w-7" />
+          </span>
+          <h1 className="text-2xl font-extrabold text-navy">Changer votre mot de passe</h1>
+          <p className="mt-2 text-sm text-navy/60">
+            {isForced
+              ? 'Pour sécuriser votre compte, choisissez un nouveau mot de passe avant de continuer.'
+              : 'Choisissez un nouveau mot de passe pour votre compte.'}
+          </p>
         </div>
-        
-        <h1 className="text-2xl font-extrabold text-[#172642] mb-3">Sécurité requise</h1>
-        <p className="text-[#172642]/70 text-[15px] leading-relaxed mb-8">
-          C'est votre première connexion. Veuillez changer votre mot de passe par défaut avant de pouvoir accéder au tableau de bord.
-        </p>
 
-        {error && (
-          <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-semibold mb-6 flex items-start gap-3 border border-red-100">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <div>
-            <label className="block text-sm font-semibold text-[#172642] mb-2">Nouveau mot de passe</label>
-            <div className="relative">
-              <KeyRound className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#FBF9F5] border border-gray-200 rounded-xl pl-12 pr-4 py-3.5 outline-none focus:border-[#EE7900] transition-colors"
-                placeholder="Au moins 8 caractères"
-              />
+        <div className="rounded-2xl border border-navy/8 bg-white p-6 shadow-sm sm:p-8">
+          {isForced && (
+            <div className="mb-6 flex items-start gap-3 rounded-lg border border-orange/25 bg-orange/5 px-4 py-3">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-orange" />
+              <p className="text-sm text-navy/75">
+                Cette étape est obligatoire lors de la première connexion.
+              </p>
             </div>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-[#172642] mb-2">Confirmer le mot de passe</label>
-            <div className="relative">
-              <KeyRound className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-              <input
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full bg-[#FBF9F5] border border-gray-200 rounded-xl pl-12 pr-4 py-3.5 outline-none focus:border-[#EE7900] transition-colors"
-                placeholder="Répétez le mot de passe"
-              />
-            </div>
-          </div>
+          )}
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-[#EE7900] hover:bg-[#172642] text-white py-4 rounded-xl font-bold text-[15px] mt-2 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-70"
-          >
-            {isLoading ? 'Enregistrement...' : <><Save className="w-4 h-4" /> Enregistrer le mot de passe</>}
-          </button>
-        </form>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+            {error && (
+              <div
+                role="alert"
+                className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+
+            {!isForced && (
+              <Field
+                label="Mot de passe actuel"
+                htmlFor="current-password"
+                required
+                error={errors.currentPassword?.message}
+              >
+                <Input
+                  id="current-password"
+                  type="password"
+                  autoComplete="current-password"
+                  aria-invalid={Boolean(errors.currentPassword)}
+                  {...register('currentPassword', {
+                    required: 'Le mot de passe actuel est obligatoire',
+                  })}
+                />
+              </Field>
+            )}
+
+            <Field
+              label="Nouveau mot de passe"
+              htmlFor="new-password"
+              required
+              hint="8 caractères minimum, avec au moins une lettre et un chiffre."
+              error={errors.newPassword?.message}
+            >
+              <Input
+                id="new-password"
+                type="password"
+                autoComplete="new-password"
+                aria-invalid={Boolean(errors.newPassword)}
+                {...register('newPassword', {
+                  required: 'Le nouveau mot de passe est obligatoire',
+                  minLength: { value: 8, message: '8 caractères minimum' },
+                  validate: (value) => {
+                    if (!/[A-Za-z]/.test(value)) return 'Au moins une lettre est requise';
+                    if (!/[0-9]/.test(value)) return 'Au moins un chiffre est requis';
+                    return true;
+                  },
+                })}
+              />
+            </Field>
+
+            <Field
+              label="Confirmer le mot de passe"
+              htmlFor="confirm-password"
+              required
+              error={errors.confirmPassword?.message}
+            >
+              <Input
+                id="confirm-password"
+                type="password"
+                autoComplete="new-password"
+                aria-invalid={Boolean(errors.confirmPassword)}
+                {...register('confirmPassword', {
+                  required: 'Veuillez confirmer le mot de passe',
+                  validate: (value) =>
+                    value === newPassword || 'Les deux mots de passe ne correspondent pas',
+                })}
+              />
+            </Field>
+
+            <Button type="submit" variant="secondary" fullWidth size="lg" isLoading={isSubmitting}>
+              Enregistrer le nouveau mot de passe
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   );

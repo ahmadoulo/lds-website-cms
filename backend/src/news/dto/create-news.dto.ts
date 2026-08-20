@@ -1,26 +1,35 @@
-import { IsString, IsObject, IsOptional, IsBoolean, IsUUID } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsLocalizedText } from '../../common/dto/localized';
 
 export class CreateNewsDto {
-  @ApiProperty({ description: 'JSON object for title in multiple languages' })
-  @IsObject()
+  @ApiProperty({ example: { fr: 'Retrospective 2026' } })
+  @IsLocalizedText({ maxLength: 250 })
   title: Record<string, string>;
 
-  @ApiProperty()
+  @ApiPropertyOptional({ description: 'Generated from the title when omitted' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
   @IsString()
-  slug: string;
+  @MaxLength(200)
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+    message: 'Le slug ne peut contenir que des minuscules, chiffres et tirets',
+  })
+  @IsOptional()
+  slug?: string;
 
-  @ApiProperty({ description: 'JSON object for excerpt' })
-  @IsObject()
+  @ApiProperty()
+  @IsLocalizedText({ maxLength: 600 })
   excerpt: Record<string, string>;
 
-  @ApiProperty({ description: 'JSON object for rich text content' })
-  @IsObject()
+  @ApiProperty({ description: 'HTML body' })
+  @IsLocalizedText({ maxLength: 100000 })
   content: Record<string, string>;
 
-  @ApiProperty()
+  @ApiPropertyOptional({ description: 'Defaults to the general category' })
   @IsUUID()
-  categoryId: string;
+  @IsOptional()
+  categoryId?: string;
 
   @ApiPropertyOptional()
   @IsUUID()

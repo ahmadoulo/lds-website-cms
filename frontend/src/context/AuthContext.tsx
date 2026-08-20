@@ -1,68 +1,122 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../lib/api/axios';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import api, { REFRESH_KEY, TOKEN_KEY, USER_KEY, clearSession } from '../lib/api/axios';
 
-interface User {
+export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'EDITOR';
+
+export interface User {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: Role;
   mustChangePassword?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
-  login: (token: string, user: User) => void;
-  logout: () => void;
-  updateUser: (updates: Partial<User>) => void;
   isAuthenticated: boolean;
+  /** True until the stored session has been re-validated against the API. */
+  isBootstrapping: boolean;
+  login: (email: string, password: string) => Promise<User>;
+  logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+  can: (minimumRole: Role) => boolean;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const ROLE_LEVEL: Record<Role, number> = { EDITOR: 1, ADMIN: 2, SUPER_ADMIN: 3 };
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function readStoredUser(): User | null {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? (JSON.parse(raw) as User) : null;
+  } catch {
+    return null;
+  }
+}
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('lds_admin_user');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [token, setToken] = useState<string | null>(localStorage.getItem('lds_admin_token'));
+  const [user, setUser] = useState<User | null>(readStoredUser);
+  const [isBootstrapping, setIsBootstrapping] = useState(Boolean(localStorage.getItem(TOKEN_KEY)));
 
+  /**
+   * A token in localStorage proves nothing - it may be expired or belong to a
+   * deactivated account. The stored session is confirmed against /auth/me before
+   * the admin UI is shown.
+   */
   useEffect(() => {
-    if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    if (!localStorage.getItem(TOKEN_KEY)) {
+      setIsBootstrapping(false);
+      return;
     }
-  }, [token]);
 
-  const login = (newToken: string, newUser: User) => {
-    localStorage.setItem('lds_admin_token', newToken);
-    localStorage.setItem('lds_admin_user', JSON.stringify(newUser));
-    setToken(newToken);
-    setUser(newUser);
-  };
+    let cancelled = false;
 
-  const logout = () => {
-    localStorage.removeItem('lds_admin_token');
-    localStorage.removeItem('lds_admin_user');
-    setToken(null);
+    api
+      .get('/auth/me')
+      .then(({ data }) => {
+        if (cancelled) return;
+        localStorage.setItem(USER_KEY, JSON.stringify(data));
+        setUser(data);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        clearSession();
+        setUser(null);
+      })
+      .finally(() => {
+        if (!cancelled) setIsBootstrapping(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const login = useCallback(async (email: string, password: string) => {
+    const { data } = await api.post('/auth/login', { email, password });
+
+    localStorage.setItem(TOKEN_KEY, data.access_token);
+    localStorage.setItem(REFRESH_KEY, data.refresh_token);
+    localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+    setUser(data.user);
+
+    return data.user as User;
+  }, []);
+
+  const logout = useCallback(async () => {
+    // Best effort: the audit trail entry must not block signing out.
+    await api.post('/auth/logout').catch(() => undefined);
+    clearSession();
     setUser(null);
-    delete api.defaults.headers.common['Authorization'];
-  };
+  }, []);
 
-  const updateUser = (updates: Partial<User>) => {
-    setUser(prev => {
-      if (!prev) return prev;
-      const updated = { ...prev, ...updates };
-      localStorage.setItem('lds_admin_user', JSON.stringify(updated));
-      return updated;
-    });
-  };
+  const refreshUser = useCallback(async () => {
+    const { data } = await api.get('/auth/me');
+    localStorage.setItem(USER_KEY, JSON.stringify(data));
+    setUser(data);
+  }, []);
 
-  return (
-    <AuthContext.Provider value={{ user, token, login, logout, updateUser, isAuthenticated: !!token }}>
-      {children}
-    </AuthContext.Provider>
+  const can = useCallback(
+    (minimumRole: Role) => Boolean(user) && ROLE_LEVEL[user!.role] >= ROLE_LEVEL[minimumRole],
+    [user],
   );
+
+  const value = useMemo(
+    () => ({
+      user,
+      isAuthenticated: Boolean(user),
+      isBootstrapping,
+      login,
+      logout,
+      refreshUser,
+      can,
+    }),
+    [user, isBootstrapping, login, logout, refreshUser, can],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

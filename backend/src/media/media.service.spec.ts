@@ -1,11 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { MediaService } from './media.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MinioService } from '../common/minio.service';
-import { BadRequestException } from '@nestjs/common';
-import * as sizeOf from 'image-size';
+import sizeOf from 'image-size';
 
-jest.mock('image-size', () => jest.fn());
+jest.mock('image-size', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
+
+const mockSizeOf = sizeOf as unknown as jest.Mock;
 
 describe('MediaService', () => {
   let service: MediaService;
@@ -16,96 +21,132 @@ describe('MediaService', () => {
       findMany: jest.fn(),
       findUnique: jest.fn(),
       delete: jest.fn(),
+      count: jest.fn(),
+      groupBy: jest.fn(),
     },
+    mission: { count: jest.fn() },
+    news: { count: jest.fn() },
+    partner: { count: jest.fn() },
+    galleryImage: { count: jest.fn() },
+    $transaction: jest.fn((ops: any[]) => Promise.all(ops)),
   };
 
   const mockMinioService = {
     uploadFile: jest.fn(),
     deleteFile: jest.fn(),
+    getFileStream: jest.fn(),
+    bucketName: 'lds-media',
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MediaService,
-        {
-          provide: PrismaService,
-          useValue: mockPrismaService,
-        },
-        {
-          provide: MinioService,
-          useValue: mockMinioService,
-        },
+        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: MinioService, useValue: mockMinioService },
       ],
     }).compile();
 
     service = module.get<MediaService>(MediaService);
+    mockSizeOf.mockReturnValue({ width: 800, height: 600 });
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  afterEach(() => jest.clearAllMocks());
+
+  const file = (over: Partial<Express.Multer.File> = {}): Express.Multer.File =>
+    ({
+      buffer: Buffer.from('fake-image-bytes'),
+      size: 1024,
+      mimetype: 'image/png',
+      originalname: 'photo de louga.png',
+      ...over,
+    }) as Express.Multer.File;
+
+  it('rejects a file above the 5 MB limit', async () => {
+    await expect(service.upload(file({ size: 6 * 1024 * 1024 }))).rejects.toThrow(BadRequestException);
+    expect(mockMinioService.uploadFile).not.toHaveBeenCalled();
   });
 
-  describe('upload validation', () => {
-    it('should reject files larger than 5MB', async () => {
-      const file = {
-        size: 6 * 1024 * 1024, // 6MB
-        mimetype: 'image/jpeg',
-        originalname: 'large.jpg',
-        buffer: Buffer.from('test'),
-      } as Express.Multer.File;
+  it('rejects a disallowed mime type', async () => {
+    await expect(service.upload(file({ mimetype: 'application/pdf' }))).rejects.toThrow(
+      BadRequestException,
+    );
+  });
 
-      await expect(service.upload(file)).rejects.toThrow(BadRequestException);
-      await expect(service.upload(file)).rejects.toThrow('File is too large');
+  it('rejects SVG uploads because they can carry script', async () => {
+    await expect(service.upload(file({ mimetype: 'image/svg+xml' }))).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('rejects bytes that do not decode as an image', async () => {
+    mockSizeOf.mockImplementation(() => {
+      throw new Error('not an image');
     });
 
-    it('should reject invalid MIME types (e.g. .exe masquerading as .jpg)', async () => {
-      const file = {
-        size: 1024,
-        mimetype: 'application/x-msdownload', // invalid mime
-        originalname: 'malicious.jpg', // safe extension
-        buffer: Buffer.from('test'),
-      } as Express.Multer.File;
+    await expect(service.upload(file())).rejects.toThrow(BadRequestException);
+    expect(mockMinioService.uploadFile).not.toHaveBeenCalled();
+  });
 
-      await expect(service.upload(file)).rejects.toThrow(BadRequestException);
-      await expect(service.upload(file)).rejects.toThrow('Invalid file type');
-    });
+  it('never uses the original filename as the storage key', async () => {
+    mockPrismaService.media.create.mockResolvedValue({ id: 'm1' });
 
-    it('should reject invalid image buffers (magic number validation via image-size)', async () => {
-      const file = {
-        size: 1024,
-        mimetype: 'image/jpeg',
-        originalname: 'fake.jpg',
-        buffer: Buffer.from('not an image'),
-      } as Express.Multer.File;
+    await service.upload(file({ originalname: '../../etc/passwd.png' }), 'news');
 
-      // Mock image-size throwing an error
-      (sizeOf as unknown as jest.Mock).mockImplementation(() => {
-        throw new TypeError('unsupported file type');
-      });
+    const key = mockMinioService.uploadFile.mock.calls[0][1];
+    // <sanitised folder>/<uuid><extension from the mime type>, never the input name.
+    expect(key).toMatch(/^news\/[^/]+\.png$/);
+    expect(key).not.toContain('..');
+    expect(key).not.toContain('passwd');
+  });
 
-      await expect(service.upload(file)).rejects.toThrow(BadRequestException);
-      await expect(service.upload(file)).rejects.toThrow('The file is not a valid image or is corrupted');
-    });
+  it('sanitises the folder name', async () => {
+    mockPrismaService.media.create.mockResolvedValue({ id: 'm1' });
 
-    it('should successfully upload valid images and sanitize filename', async () => {
-      const file = {
-        size: 1024,
-        mimetype: 'image/png',
-        originalname: 'valid!_name@.png',
-        buffer: Buffer.from('fake-png-data'),
-      } as Express.Multer.File;
+    await service.upload(file(), '../secret folder!');
 
-      (sizeOf as unknown as jest.Mock).mockReturnValue({ width: 100, height: 100 });
-      mockMinioService.uploadFile.mockResolvedValue({ url: 'http://localhost/bucket/key' });
-      mockPrismaService.media.create.mockResolvedValue({ id: 'media-1' });
+    const key = mockMinioService.uploadFile.mock.calls[0][1];
+    expect(key.startsWith('secretfolder/')).toBe(true);
+  });
 
-      const result = await service.upload(file, 'test-folder');
+  it('stores the decoded dimensions alongside the metadata', async () => {
+    mockPrismaService.media.create.mockResolvedValue({ id: 'm1' });
 
-      expect(mockMinioService.uploadFile).toHaveBeenCalled();
-      const calledKey = mockMinioService.uploadFile.mock.calls[0][1];
-      expect(calledKey).toMatch(/^test-folder\/[a-f0-9-]+\.png$/); // folder/uuid.ext
-      expect(result).toEqual({ id: 'media-1' });
-    });
+    await service.upload(file());
+
+    expect(mockPrismaService.media.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ width: 800, height: 600, bucket: 'lds-media' }),
+      }),
+    );
+  });
+
+  it('refuses to delete a file that is still in use', async () => {
+    mockPrismaService.media.findUnique.mockResolvedValue({ id: 'm1', storageKey: 'k' });
+    mockPrismaService.mission.count.mockResolvedValue(1);
+    mockPrismaService.news.count.mockResolvedValue(0);
+    mockPrismaService.partner.count.mockResolvedValue(0);
+    mockPrismaService.galleryImage.count.mockResolvedValue(0);
+
+    await expect(service.remove('m1')).rejects.toThrow(ConflictException);
+    expect(mockMinioService.deleteFile).not.toHaveBeenCalled();
+  });
+
+  it('removes the object from storage before the database row', async () => {
+    mockPrismaService.media.findUnique.mockResolvedValue({ id: 'm1', storageKey: 'news/x.png' });
+    mockPrismaService.mission.count.mockResolvedValue(0);
+    mockPrismaService.news.count.mockResolvedValue(0);
+    mockPrismaService.partner.count.mockResolvedValue(0);
+    mockPrismaService.galleryImage.count.mockResolvedValue(0);
+
+    await service.remove('m1');
+
+    expect(mockMinioService.deleteFile).toHaveBeenCalledWith('news/x.png');
+    expect(mockPrismaService.media.delete).toHaveBeenCalledWith({ where: { id: 'm1' } });
+  });
+
+  it('throws when the media does not exist', async () => {
+    mockPrismaService.media.findUnique.mockResolvedValue(null);
+    await expect(service.findOne('nope')).rejects.toThrow(NotFoundException);
   });
 });

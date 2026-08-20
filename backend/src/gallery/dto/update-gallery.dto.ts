@@ -1,4 +1,4 @@
 import { PartialType } from '@nestjs/swagger';
-import { CreateGalleryDto } from './create-gallery.dto';
+import { CreateGalleryAlbumDto } from './create-gallery.dto';
 
-export class UpdateGalleryDto extends PartialType(CreateGalleryDto) {}
+export class UpdateGalleryAlbumDto extends PartialType(CreateGalleryAlbumDto) {}

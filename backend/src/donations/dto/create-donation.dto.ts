@@ -1,33 +1,41 @@
-import { IsString, IsObject, IsBoolean, IsOptional, IsNumber } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsLocalizedText } from '../../common/dto/localized';
+
+export const DONATION_ACTION_TYPES = ['phone', 'link', 'contact', 'email'] as const;
+export const DONATION_COLORS = ['orange', 'blue', 'green', 'navy'] as const;
 
 export class CreateDonationDto {
-  @ApiProperty()
-  @IsObject()
+  @ApiProperty({ example: { fr: 'Faire un don financier' } })
+  @IsLocalizedText({ maxLength: 160 })
   title: Record<string, string>;
 
   @ApiProperty()
-  @IsObject()
+  @IsLocalizedText({ maxLength: 800 })
   description: Record<string, string>;
 
-  @ApiProperty()
-  @IsString()
+  @ApiProperty({ enum: DONATION_ACTION_TYPES })
+  @IsIn(DONATION_ACTION_TYPES as unknown as string[], {
+    message: "Type d'action invalide (phone, link, contact, email)",
+  })
   actionType: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: '+221 77 861 32 02' })
   @IsString()
+  @MinLength(1)
+  @MaxLength(300)
   actionData: string;
 
   @ApiProperty()
-  @IsObject()
+  @IsLocalizedText({ maxLength: 120 })
   actionLabel: Record<string, string>;
 
-  @ApiProperty()
-  @IsString()
+  @ApiProperty({ enum: DONATION_COLORS })
+  @IsIn(DONATION_COLORS as unknown as string[], { message: 'Couleur invalide' })
   iconColor: string;
 
   @ApiPropertyOptional()
-  @IsNumber()
+  @IsInt()
   @IsOptional()
   order?: number;
 

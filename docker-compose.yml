@@ -8,8 +8,9 @@ services:
     container_name: lds-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: ${POSTGRES_DB:-lds_db}
+    # Bound to loopback only: the database is never reachable from the internet.
     ports:
       - "127.0.0.1:5434:5432"
     networks:
@@ -28,10 +29,12 @@ services:
     container_name: lds-minio
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-SuperSecretPassword123!}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}
+    # Object storage stays private; images are streamed through the API.
+    # The console is published on loopback for administration over an SSH tunnel.
     ports:
-      - "9010:9000"
-      - "9011:9001"
+      - "127.0.0.1:9010:9000"
+      - "127.0.0.1:9011:9001"
     networks:
       - lds_network
     volumes:
@@ -39,26 +42,17 @@ services:
     command: server /data --console-address ":9001"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-
-  minio-setup:
-    image: minio/mc
-    container_name: lds-minio-setup
-    networks:
-      - lds_network
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER:-admin} ${MINIO_ROOT_PASSWORD:-SuperSecretPassword123!};
-      /usr/bin/mc mb myminio/${MINIO_BUCKET:-lds-media} --ignore-existing;
-      /usr/bin/mc policy set download myminio/${MINIO_BUCKET:-lds-media};
-      exit 0;
-      "
+      # `mc ready` is the documented probe; the HTTP endpoint is kept as a
+      # fallback so a change in the image's bundled tools cannot wedge startup.
+      test:
+        [
+          "CMD-SHELL",
+          "mc ready local || curl -sf http://localhost:9000/minio/health/live || exit 1",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
 
   backend:
     build:
@@ -66,19 +60,30 @@ services:
       dockerfile: Dockerfile
     container_name: lds-backend
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-lds_db}?schema=public
-      - MINIO_ENDPOINT=minio
-      - MINIO_PORT=9000
-      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-admin}
-      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-SuperSecretPassword123!}
-      - MINIO_BUCKET=${MINIO_BUCKET:-lds-media}
-      - JWT_SECRET=${JWT_SECRET:-super_secret_jwt_key_example}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-super_secret_jwt_refresh_key_example}
-      - ADMIN_SEED_EMAIL=${ADMIN_SEED_EMAIL:-admin@lougasolidaire.org}
-      - ADMIN_SEED_PASSWORD=${ADMIN_SEED_PASSWORD:-Password123!}
-      - CORS_ORIGIN=${FRONTEND_URL:-http://38.242.228.14:8096}
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-lds_db}?schema=public
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-admin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}
+      MINIO_BUCKET: ${MINIO_BUCKET:-lds-media}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
+      ADMIN_SEED_EMAIL: ${ADMIN_SEED_EMAIL:-admin@lougasolidaire.org}
+      ADMIN_SEED_PASSWORD: ${ADMIN_SEED_PASSWORD:?ADMIN_SEED_PASSWORD is required}
+      # Both are optional in the default single-origin setup: the browser talks
+      # to nginx, which proxies /api here, so there is no cross-origin request to
+      # authorise and the API derives its own public address from the forwarded
+      # headers. Set them only when the API is served on a separate domain.
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-}
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
+    # Not published on a public interface: the API is reached through nginx.
+    # The loopback binding keeps Swagger and debugging available over an SSH
+    # tunnel without exposing the service to the internet.
     ports:
-      - "3020:3000"
+      - "127.0.0.1:3020:3000"
     networks:
       - lds_network
     depends_on:
@@ -93,11 +98,13 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # Default fallback for local testing
-        VITE_API_URL: ${API_URL:-http://38.242.228.14:3020/api/v1}
+        # Empty means "same origin": the bundle calls /api/v1 and nginx proxies
+        # it to the backend. Only set this for a separate API domain.
+        VITE_API_URL: ${VITE_API_URL:-}
     container_name: lds-frontend
+    # The only port that needs to be reachable from the internet.
     ports:
-      - "8096:80"
+      - "${SITE_PORT:-8096}:80"
     networks:
       - lds_network
     depends_on:

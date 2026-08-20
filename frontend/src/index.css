@@ -1,25 +1,51 @@
 @import "tailwindcss";
 
 @theme {
+  /* Brand palette (see design.md) */
   --color-navy: #172642;
-  --color-green: #87CE18;
-  --color-blue: #00A4DE;
-  --color-orange: #EE7900;
-  --color-warm: #FBF9F5;
-  --color-warm-muted: #F5F2EC;
+  --color-green: #87ce18;
+  --color-blue: #00a4de;
+  --color-orange: #ee7900;
+  --color-warm: #fbf9f5;
+  --color-warm-muted: #f5f2ec;
 
-  --font-montserrat: "Montserrat", sans-serif;
-  --font-lora: "Lora", serif;
+  --font-montserrat: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-lora: "Lora", ui-serif, Georgia, serif;
 
-  --shadow-soft: 0 12px 30px -14px rgba(23,38,66,0.15);
-  --shadow-soft-hover: 0 20px 40px -14px rgba(23,38,66,0.22);
+  --shadow-soft: 0 12px 30px -14px rgba(23, 38, 66, 0.15);
+  --shadow-soft-hover: 0 20px 40px -14px rgba(23, 38, 66, 0.22);
 
   --radius-4xl: 2rem;
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Respect the visitor's motion preference across the whole site. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
   body {
-    @apply font-montserrat bg-warm text-navy antialiased;
+    @apply bg-warm font-montserrat text-navy antialiased;
+  }
+
+  /* A visible focus ring is required for keyboard navigation. */
+  :focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 2px;
   }
 }
 
@@ -27,4 +53,119 @@
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/*
+  Typography for the sanitised HTML bodies of news articles. Written as plain CSS
+  rather than a plugin so the styles are explicit and scoped to CMS content only.
+*/
+.prose-lds {
+  color: color-mix(in srgb, var(--color-navy) 80%, transparent);
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+.prose-lds > * + * {
+  margin-top: 1.25em;
+}
+
+.prose-lds h2 {
+  color: var(--color-navy);
+  font-size: 1.6em;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-top: 2em;
+}
+
+.prose-lds h3 {
+  color: var(--color-navy);
+  font-size: 1.28em;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 1.7em;
+}
+
+.prose-lds h4 {
+  color: var(--color-navy);
+  font-size: 1.1em;
+  font-weight: 700;
+  margin-top: 1.5em;
+}
+
+.prose-lds strong {
+  color: var(--color-navy);
+  font-weight: 700;
+}
+
+.prose-lds a {
+  color: var(--color-blue);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prose-lds a:hover {
+  color: var(--color-orange);
+}
+
+.prose-lds ul,
+.prose-lds ol {
+  padding-left: 1.4em;
+}
+
+.prose-lds ul {
+  list-style: disc;
+}
+
+.prose-lds ol {
+  list-style: decimal;
+}
+
+.prose-lds li + li {
+  margin-top: 0.45em;
+}
+
+.prose-lds blockquote {
+  border-left: 4px solid var(--color-green);
+  background: var(--color-warm-muted);
+  padding: 1.1em 1.4em;
+  font-family: var(--font-lora);
+  font-style: italic;
+  color: var(--color-navy);
+}
+
+.prose-lds img {
+  border-radius: 1rem;
+  max-width: 100%;
+  height: auto;
+}
+
+.prose-lds figure figcaption {
+  font-size: 0.85em;
+  color: color-mix(in srgb, var(--color-navy) 55%, transparent);
+  margin-top: 0.6em;
+  text-align: center;
+}
+
+.prose-lds hr {
+  border-color: color-mix(in srgb, var(--color-navy) 12%, transparent);
+  margin: 2.5em 0;
+}
+
+.prose-lds table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+
+.prose-lds th,
+.prose-lds td {
+  border: 1px solid color-mix(in srgb, var(--color-navy) 12%, transparent);
+  padding: 0.6em 0.9em;
+  text-align: left;
+}
+
+.prose-lds th {
+  background: var(--color-warm-muted);
+  font-weight: 700;
+  color: var(--color-navy);
 }

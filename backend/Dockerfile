@@ -1,38 +1,38 @@
-# Base stage
-FROM node:20-alpine AS base
+# ---------------------------------------------------------------- base
+FROM node:22-alpine AS base
 WORKDIR /app
-# Install OpenSSL for Prisma
+# Prisma needs OpenSSL at runtime.
 RUN apk add --no-cache openssl
 
-# Builder stage
+# ------------------------------------------------------------- builder
 FROM base AS builder
+
 COPY package*.json ./
 RUN npm ci
 
-# Copy Prisma schema and generate client
 COPY prisma ./prisma
 RUN npx prisma generate
 
-# Copy source and build
 COPY . .
 RUN npm run build
-RUN npx tsc prisma/seed.ts --module commonjs --esModuleInterop --skipLibCheck || true
 
-# Production stage
+# ---------------------------------------------------------- production
 FROM base AS production
 ENV NODE_ENV=production
 
-# Copy dependencies (we could run npm ci --only=production, but we need Prisma client which gets generated into node_modules)
-# Alternatively, copy from builder
+# node_modules is copied from the builder because it holds the generated
+# Prisma client; ts-node (a dev dependency) is what runs the seed script.
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
-
-# Create a startup script
-RUN echo 'npx prisma db push --accept-data-loss && npx prisma db seed && node dist/main.js' > start.sh
-RUN chmod +x start.sh
+COPY --from=builder /app/tsconfig.json ./
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
 
 EXPOSE 3000
 
-CMD ["./start.sh"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://127.0.0.1:3000/api/v1/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+
+CMD ["./docker-entrypoint.sh"]
