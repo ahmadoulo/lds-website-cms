@@ -2,6 +2,7 @@
 set -e
 
 BASELINE=20260101000000_init
+MAX_MIGRATION_ATTEMPTS=6
 
 fatal_credentials() {
   cat <<'MSG'
@@ -26,12 +27,28 @@ MSG
   exit 1
 }
 
+# Prisma names the offending migration in its output; that is what has to be
+# marked as applied when its objects are already in the database.
+failed_migration() {
+  printf '%s' "$1" | sed -n 's/.*[Mm]igration name: *\([0-9][0-9_a-zA-Z-]*\).*/\1/p' | head -n 1
+}
+
 echo "[startup] applying database migrations..."
 
-if output=$(npx prisma migrate deploy 2>&1); then
+attempt=0
+while : ; do
+  attempt=$((attempt + 1))
+
+  if output=$(npx prisma migrate deploy 2>&1); then
+    echo "$output"
+    break
+  fi
   echo "$output"
-else
-  echo "$output"
+
+  if [ "$attempt" -ge "$MAX_MIGRATION_ATTEMPTS" ]; then
+    echo "[startup] FATAL: migrations still failing after $attempt attempts."
+    exit 1
+  fi
 
   case "$output" in
     *P1000*) fatal_credentials ;;
@@ -39,16 +56,36 @@ else
       echo "[startup] database unreachable. Retrying on next restart."
       exit 1
       ;;
+    *P3005*)
+      # Tables exist but there is no migration history: the database predates
+      # migrations, having been created by `prisma db push`. Adopt it.
+      echo "[startup] no migration history found; adopting the existing schema..."
+      npx prisma migrate resolve --applied "$BASELINE" || {
+        echo "[startup] FATAL: could not baseline the existing schema."
+        exit 1
+      }
+      ;;
+    *"already exists"*|*P3018*)
+      # The objects a migration creates are already there, usually because a
+      # previous drift reconciliation added them. Recording it as applied lets
+      # the remaining migrations through instead of blocking every start.
+      name=$(failed_migration "$output")
+      if [ -z "$name" ]; then
+        echo "[startup] FATAL: a migration failed and could not be identified."
+        exit 1
+      fi
+      echo "[startup] \"$name\" is already present in the database; marking it as applied..."
+      npx prisma migrate resolve --applied "$name" || {
+        echo "[startup] FATAL: could not resolve migration \"$name\"."
+        exit 1
+      }
+      ;;
+    *)
+      echo "[startup] FATAL: migrations failed for a reason that needs a human."
+      exit 1
+      ;;
   esac
-
-  # P3005 and friends: the database already has the tables but no migration
-  # history, because it was created by `prisma db push` before migrations
-  # existed. Adopt it rather than rebuilding it.
-  echo "[startup] no migration history found; adopting the existing schema..."
-  npx prisma migrate resolve --applied "$BASELINE"
-  npx prisma migrate deploy
-
-fi
+done
 
 # Recording a baseline creates nothing, so a database adopted from `prisma db
 # push` keeps missing every column added after that baseline was written. The
@@ -56,7 +93,10 @@ fi
 # not lost once the baseline is recorded and `migrate deploy` starts succeeding.
 echo "[startup] comparing the database with prisma/schema.prisma..."
 drift=0
-npx prisma migrate diff   --from-url "$DATABASE_URL"   --to-schema-datamodel prisma/schema.prisma   --exit-code >/dev/null 2>&1 || drift=$?
+npx prisma migrate diff \
+  --from-url "$DATABASE_URL" \
+  --to-schema-datamodel prisma/schema.prisma \
+  --exit-code >/dev/null 2>&1 || drift=$?
 
 case "$drift" in
   0)
