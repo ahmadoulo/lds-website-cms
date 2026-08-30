@@ -13,6 +13,7 @@ import { DonationCard } from '../../components/public/DonationCard';
 import { PaymentMethodCard } from '../../components/public/PaymentMethodCard';
 import { ErrorState, SkeletonCards, Skeleton } from '../../components/ui/States';
 import { resolveIcon } from '../../lib/icons';
+import { BRAND, WARM_SURFACE, readableOn } from '../../lib/brand';
 import { t } from '../../lib/types';
 import type { GalleryImage } from '../../lib/types';
 
@@ -64,19 +65,20 @@ const Home = () => {
       />
 
       {/* ---------------------------------------------------------------- Hero */}
-      <section className="relative overflow-hidden px-6 pb-[100px] pt-[76px]">
+      <section className="relative overflow-hidden section-y">
+        {/*
+          One warm wash instead of two floating colour blobs. The brand's three
+          accents belong to content, not to decoration.
+        */}
         <div
-          className="absolute -right-[90px] -top-[90px] h-[320px] w-[320px] rounded-full bg-[radial-gradient(circle,rgba(135,206,24,0.16),transparent_70%)]"
-          aria-hidden
-        />
-        <div
-          className="absolute -bottom-[40px] -left-[110px] h-[280px] w-[280px] rounded-full bg-[radial-gradient(circle,rgba(0,164,222,0.14),transparent_70%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_78%_0%,rgba(0,164,222,0.10),transparent_62%)]"
           aria-hidden
         />
 
         <div className="relative z-10 container-page flex flex-wrap items-center gap-16">
           <div className="min-w-[min(100%,320px)] flex-[1_1_460px]">
-            <span className="mb-6 inline-block rounded-full bg-green/15 px-[18px] py-2 text-eyebrow uppercase text-[#4d7c0f]">
+            <span className="mb-6 inline-flex items-center rounded-full bg-green/15 px-4 py-2 text-eyebrow uppercase"
+              style={{ color: readableOn(BRAND.green, WARM_SURFACE) }}>
               {organization?.name ?? 'Louga Développement Solidaire'}
             </span>
 
@@ -210,7 +212,7 @@ const Home = () => {
             eyebrow="Nos domaines d'action"
             title="Nos piliers d'intervention à Louga"
             description="Nous améliorons les conditions de vie à Louga à travers des domaines d'intervention complémentaires."
-            accent="orange"
+            accent="green"
           />
 
           {isLoading ? (
@@ -254,21 +256,23 @@ const Home = () => {
             <dl className="grid grid-cols-2 gap-10 md:grid-cols-4">
               {impact.map((stat) => {
                 const Icon = stat.icon ? resolveIcon(stat.icon) : null;
+                // The band is navy: a statistic stored as navy would vanish.
+                const color = readableOn(stat.color, BRAND.navy);
 
                 return (
                   <div key={stat.id} className="flex flex-col items-center text-center">
                     {Icon && (
                       <span
                         className="mb-4 flex h-12 w-12 items-center justify-center rounded-full"
-                        style={{ backgroundColor: `${stat.color}1f`, color: stat.color }}
+                        style={{ backgroundColor: `${color}1f`, color }}
                         aria-hidden
                       >
                         <Icon className="h-6 w-6" />
                       </span>
                     )}
                     <dd
-                      className="mb-3 text-stat font-extrabold leading-none tabular-nums"
-                      style={{ color: stat.color }}
+                      className="mb-3 text-stat tabular-nums"
+                      style={{ color }}
                     >
                       <ImpactCounter value={stat.value} />
                     </dd>

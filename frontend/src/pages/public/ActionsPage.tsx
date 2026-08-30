@@ -23,7 +23,7 @@ export const ActionsPage = () => {
             eyebrow="Nos actions"
             title="Nos domaines d'intervention à Louga"
             description="Nous améliorons les conditions de vie à Louga à travers des domaines d'intervention complémentaires."
-            accent="orange"
+            accent="green"
             as="h1"
           />
 

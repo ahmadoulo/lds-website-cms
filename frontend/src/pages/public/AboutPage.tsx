@@ -77,7 +77,7 @@ export const AboutPage = () => {
       {/* Mission */}
       <section className="bg-warm-muted section-y">
         <div className="mx-auto max-w-[840px] gutter-x">
-          <SectionHeading eyebrow="Notre mission" title="Ce que nous faisons" accent="orange" />
+          <SectionHeading eyebrow="Notre mission" title="Ce que nous faisons" accent="blue" />
           <p className="text-center text-body-lg leading-[1.8] text-navy/75">
             {organization?.mission}
           </p>

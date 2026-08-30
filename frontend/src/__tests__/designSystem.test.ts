@@ -43,8 +43,10 @@ describe('design system', () => {
     expect(offenders(/text-\[(?:\d|clamp)[^\]]*\]/g)).toEqual([]);
   });
 
-  it('declares no arbitrary section padding', () => {
-    expect(offenders(/py-\[\d+px\]/g)).toEqual([]);
+  it('declares no arbitrary padding', () => {
+    // The first version only looked at `py-`, so the hero kept a pb-/pt- pair
+    // and its stale markup went unnoticed through a whole review.
+    expect(offenders(/p[trblxy]?-\[\d+px\]/g)).toEqual([]);
   });
 
   it('declares no arbitrary corner radius', () => {

@@ -23,7 +23,7 @@ export const PartnersPage = () => {
             eyebrow="Nos partenaires"
             title="Ils nous font confiance"
             description="Institutions, entreprises et associations qui rendent nos actions possibles."
-            accent="green"
+            accent="blue"
             as="h1"
           />
 
@@ -42,42 +42,45 @@ export const PartnersPage = () => {
               description="Nos partenaires seront présentés ici prochainement."
             />
           ) : (
-            <ul className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+            <ul className="flex flex-wrap justify-center gap-6">
               {partners.map((partner) => {
                 const Icon = resolveIcon(partner.icon);
                 const inner = (
                   <>
-                    <span className="mb-4 flex h-20 items-center justify-center">
+                    <span className="mb-4 flex h-14 w-full items-center justify-center">
                       {partner.logo ? (
                         <img
                           src={partner.logo.url}
                           alt={`Logo ${partner.name}`}
                           loading="lazy"
-                          className="max-h-16 w-auto max-w-full object-contain"
+                          className="max-h-14 w-auto max-w-full object-contain"
                         />
                       ) : (
-                        <Icon className="h-10 w-10 text-navy/40" aria-hidden />
+                        <Icon className="h-8 w-8 text-navy/30" aria-hidden />
                       )}
                     </span>
-                    <span className="text-center text-body font-bold text-navy">
+                    <span className="text-balance text-center text-caption font-bold text-navy">
                       {partner.name}
                     </span>
                   </>
                 );
 
                 return (
-                  <li key={partner.id}>
+                  <li
+                    key={partner.id}
+                    className="w-[calc(50%-0.75rem)] sm:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1.125rem)]"
+                  >
                     {partner.url ? (
                       <a
                         href={partner.url}
                         target="_blank"
                         rel="noreferrer noopener"
-                        className="flex h-full flex-col items-center rounded-2xl border border-navy/8 bg-white p-6 transition-all hover:-translate-y-1 hover:border-blue/40 hover:shadow-md"
+                        className="flex h-full flex-col items-center justify-center rounded-card bg-white p-5 shadow-e1 ring-1 ring-navy/5 transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-e2"
                       >
                         {inner}
                       </a>
                     ) : (
-                      <div className="flex h-full flex-col items-center rounded-2xl border border-navy/8 bg-white p-6">
+                      <div className="flex h-full flex-col items-center justify-center rounded-card bg-white p-5 shadow-e1 ring-1 ring-navy/5">
                         {inner}
                       </div>
                     )}
