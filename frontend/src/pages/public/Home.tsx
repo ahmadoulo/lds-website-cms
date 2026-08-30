@@ -224,9 +224,14 @@ const Home = () => {
               Les domaines d'action seront publiés prochainement.
             </p>
           ) : (
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-wrap justify-center gap-8">
               {missions.map((mission, index) => (
-                <MissionCard key={mission.id} mission={mission} index={index} />
+                <div
+                  key={mission.id}
+                  className="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.334rem)]"
+                >
+                  <MissionCard mission={mission} index={index} />
+                </div>
               ))}
             </div>
           )}
@@ -251,19 +256,32 @@ const Home = () => {
             </div>
 
             <dl className="grid grid-cols-2 gap-10 md:grid-cols-4">
-              {impact.map((stat) => (
-                <div key={stat.id} className="text-center">
-                  <dd
-                    className="mb-3 text-[clamp(36px,5vw,56px)] font-extrabold tabular-nums"
-                    style={{ color: stat.color }}
-                  >
-                    <ImpactCounter value={stat.value} />
-                  </dd>
-                  <dt className="text-sm font-medium uppercase tracking-wide text-white/75">
-                    {t(stat.label)}
-                  </dt>
-                </div>
-              ))}
+              {impact.map((stat) => {
+                const Icon = stat.icon ? resolveIcon(stat.icon) : null;
+
+                return (
+                  <div key={stat.id} className="flex flex-col items-center text-center">
+                    {Icon && (
+                      <span
+                        className="mb-4 flex h-12 w-12 items-center justify-center rounded-full"
+                        style={{ backgroundColor: `${stat.color}1f`, color: stat.color }}
+                        aria-hidden
+                      >
+                        <Icon className="h-6 w-6" />
+                      </span>
+                    )}
+                    <dd
+                      className="mb-3 text-[clamp(36px,5vw,56px)] font-extrabold leading-none tabular-nums"
+                      style={{ color: stat.color }}
+                    >
+                      <ImpactCounter value={stat.value} />
+                    </dd>
+                    <dt className="text-sm font-medium uppercase tracking-wide text-white/75">
+                      {t(stat.label)}
+                    </dt>
+                  </div>
+                );
+              })}
             </dl>
 
             <div className="mt-12 text-center">
@@ -368,7 +386,7 @@ const Home = () => {
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-navy/70 to-navy/95" aria-hidden />
 
-        <div className="relative z-10 mx-auto max-w-[740px]">
+        <div className="relative z-10 mx-auto max-w-[1040px]">
           <p className="mb-9 font-lora text-[clamp(26px,4.2vw,42px)] font-medium italic leading-[1.35] text-white">
             « {homepage?.ctaQuote ?? 'Ensemble, pour le développement de Louga.'} »
           </p>

@@ -4,6 +4,7 @@ import { BarChart3 } from 'lucide-react';
 import { useImpactStats } from '../../lib/queries/publicHooks';
 import { Seo } from '../../components/seo/Seo';
 import { ImpactCounter } from '../../components/public/ImpactCounter';
+import { resolveIcon } from '../../lib/icons';
 import { EmptyState, ErrorState, Skeleton } from '../../components/ui/States';
 import { t } from '../../lib/types';
 
@@ -53,19 +54,32 @@ export const ImpactPage = () => {
             />
           ) : (
             <dl className="grid grid-cols-2 gap-8 md:grid-cols-4 md:gap-12">
-              {stats.map((stat) => (
-                <div key={stat.id} className="group text-center">
-                  <dd
-                    className="mb-3 text-5xl font-extrabold tabular-nums transition-transform duration-500 group-hover:scale-105 md:text-[64px]"
-                    style={{ color: stat.color }}
-                  >
-                    <ImpactCounter value={stat.value} />
-                  </dd>
-                  <dt className="text-sm font-medium uppercase tracking-wide text-white/80 md:text-base">
-                    {t(stat.label)}
-                  </dt>
-                </div>
-              ))}
+              {stats.map((stat) => {
+                const Icon = stat.icon ? resolveIcon(stat.icon) : null;
+
+                return (
+                  <div key={stat.id} className="group flex flex-col items-center text-center">
+                    {Icon && (
+                      <span
+                        className="mb-5 flex h-14 w-14 items-center justify-center rounded-full"
+                        style={{ backgroundColor: `${stat.color}1f`, color: stat.color }}
+                        aria-hidden
+                      >
+                        <Icon className="h-7 w-7" />
+                      </span>
+                    )}
+                    <dd
+                      className="mb-3 text-5xl font-extrabold leading-none tabular-nums transition-transform duration-500 group-hover:scale-105 md:text-[64px]"
+                      style={{ color: stat.color }}
+                    >
+                      <ImpactCounter value={stat.value} />
+                    </dd>
+                    <dt className="text-sm font-medium uppercase tracking-wide text-white/80 md:text-base">
+                      {t(stat.label)}
+                    </dt>
+                  </div>
+                );
+              })}
             </dl>
           )}
 

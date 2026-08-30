@@ -94,7 +94,7 @@ const COLUMN_DEFAULTS: Record<string, Record<string, unknown>> = {
   galleryAlbum: { order: 0, isPublished: false },
   galleryImage: { order: 0 },
   partner: { order: 0, isPublished: true, logoId: null, url: null, icon: null },
-  impactStatistic: { order: 0, isPublished: true },
+  impactStatistic: { order: 0, isPublished: true, icon: null },
   donationMethod: {
     order: 0,
     isPublished: true,

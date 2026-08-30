@@ -1,4 +1,5 @@
 import {
+  Backpack,
   Briefcase,
   Building2,
   GraduationCap,
@@ -16,6 +17,11 @@ import {
   Droplets,
   BookOpen,
   Stethoscope,
+  HandCoins,
+  Home,
+  School,
+  Trees,
+  UserCheck,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -25,6 +31,12 @@ import {
  * instead of crashing the render.
  */
 export const CONTENT_ICONS: Record<string, LucideIcon> = {
+  Backpack,
+  HandCoins,
+  Home,
+  School,
+  Trees,
+  UserCheck,
   GraduationCap,
   BookOpen,
   HeartPulse,
@@ -57,6 +69,28 @@ export const MISSION_ICON_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'Users', label: 'Communauté' },
   { value: 'Utensils', label: 'Alimentation' },
   { value: 'Droplets', label: 'Accès à l\u2019eau' },
+];
+
+/**
+ * Pictograms for the key figures. Chosen to read at a glance next to a number,
+ * which is why they lean concrete (a backpack, a tree) rather than abstract.
+ */
+export const IMPACT_ICON_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'Backpack', label: 'Kits scolaires (sac à dos)' },
+  { value: 'GraduationCap', label: 'Élèves accompagnés (diplôme)' },
+  { value: 'School', label: 'Établissements (école)' },
+  { value: 'BookOpen', label: 'Formation (livre)' },
+  { value: 'Stethoscope', label: 'Patients soignés (stéthoscope)' },
+  { value: 'HeartPulse', label: 'Santé (pouls)' },
+  { value: 'Trees', label: 'Arbres plantés (forêt)' },
+  { value: 'Leaf', label: 'Environnement (feuille)' },
+  { value: 'Droplets', label: "Accès à l'eau (gouttes)" },
+  { value: 'Utensils', label: 'Repas distribués (couverts)' },
+  { value: 'Users', label: 'Bénéficiaires (personnes)' },
+  { value: 'UserCheck', label: 'Bénévoles (personne validée)' },
+  { value: 'HandCoins', label: 'Dons collectés (main et pièces)' },
+  { value: 'Home', label: 'Familles aidées (maison)' },
+  { value: 'HandHeart', label: 'Actions solidaires (main et cœur)' },
 ];
 
 export const PARTNER_ICON_OPTIONS: Array<{ value: string; label: string }> = [

@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsOptional, Matches, Max, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsLocalizedText } from '../../common/dto/localized';
 
@@ -18,6 +18,12 @@ export class CreateImpactDto {
     message: 'La couleur doit être un code hexadécimal (#87CE18)',
   })
   color: string;
+
+  @ApiPropertyOptional({ description: 'lucide-react icon name shown above the figure' })
+  @IsString()
+  @MaxLength(64)
+  @IsOptional()
+  icon?: string | null;
 
   @ApiPropertyOptional()
   @IsInt()

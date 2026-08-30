@@ -38,9 +38,14 @@ export const ActionsPage = () => {
               description="Nos domaines d'intervention seront présentés ici prochainement."
             />
           ) : (
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-wrap justify-center gap-8">
               {missions.map((mission, index) => (
-                <MissionCard key={mission.id} mission={mission} index={index} />
+                <div
+                  key={mission.id}
+                  className="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.334rem)]"
+                >
+                  <MissionCard mission={mission} index={index} />
+                </div>
               ))}
             </div>
           )}

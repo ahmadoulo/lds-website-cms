@@ -213,10 +213,10 @@ async function seedImpact() {
   if ((await prisma.impactStatistic.count()) > 0) return;
 
   const stats = [
-    { label: { fr: 'Kits scolaires distribués', en: 'School kits distributed' }, value: 620, color: '#87CE18', order: 0, isPublished: true },
-    { label: { fr: 'Élèves accompagnés', en: 'Students supported' }, value: 240, color: '#EE7900', order: 1, isPublished: true },
-    { label: { fr: 'Patients soignés gratuitement', en: 'Patients treated for free' }, value: 608, color: '#00A4DE', order: 2, isPublished: true },
-    { label: { fr: 'Arbres plantés', en: 'Trees planted' }, value: 20, color: '#172642', order: 3, isPublished: true },
+    { label: { fr: 'Kits scolaires distribués', en: 'School kits distributed' }, value: 620, color: '#87CE18', icon: 'Backpack', order: 0, isPublished: true },
+    { label: { fr: 'Élèves accompagnés', en: 'Students supported' }, value: 240, color: '#EE7900', icon: 'GraduationCap', order: 1, isPublished: true },
+    { label: { fr: 'Patients soignés gratuitement', en: 'Patients treated for free' }, value: 608, color: '#00A4DE', icon: 'Stethoscope', order: 2, isPublished: true },
+    { label: { fr: 'Arbres plantés', en: 'Trees planted' }, value: 20, color: '#87CE18', icon: 'Trees', order: 3, isPublished: true },
   ];
 
   for (const stat of stats) await prisma.impactStatistic.create({ data: stat });
@@ -231,7 +231,7 @@ async function seedPartners() {
   const partners = [
     { name: 'Institut Islamique Manar Al Houda', icon: 'Landmark', isPublished: true, order: 0 },
     { name: 'LaMe', icon: 'HeartPulse', isPublished: true, order: 1 },
-    { name: 'Orange Money', icon: 'Smartphone', isPublished: true, order: 2 },
+    { name: 'YOM France (Ya Oummata Mouhamad)', icon: 'Users', isPublished: true, order: 2 },
   ];
 
   for (const partner of partners) await prisma.partner.create({ data: partner });

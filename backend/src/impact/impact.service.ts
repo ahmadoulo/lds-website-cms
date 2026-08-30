@@ -9,7 +9,11 @@ export class ImpactService {
 
   async create(dto: CreateImpactDto) {
     const order = dto.order ?? (await this.nextOrder());
-    return this.prisma.impactStatistic.create({ data: { ...dto, order } });
+    // An empty icon means "no pictogram", stored as NULL so the site has one
+    // thing to check rather than two.
+    return this.prisma.impactStatistic.create({
+      data: { ...dto, order, icon: dto.icon || null },
+    });
   }
 
   async findAll(includeUnpublished = false) {
@@ -27,7 +31,9 @@ export class ImpactService {
 
   async update(id: string, dto: UpdateImpactDto) {
     await this.findOne(id);
-    return this.prisma.impactStatistic.update({ where: { id }, data: dto });
+    const data: any = { ...dto };
+    if (dto.icon !== undefined) data.icon = dto.icon || null;
+    return this.prisma.impactStatistic.update({ where: { id }, data });
   }
 
   async remove(id: string) {

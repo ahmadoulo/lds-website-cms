@@ -86,6 +86,8 @@ export interface ImpactStat {
   label: Localized;
   value: number;
   color: string;
+  /** lucide-react icon name, or null to show the figure alone. */
+  icon: string | null;
   order: number;
   isPublished: boolean;
 }

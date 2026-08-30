@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { BarChart3, Edit2, Eye, EyeOff, Plus, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
+import { IMPACT_ICON_OPTIONS, resolveIcon } from '../../lib/icons';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
 import { PreviewButton } from '../../components/admin/ui/PreviewButton';
@@ -11,7 +12,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Badge } from '../../components/ui/Badge';
-import { Checkbox, Field, Input } from '../../components/ui/Field';
+import { Checkbox, Field, Input, Select } from '../../components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { t, type ImpactStat } from '../../lib/types';
 
@@ -19,6 +20,7 @@ interface FormValues {
   label: string;
   value: number;
   color: string;
+  icon: string;
   isPublished: boolean;
 }
 
@@ -29,7 +31,13 @@ const BRAND_COLORS = [
   { value: '#172642', label: 'Bleu nuit' },
 ];
 
-const EMPTY_FORM: FormValues = { label: '', value: 0, color: BRAND_COLORS[0].value, isPublished: true };
+const EMPTY_FORM: FormValues = {
+  label: '',
+  value: 0,
+  color: BRAND_COLORS[0].value,
+  icon: '',
+  isPublished: true,
+};
 
 export const ImpactAdmin = () => {
   const [editing, setEditing] = useState<ImpactStat | null>(null);
@@ -63,6 +71,7 @@ export const ImpactAdmin = () => {
       label: t(stat.label),
       value: stat.value,
       color: stat.color,
+      icon: stat.icon ?? '',
       isPublished: stat.isPublished,
     });
     setIsFormOpen(true);
@@ -80,6 +89,8 @@ export const ImpactAdmin = () => {
         label: { fr: values.label },
         value: Number(values.value),
         color: values.color,
+        // Empty means "no pictogram"; the figure is then shown on its own.
+        icon: values.icon || null,
         isPublished: values.isPublished,
       };
 
@@ -119,7 +130,23 @@ export const ImpactAdmin = () => {
     {
       key: 'label',
       header: 'Intitulé',
-      render: (stat) => <span className="font-semibold text-navy">{t(stat.label)}</span>,
+      render: (stat) => {
+        const Icon = stat.icon ? resolveIcon(stat.icon) : null;
+        return (
+          <span className="inline-flex items-center gap-2 font-semibold text-navy">
+            {Icon && (
+              <span
+                className="flex h-7 w-7 items-center justify-center rounded-full"
+                style={{ backgroundColor: `${stat.color}1f`, color: stat.color }}
+                aria-hidden
+              >
+                <Icon className="h-4 w-4" />
+              </span>
+            )}
+            {t(stat.label)}
+          </span>
+        );
+      },
     },
     {
       key: 'color',
@@ -247,6 +274,21 @@ export const ImpactAdmin = () => {
                 min: { value: 0, message: 'La valeur doit être positive' },
               })}
             />
+          </Field>
+
+          <Field
+            label="Pictogramme"
+            htmlFor="impact-icon"
+            hint="Affiché au-dessus du chiffre sur le site. Laissez vide pour n'afficher que le nombre."
+          >
+            <Select id="impact-icon" {...register('icon')}>
+              <option value="">Aucun pictogramme</option>
+              {IMPACT_ICON_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
           </Field>
 
           <Field label="Couleur" htmlFor="impact-color" hint="Utilisez une couleur de la charte.">

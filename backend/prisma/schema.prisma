@@ -208,6 +208,8 @@ model ImpactStatistic {
   label       Json // { "fr": "...", "en": "..." }
   value       Int
   color       String // hex code for visual identity
+  /// lucide-react icon name shown above the figure. NULL renders the number alone.
+  icon        String?
   order       Int     @default(0)
   isPublished Boolean @default(true)
 

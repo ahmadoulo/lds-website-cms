@@ -342,6 +342,51 @@ describe('Content workflow (e2e)', () => {
     });
   });
 
+  describe('key figures carry a pictogram', () => {
+    let statId: string;
+
+    it('accepts a figure with an icon', async () => {
+      const res = await request(http)
+        .post('/api/v1/impact')
+        .set(auth())
+        .send({
+          label: { fr: 'Kits scolaires distribués' },
+          value: 620,
+          color: '#87CE18',
+          icon: 'Backpack',
+        })
+        .expect(201);
+
+      statId = res.body.id;
+      expect(res.body.icon).toBe('Backpack');
+    });
+
+    it('serves the icon to the public site', async () => {
+      const res = await request(http).get('/api/v1/public/impact').expect(200);
+      expect(res.body.find((s: any) => s.id === statId).icon).toBe('Backpack');
+    });
+
+    it('stores an omitted icon as null rather than an empty string', async () => {
+      const res = await request(http)
+        .post('/api/v1/impact')
+        .set(auth())
+        .send({ label: { fr: 'Sans pictogramme' }, value: 5, color: '#00A4DE' })
+        .expect(201);
+
+      expect(res.body.icon).toBeNull();
+    });
+
+    it('clears the icon back to null', async () => {
+      const res = await request(http)
+        .patch(`/api/v1/impact/${statId}`)
+        .set(auth())
+        .send({ icon: '' })
+        .expect(200);
+
+      expect(res.body.icon).toBeNull();
+    });
+  });
+
   describe('media library housekeeping', () => {
     const PNG = Buffer.from(
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
