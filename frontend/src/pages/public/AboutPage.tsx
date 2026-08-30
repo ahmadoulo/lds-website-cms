@@ -27,9 +27,9 @@ export const AboutPage = () => {
         image={settings?.seo.ogImage?.url ?? photo?.url}
       />
 
-      <section className="bg-white px-6 py-[90px]">
-        <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-16">
-          <div className="min-w-[300px] flex-[1_1_440px]">
+      <section className="bg-white section-y">
+        <div className="container-page flex flex-wrap items-center gap-16">
+          <div className="min-w-[min(100%,300px)] flex-[1_1_440px]">
             <SectionHeading
               eyebrow="Qui sommes-nous"
               title="L'association au service des Lougatois"
@@ -46,10 +46,10 @@ export const AboutPage = () => {
               </div>
             ) : (
               <>
-                <p className="mb-6 text-[17px] leading-[1.75] text-navy/75">{organization?.about}</p>
+                <p className="mb-6 text-body-lg leading-[1.75] text-navy/75">{organization?.about}</p>
                 {organization?.quote && (
                   <blockquote className="border-l-4 border-green bg-warm-muted/60 p-6">
-                    <p className="font-lora text-[19px] italic leading-relaxed text-navy">
+                    <p className="font-lora text-lead italic leading-relaxed text-navy">
                       {organization.quote}
                     </p>
                   </blockquote>
@@ -58,12 +58,12 @@ export const AboutPage = () => {
             )}
           </div>
 
-          <div className="min-w-[300px] flex-[1_1_380px]">
+          <div className="min-w-[min(100%,300px)] flex-[1_1_380px]">
             {photo ? (
               <img
                 src={photo.url}
                 alt={photo.altText?.fr || "Action de l'association sur le terrain"}
-                className="aspect-[4/3] w-full rounded-2xl object-cover shadow-[0_24px_50px_-18px_rgba(23,38,66,0.3)]"
+                className="aspect-[4/3] w-full rounded-2xl object-cover shadow-e4"
               />
             ) : (
               <div className="flex aspect-[4/3] w-full items-center justify-center rounded-2xl bg-warm-muted">
@@ -75,16 +75,16 @@ export const AboutPage = () => {
       </section>
 
       {/* Mission */}
-      <section className="bg-warm-muted px-6 py-[90px]">
-        <div className="mx-auto max-w-[840px]">
+      <section className="bg-warm-muted section-y">
+        <div className="mx-auto max-w-[840px] gutter-x">
           <SectionHeading eyebrow="Notre mission" title="Ce que nous faisons" accent="orange" />
-          <p className="text-center text-[17px] leading-[1.8] text-navy/75">
+          <p className="text-center text-body-lg leading-[1.8] text-navy/75">
             {organization?.mission}
           </p>
           <div className="mt-10 text-center">
             <Link
               to="/nos-actions"
-              className="group inline-flex items-center gap-2 rounded-full bg-navy px-7 py-3.5 text-[14.5px] font-bold text-white transition-colors hover:bg-blue"
+              className="group inline-flex items-center gap-2 rounded-full bg-navy px-7 py-3.5 text-body font-bold text-white transition-colors hover:bg-blue"
             >
               Découvrir nos domaines d'action
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
@@ -95,16 +95,16 @@ export const AboutPage = () => {
 
       {/* Key figures */}
       {impact && impact.length > 0 && (
-        <section className="bg-navy px-6 py-[80px]">
-          <div className="mx-auto max-w-[1080px]">
-            <h2 className="mb-12 text-center text-[clamp(24px,3vw,32px)] font-extrabold text-white">
+        <section className="bg-navy section-y-sm">
+          <div className="mx-auto max-w-[1080px] gutter-x">
+            <h2 className="mb-12 text-center text-h2 font-extrabold text-white">
               Notre impact en chiffres
             </h2>
             <dl className="grid grid-cols-2 gap-10 md:grid-cols-4">
               {impact.map((stat) => (
                 <div key={stat.id} className="text-center">
                   <dd
-                    className="mb-2 text-[clamp(32px,4vw,48px)] font-extrabold tabular-nums"
+                    className="mb-2 text-h1 font-extrabold tabular-nums"
                     style={{ color: stat.color }}
                   >
                     <ImpactCounter value={stat.value} />
@@ -118,8 +118,8 @@ export const AboutPage = () => {
       )}
 
       {/* Contact details */}
-      <section className="bg-white px-6 py-[90px]">
-        <div className="mx-auto max-w-[900px]">
+      <section className="bg-white section-y">
+        <div className="mx-auto max-w-[900px] gutter-x">
           <SectionHeading eyebrow="Nous joindre" title="Nos coordonnées" />
 
           <div className="grid gap-6 sm:grid-cols-3">

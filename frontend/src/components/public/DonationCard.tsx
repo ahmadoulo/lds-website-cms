@@ -27,7 +27,7 @@ export const DonationCard = ({ method }: { method: DonationMethod }) => {
   };
 
   return (
-    <div className="flex flex-col rounded-[20px] border border-navy/6 bg-white p-8 shadow-[0_12px_30px_-16px_rgba(23,38,66,0.12)] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_24px_50px_-14px_rgba(23,38,66,0.15)]">
+    <div className="flex flex-col rounded-card border border-navy/6 bg-white p-8 shadow-e2 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-e3">
       <span
         className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg ${colors.bg}`}
         aria-hidden
@@ -35,7 +35,7 @@ export const DonationCard = ({ method }: { method: DonationMethod }) => {
         <Heart className="h-6 w-6" />
       </span>
 
-      <h3 className="mb-3 text-[20px] font-extrabold text-navy">{t(method.title)}</h3>
+      <h3 className="mb-3 text-h3 font-extrabold text-navy">{t(method.title)}</h3>
       <p className="mb-7 flex-1 leading-relaxed text-navy/70">{t(method.description)}</p>
 
       {method.actionType === 'phone' ? (

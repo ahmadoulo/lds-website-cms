@@ -1,8 +1,8 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { Target } from 'lucide-react';
 import { useMissions } from '../../lib/queries/publicHooks';
 import { Seo } from '../../components/seo/Seo';
+import { CtaLink } from '../../components/public/CtaLink';
 import { SectionHeading } from '../../components/public/SectionHeading';
 import { MissionCard } from '../../components/public/MissionCard';
 import { EmptyState, ErrorState, SkeletonCards } from '../../components/ui/States';
@@ -17,8 +17,8 @@ export const ActionsPage = () => {
         description="Les domaines d'intervention de Louga Développement Solidaire : éducation, santé, environnement, insertion professionnelle et solidarité."
       />
 
-      <div className="min-h-[60vh] bg-warm-muted px-6 py-[90px]">
-        <div className="mx-auto max-w-[1280px]">
+      <div className="min-h-[60vh] bg-warm-muted section-y">
+        <div className="container-page">
           <SectionHeading
             eyebrow="Nos actions"
             title="Nos domaines d'intervention à Louga"
@@ -51,18 +51,13 @@ export const ActionsPage = () => {
           )}
 
           <div className="mt-16 rounded-2xl bg-navy px-6 py-12 text-center">
-            <h2 className="mb-4 text-[clamp(22px,2.6vw,28px)] font-extrabold text-white">
+            <h2 className="mb-4 text-h2 font-extrabold text-white">
               Vous souhaitez soutenir nos actions ?
             </h2>
             <p className="mx-auto mb-8 max-w-xl text-white/70">
               Un don, du temps ou du matériel : chaque contribution nous permet d'aller plus loin.
             </p>
-            <Link
-              to="/nous-soutenir"
-              className="inline-block rounded-full bg-orange px-8 py-3.5 font-bold text-white transition-colors hover:bg-green"
-            >
-              Nous soutenir
-            </Link>
+            <CtaLink to="/nous-soutenir">Nous soutenir</CtaLink>
           </div>
         </div>
       </div>

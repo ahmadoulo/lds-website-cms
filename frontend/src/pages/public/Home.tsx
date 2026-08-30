@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ImageIcon, Users } from 'lucide-react';
+import { ArrowRight, Heart, ImageIcon, Users } from 'lucide-react';
 import { useHomepage } from '../../lib/queries/publicHooks';
 import { Seo } from '../../components/seo/Seo';
+import { CtaLink } from '../../components/public/CtaLink';
 import { SectionHeading } from '../../components/public/SectionHeading';
 import { MissionCard } from '../../components/public/MissionCard';
 import { NewsCard } from '../../components/public/NewsCard';
@@ -73,9 +74,9 @@ const Home = () => {
           aria-hidden
         />
 
-        <div className="relative z-10 mx-auto flex max-w-[1280px] flex-wrap items-center gap-16">
-          <div className="min-w-[320px] flex-[1_1_460px]">
-            <span className="mb-6 inline-block rounded-full bg-green/15 px-[18px] py-2 text-[12.5px] font-bold uppercase tracking-wider text-[#4d7c0f]">
+        <div className="relative z-10 container-page flex flex-wrap items-center gap-16">
+          <div className="min-w-[min(100%,320px)] flex-[1_1_460px]">
+            <span className="mb-6 inline-block rounded-full bg-green/15 px-[18px] py-2 text-eyebrow uppercase text-[#4d7c0f]">
               {organization?.name ?? 'Louga Développement Solidaire'}
             </span>
 
@@ -87,34 +88,29 @@ const Home = () => {
               </>
             ) : (
               <>
-                <h1 className="mb-[22px] text-[clamp(32px,4.6vw,52px)] font-extrabold leading-[1.14] text-navy">
+                <h1 className="mb-[22px] text-h1 font-extrabold leading-[1.14] text-navy">
                   {homepage?.heroTitle}
                 </h1>
-                <p className="mb-9 max-w-[520px] text-[18.5px] leading-relaxed text-navy/70">
+                <p className="mb-9 max-w-[520px] text-lead leading-relaxed text-navy/70">
                   {homepage?.heroSubtitle}
                 </p>
               </>
             )}
 
             <div className="flex flex-wrap gap-4">
-              <Link
-                to="/nous-soutenir"
-                className="rounded-full bg-orange px-8 py-4 text-[15.5px] font-bold text-white shadow-[0_14px_28px_-10px_rgba(238,121,0,0.55)] transition-transform hover:-translate-y-1"
-              >
-                Faire un don
-              </Link>
-              <Link
-                to="/nos-actions"
-                className="rounded-full border-[1.5px] border-navy/15 bg-white px-8 py-4 text-[15.5px] font-bold text-navy transition-colors hover:border-navy"
-              >
+              <CtaLink to="/nous-soutenir" size="lg">
+                <Heart className="h-4 w-4" aria-hidden /> Faire un don
+              </CtaLink>
+              <CtaLink to="/nos-actions" variant="secondary" size="lg">
                 Découvrir nos actions
-              </Link>
+              </CtaLink>
             </div>
           </div>
 
-          <div className="relative min-w-[280px] max-w-[400px] flex-[1_1_320px]">
+          <div className="relative min-w-[min(100%,280px)] max-w-[400px] flex-[1_1_320px]">
+            {/* Offset frame: one accent colour, squared off behind the photo. */}
             <div
-              className="absolute -inset-4 rotate-3 rounded-[32px] bg-gradient-to-br from-green via-blue to-orange opacity-20"
+              className="absolute -bottom-4 -right-4 top-8 left-8 rounded-panel bg-green/20"
               aria-hidden
             />
             {heroImage ? (
@@ -125,24 +121,24 @@ const Home = () => {
                 height={1200}
                 fetchPriority="high"
                 decoding="async"
-                className="relative aspect-[3/4] w-full rounded-[26px] object-cover shadow-[0_30px_60px_-20px_rgba(23,38,66,0.35)]"
+                className="relative aspect-[3/4] w-full rounded-panel object-cover shadow-e4"
               />
             ) : (
-              <div className="relative flex aspect-[3/4] w-full items-center justify-center rounded-[26px] bg-warm-muted shadow-[0_30px_60px_-20px_rgba(23,38,66,0.2)]">
+              <div className="relative flex aspect-[3/4] w-full items-center justify-center rounded-panel bg-warm-muted shadow-e4">
                 <ImageIcon className="h-10 w-10 text-navy/15" aria-hidden />
               </div>
             )}
 
             {homepage?.heroBadgeTitle && (
-              <div className="absolute -bottom-5 -left-5 flex items-center gap-3 rounded-2xl bg-white px-5 py-3.5 shadow-[0_16px_32px_-8px_rgba(23,38,66,0.25)]">
+              <div className="absolute -bottom-5 -left-5 flex items-center gap-3 rounded-2xl bg-white px-5 py-3.5 shadow-e3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green text-white">
                   <Users className="h-5 w-5" aria-hidden />
                 </span>
                 <span>
-                  <span className="block text-[15px] font-extrabold leading-tight text-navy">
+                  <span className="block text-body font-extrabold leading-tight text-navy">
                     {homepage.heroBadgeTitle}
                   </span>
-                  <span className="block text-[11.5px] text-navy/60">
+                  <span className="block text-xs text-navy/60">
                     {homepage.heroBadgeSubtitle}
                   </span>
                 </span>
@@ -153,9 +149,9 @@ const Home = () => {
       </section>
 
       {/* -------------------------------------------------------- Association */}
-      <section className="bg-white px-6 py-[100px]">
-        <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-16">
-          <div className="min-w-[300px] flex-[1_1_440px]">
+      <section className="bg-white section-y">
+        <div className="container-page flex flex-wrap items-center gap-16">
+          <div className="min-w-[min(100%,300px)] flex-[1_1_440px]">
             <SectionHeading
               eyebrow="Qui sommes-nous"
               title="L'association au service des Lougatois"
@@ -170,11 +166,11 @@ const Home = () => {
               </>
             ) : (
               <>
-                <p className="mb-5 text-[16.5px] leading-[1.75] text-navy/75">{organization?.about}</p>
-                <p className="mb-9 text-[16.5px] leading-[1.75] text-navy/75">{organization?.mission}</p>
+                <p className="mb-5 text-body-lg leading-[1.75] text-navy/75">{organization?.about}</p>
+                <p className="mb-9 text-body-lg leading-[1.75] text-navy/75">{organization?.mission}</p>
                 {organization?.quote && (
                   <blockquote className="flex items-start gap-4 border-l-4 border-green bg-warm-muted/60 p-6">
-                    <p className="font-lora text-[19px] italic leading-relaxed text-navy">
+                    <p className="font-lora text-lead italic leading-relaxed text-navy">
                       {organization.quote}
                     </p>
                   </blockquote>
@@ -183,20 +179,20 @@ const Home = () => {
             )}
             <Link
               to="/a-propos"
-              className="group mt-8 inline-flex items-center gap-2 text-[14px] font-bold text-blue"
+              className="group mt-8 inline-flex items-center gap-2 text-body font-bold text-blue"
             >
               En savoir plus sur l'association
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
             </Link>
           </div>
 
-          <div className="min-w-[300px] flex-[1_1_380px]">
+          <div className="min-w-[min(100%,300px)] flex-[1_1_380px]">
             {aboutImage ? (
               <img
                 src={aboutImage.url}
                 alt={aboutImage.altText?.fr || "Action de l'association sur le terrain"}
                 loading="lazy"
-                className="aspect-[4/3] w-full rounded-2xl object-cover shadow-[0_24px_50px_-18px_rgba(23,38,66,0.3)]"
+                className="aspect-[4/3] w-full rounded-2xl object-cover shadow-e4"
               />
             ) : (
               <div className="flex aspect-[4/3] w-full items-center justify-center rounded-2xl bg-warm-muted">
@@ -208,8 +204,8 @@ const Home = () => {
       </section>
 
       {/* ------------------------------------------------------------ Missions */}
-      <section className="bg-warm-muted px-6 py-[100px]">
-        <div className="mx-auto max-w-[1280px]">
+      <section className="bg-warm-muted section-y">
+        <div className="container-page">
           <SectionHeading
             eyebrow="Nos domaines d'action"
             title="Nos piliers d'intervention à Louga"
@@ -240,17 +236,17 @@ const Home = () => {
 
       {/* -------------------------------------------------------------- Impact */}
       {impact.length > 0 && (
-        <section className="relative overflow-hidden bg-navy px-6 py-[90px]">
+        <section className="relative overflow-hidden bg-navy section-y">
           <div
             className="absolute right-0 top-0 h-[600px] w-[600px] bg-[radial-gradient(circle,rgba(135,206,24,0.08),transparent_70%)]"
             aria-hidden
           />
-          <div className="relative z-10 mx-auto max-w-[1280px]">
+          <div className="relative z-10 container-page">
             <div className="mb-14 text-center">
-              <p className="mb-3.5 text-[13px] font-bold uppercase tracking-wider text-green">
+              <p className="mb-3.5 text-eyebrow uppercase text-green">
                 Notre impact
               </p>
-              <h2 className="text-[clamp(27px,3.6vw,38px)] font-extrabold text-white">
+              <h2 className="text-h2 font-extrabold text-white">
                 Des résultats concrets sur le terrain
               </h2>
             </div>
@@ -271,7 +267,7 @@ const Home = () => {
                       </span>
                     )}
                     <dd
-                      className="mb-3 text-[clamp(36px,5vw,56px)] font-extrabold leading-none tabular-nums"
+                      className="mb-3 text-stat font-extrabold leading-none tabular-nums"
                       style={{ color: stat.color }}
                     >
                       <ImpactCounter value={stat.value} />
@@ -287,7 +283,7 @@ const Home = () => {
             <div className="mt-12 text-center">
               <Link
                 to="/impact"
-                className="group inline-flex items-center gap-2 text-[14px] font-bold text-green"
+                className="group inline-flex items-center gap-2 text-body font-bold text-green"
               >
                 Voir tout notre impact
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
@@ -299,8 +295,8 @@ const Home = () => {
 
       {/* ----------------------------------------------------------- Actualités */}
       {news.length > 0 && (
-        <section className="bg-white px-6 py-[100px]">
-          <div className="mx-auto max-w-[1280px]">
+        <section className="bg-white section-y">
+          <div className="container-page">
             <SectionHeading
               eyebrow="Actualités"
               title="Nos dernières actions"
@@ -317,7 +313,7 @@ const Home = () => {
             <div className="mt-12 text-center">
               <Link
                 to="/actualites"
-                className="rounded-full border-[1.5px] border-navy/15 px-7 py-3 text-[14.5px] font-bold text-navy transition-colors hover:border-navy"
+                className="rounded-full border-[1.5px] border-navy/15 px-7 py-3 text-body font-bold text-navy transition-colors hover:border-navy"
               >
                 Toutes les actualités
               </Link>
@@ -328,8 +324,8 @@ const Home = () => {
 
       {/* -------------------------------------------------------------- Galerie */}
       {gallery.length > 0 && (
-        <section className="bg-warm-muted px-6 py-[100px]">
-          <div className="mx-auto max-w-[1280px]">
+        <section className="bg-warm-muted section-y">
+          <div className="container-page">
             <SectionHeading
               eyebrow="Galerie"
               title="Nos actions en images"
@@ -343,7 +339,7 @@ const Home = () => {
                   type="button"
                   onClick={() => setLightboxIndex(index)}
                   aria-label={`Agrandir : ${t(image.caption, 'photo')}`}
-                  className="group relative aspect-[4/3] overflow-hidden rounded-2xl shadow-[0_8px_20px_-10px_rgba(23,38,66,0.18)] transition-shadow hover:shadow-[0_16px_32px_-10px_rgba(23,38,66,0.3)]"
+                  className="group relative aspect-[4/3] overflow-hidden rounded-2xl shadow-e1 transition-shadow hover:shadow-e3"
                 >
                   <img
                     src={image.media.url}
@@ -352,7 +348,7 @@ const Home = () => {
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   {image.caption && (
-                    <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/85 to-transparent px-3.5 pb-3 pt-8 text-left text-[13px] font-semibold text-white">
+                    <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/85 to-transparent px-3.5 pb-3 pt-8 text-left text-caption font-semibold text-white">
                       {t(image.caption)}
                     </span>
                   )}
@@ -363,7 +359,7 @@ const Home = () => {
             <div className="mt-12 text-center">
               <Link
                 to="/galerie"
-                className="rounded-full border-[1.5px] border-navy/15 bg-white px-7 py-3 text-[14.5px] font-bold text-navy transition-colors hover:border-navy"
+                className="rounded-full border-[1.5px] border-navy/15 bg-white px-7 py-3 text-body font-bold text-navy transition-colors hover:border-navy"
               >
                 Voir toute la galerie
               </Link>
@@ -373,7 +369,7 @@ const Home = () => {
       )}
 
       {/* ------------------------------------------------------ Appel à l'action */}
-      <section className="relative overflow-hidden px-6 py-[120px] text-center">
+      <section className="relative overflow-hidden section-y text-center">
         {ctaImage ? (
           <img
             src={ctaImage.url}
@@ -386,23 +382,20 @@ const Home = () => {
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-navy/70 to-navy/95" aria-hidden />
 
-        <div className="relative z-10 mx-auto max-w-[1040px]">
-          <p className="mb-9 font-lora text-[clamp(26px,4.2vw,42px)] font-medium italic leading-[1.35] text-white">
+        <div className="relative z-10 mx-auto max-w-[1040px] gutter-x">
+          <p className="mb-9 font-lora text-h2 font-medium italic leading-[1.35] text-white">
             « {homepage?.ctaQuote ?? 'Ensemble, pour le développement de Louga.'} »
           </p>
-          <Link
-            to="/nous-soutenir"
-            className="inline-block rounded-full bg-orange px-[34px] py-4 text-[15.5px] font-bold text-white shadow-lg transition-colors hover:bg-green"
-          >
+          <CtaLink to="/nous-soutenir" size="lg">
             Rejoindre le mouvement
-          </Link>
+          </CtaLink>
         </div>
       </section>
 
       {/* --------------------------------------------------------- Nous soutenir */}
       {donations.length > 0 && (
-        <section className="bg-white px-6 py-[100px]">
-          <div className="mx-auto max-w-[1120px]">
+        <section className="bg-white section-y">
+          <div className="mx-auto max-w-[1120px] gutter-x">
             <SectionHeading
               eyebrow="Nous soutenir"
               title="Comment nous soutenir ?"
@@ -425,12 +418,12 @@ const Home = () => {
 
       {/* ---------------------------------------------------------- Partenaires */}
       {partners.length > 0 && (
-        <section className="border-y border-navy/5 bg-warm-muted px-6 py-[76px]">
-          <div className="mx-auto max-w-[1280px] text-center">
-            <p className="mb-3.5 text-[13px] font-bold uppercase tracking-wider text-green">
+        <section className="border-y border-navy/5 bg-warm-muted section-y-sm">
+          <div className="container-page text-center">
+            <p className="mb-3.5 text-eyebrow uppercase text-green">
               Partenaires
             </p>
-            <h2 className="mb-10 text-[clamp(23px,2.8vw,30px)] font-extrabold text-navy">
+            <h2 className="mb-10 text-h2 font-extrabold text-navy">
               Ils nous accompagnent
             </h2>
 
@@ -449,7 +442,7 @@ const Home = () => {
                     ) : (
                       <Icon className="h-5 w-5 text-navy/50" aria-hidden />
                     )}
-                    <span className="text-[14.5px] font-bold text-navy">{partner.name}</span>
+                    <span className="text-body font-bold text-navy">{partner.name}</span>
                   </>
                 );
 

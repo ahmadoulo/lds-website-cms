@@ -21,7 +21,7 @@ interface BadgeProps {
 export const Badge = ({ tone = 'neutral', className, children }: BadgeProps) => (
   <span
     className={cn(
-      'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide',
+      'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-eyebrow uppercase',
       TONES[tone],
       className,
     )}

@@ -10,6 +10,7 @@ import {
 import { useSettings } from '../../context/SettingsContext';
 import { cn } from '../../lib/cn';
 import { SiteLogo } from '../public/SiteLogo';
+import { CtaLink } from '../public/CtaLink';
 import { PreviewBanner } from '../public/PreviewBanner';
 
 const NAV = [
@@ -63,8 +64,8 @@ export const PublicLayout = () => {
       </a>
 
       {/* Contact bar */}
-      <div className="hidden bg-navy text-[13px] text-white/80 sm:block">
-        <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3 px-6 py-2.5">
+      <div className="hidden bg-navy text-caption text-white/80 sm:block">
+        <div className="container-page flex flex-wrap items-center justify-between gap-3 py-2.5">
           <div className="flex flex-wrap gap-6">
             {contact?.email && (
               <a href={`mailto:${contact.email}`} className="flex items-center gap-2 transition-colors hover:text-white">
@@ -103,11 +104,16 @@ export const PublicLayout = () => {
       {/* Header */}
       <header
         className={cn(
-          'sticky top-0 z-50 bg-white transition-shadow duration-300',
-          isScrolled ? 'shadow-[0_8px_30px_rgba(23,38,66,0.08)]' : '',
+          'sticky top-0 z-50 border-b bg-white/95 backdrop-blur transition-[box-shadow,border-color] duration-300',
+          isScrolled ? 'border-navy/8 shadow-header' : 'border-transparent',
         )}
       >
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-6 px-6 py-4">
+        <div
+          className={cn(
+            'container-page flex items-center justify-between gap-6 transition-[padding] duration-300',
+            isScrolled ? 'py-3' : 'py-4',
+          )}
+        >
           <Link to="/" className="flex items-center" aria-label="Accueil">
             <SiteLogo />
           </Link>
@@ -120,20 +126,22 @@ export const PublicLayout = () => {
                 end={item.href === '/'}
                 className={({ isActive }) =>
                   cn(
-                    'text-[14.5px] font-semibold transition-colors',
-                    isActive ? 'text-blue' : 'text-navy hover:text-blue',
+                    'relative py-1 text-body font-semibold transition-colors',
+                    'after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-blue',
+                    'after:origin-left after:transition-transform after:duration-300',
+                    isActive
+                      ? 'text-navy after:scale-x-100'
+                      : 'text-navy/70 hover:text-navy after:scale-x-0 hover:after:scale-x-100',
                   )
                 }
+                aria-current={undefined}
               >
                 {item.label}
               </NavLink>
             ))}
-            <Link
-              to="/nous-soutenir"
-              className="flex items-center gap-2 rounded-full bg-orange px-6 py-2.5 text-[14px] font-bold text-white shadow-[0_10px_22px_-8px_rgba(238,121,0,0.55)] transition-colors hover:bg-navy"
-            >
+            <CtaLink to="/nous-soutenir" className="ml-1">
               <Heart className="h-4 w-4" aria-hidden /> Faire un don
-            </Link>
+            </CtaLink>
           </nav>
 
           <button
@@ -148,28 +156,27 @@ export const PublicLayout = () => {
         </div>
 
         {isMenuOpen && (
-          <div className="absolute inset-x-0 top-full flex flex-col gap-1 border-t border-navy/8 bg-white p-5 shadow-lg lg:hidden">
-            {NAV.map((item) => (
-              <NavLink
-                key={item.href}
-                to={item.href}
-                end={item.href === '/'}
-                className={({ isActive }) =>
-                  cn(
-                    'border-b border-navy/5 px-2 py-3.5 text-[15px] font-semibold',
-                    isActive ? 'text-blue' : 'text-navy',
-                  )
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-            <Link
-              to="/nous-soutenir"
-              className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-orange p-3.5 font-bold text-white"
-            >
+          <div className="absolute inset-x-0 top-full max-h-[calc(100dvh-5rem)] overflow-y-auto border-t border-navy/8 bg-white p-4 shadow-e3 lg:hidden">
+            <nav className="flex flex-col" aria-label="Navigation mobile">
+              {NAV.map((item) => (
+                <NavLink
+                  key={item.href}
+                  to={item.href}
+                  end={item.href === '/'}
+                  className={({ isActive }) =>
+                    cn(
+                      'rounded-xl px-3 py-3.5 text-body-lg font-semibold transition-colors',
+                      isActive ? 'bg-blue/10 text-blue' : 'text-navy hover:bg-navy/5',
+                    )
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+            <CtaLink to="/nous-soutenir" size="lg" className="mt-4 w-full">
               <Heart className="h-4 w-4" aria-hidden /> Faire un don
-            </Link>
+            </CtaLink>
           </div>
         )}
       </header>
@@ -180,7 +187,7 @@ export const PublicLayout = () => {
 
       {/* Footer */}
       <footer className="mt-auto bg-navy px-6 pb-10 pt-16 text-white">
-        <div className="mx-auto grid max-w-[1280px] gap-10 md:grid-cols-3 lg:gap-12">
+        <div className="container-page grid gap-10 md:grid-cols-3 lg:gap-12">
           <div>
             <span className="mb-5 block">
               <SiteLogo variant="dark" />
@@ -208,7 +215,7 @@ export const PublicLayout = () => {
           </div>
 
           <nav aria-label="Navigation du pied de page">
-            <h2 className="mb-5 text-[15px] font-bold">Navigation</h2>
+            <h2 className="mb-5 text-body font-bold">Navigation</h2>
             <ul className="flex flex-col gap-3 text-white/65">
               {NAV.map((item) => (
                 <li key={item.href}>
@@ -221,7 +228,7 @@ export const PublicLayout = () => {
           </nav>
 
           <div>
-            <h2 className="mb-5 text-[15px] font-bold">Contact</h2>
+            <h2 className="mb-5 text-body font-bold">Contact</h2>
             <address className="flex flex-col gap-4 not-italic text-white/65">
               {contact?.address && (
                 <span className="flex items-start gap-3">
@@ -257,7 +264,7 @@ export const PublicLayout = () => {
           </div>
         </div>
 
-        <div className="mx-auto mt-14 flex max-w-[1280px] flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-8 text-sm text-white/45">
+        <div className="container-page mt-14 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-8 text-sm text-white/45">
           <span>
             © {new Date().getFullYear()} {organization?.name || 'Louga Développement Solidaire'}. Tous
             droits réservés.

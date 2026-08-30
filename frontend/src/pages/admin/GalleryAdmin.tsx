@@ -199,7 +199,7 @@ export const GalleryAdmin = () => {
                         event.target.value = '';
                       }}
                     />
-                    <span className="inline-flex items-center gap-2 rounded-lg border border-navy/15 bg-white px-3 py-1.5 text-[13px] font-semibold text-navy transition-colors hover:border-navy/40">
+                    <span className="inline-flex items-center gap-2 rounded-lg border border-navy/15 bg-white px-3 py-1.5 text-caption font-semibold text-navy transition-colors hover:border-navy/40">
                       {uploadingAlbumId === album.id ? (
                         <Spinner className="h-3.5 w-3.5" />
                       ) : (

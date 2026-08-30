@@ -73,7 +73,7 @@ export const MediaPicker = ({ value, onChange, slot, label = 'Image' }: MediaPic
     <div className="space-y-2">
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-sm font-semibold text-navy">{label}</span>
-        <span className="text-[11px] text-navy/45">
+        <span className="text-xs text-navy/45">
           {spec.width}×{spec.height} · {spec.ratioLabel}
         </span>
       </div>
@@ -111,7 +111,7 @@ export const MediaPicker = ({ value, onChange, slot, label = 'Image' }: MediaPic
             <span className="text-xs font-medium text-navy/60">
               Glissez une image ici ou cliquez pour parcourir
             </span>
-            <span className="text-[11px] text-navy/40">JPG, PNG, WebP · 5 Mo maximum</span>
+            <span className="text-xs text-navy/40">JPG, PNG, WebP · 5 Mo maximum</span>
           </button>
         )}
 
@@ -119,7 +119,7 @@ export const MediaPicker = ({ value, onChange, slot, label = 'Image' }: MediaPic
           <button
             type="button"
             onClick={() => setShowWholeImage((shown) => !shown)}
-            className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-lg bg-white/90 px-2 py-1 text-[11px] font-semibold text-navy shadow transition-colors hover:bg-white"
+            className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-lg bg-white/90 px-2 py-1 text-xs font-semibold text-navy shadow transition-colors hover:bg-white"
           >
             {showWholeImage ? (
               <>
@@ -143,7 +143,7 @@ export const MediaPicker = ({ value, onChange, slot, label = 'Image' }: MediaPic
       </div>
 
       {previewUrl && showWholeImage && spec.fit === 'cover' && (
-        <p className="text-[11px] font-medium text-blue">
+        <p className="text-xs font-medium text-blue">
           Image entière. Seule la zone visible dans le cadrage sera affichée sur le site.
         </p>
       )}
@@ -179,7 +179,7 @@ export const MediaPicker = ({ value, onChange, slot, label = 'Image' }: MediaPic
       </div>
 
       {pending && (
-        <p className="flex items-start gap-1.5 rounded-lg border border-blue/25 bg-blue/5 px-2.5 py-1.5 text-[11px] text-navy/75">
+        <p className="flex items-start gap-1.5 rounded-lg border border-blue/25 bg-blue/5 px-2.5 py-1.5 text-xs text-navy/75">
           <Clock className="mt-px h-3.5 w-3.5 shrink-0 text-blue" />
           Image sélectionnée mais pas encore envoyée. Elle sera stockée lors de
           l'enregistrement du formulaire.
@@ -259,8 +259,8 @@ export const MediaLibraryModal = ({ isOpen, onClose, onSelect }: MediaLibraryMod
                 className="aspect-square w-full object-cover"
               />
               <div className="px-2 py-1.5">
-                <p className="truncate text-[11px] font-medium text-navy">{media.originalName}</p>
-                <p className="text-[10px] text-navy/45">
+                <p className="truncate text-xs font-medium text-navy">{media.originalName}</p>
+                <p className="text-xs text-navy/45">
                   {media.width}×{media.height} · {formatBytes(media.size)}
                 </p>
               </div>

@@ -17,8 +17,8 @@ export const PartnersPage = () => {
         description="Les organisations qui accompagnent Louga Développement Solidaire."
       />
 
-      <div className="min-h-[60vh] bg-white px-6 py-[90px]">
-        <div className="mx-auto w-full max-w-[1280px]">
+      <div className="min-h-[60vh] bg-white section-y">
+        <div className="container-page">
           <SectionHeading
             eyebrow="Nos partenaires"
             title="Ils nous font confiance"
@@ -59,7 +59,7 @@ export const PartnersPage = () => {
                         <Icon className="h-10 w-10 text-navy/40" aria-hidden />
                       )}
                     </span>
-                    <span className="text-center text-[15px] font-bold text-navy">
+                    <span className="text-center text-body font-bold text-navy">
                       {partner.name}
                     </span>
                   </>
@@ -88,7 +88,7 @@ export const PartnersPage = () => {
           )}
 
           <div className="mt-16 rounded-2xl bg-warm-muted px-6 py-12 text-center">
-            <h2 className="mb-4 text-[clamp(20px,2.4vw,26px)] font-extrabold text-navy">
+            <h2 className="mb-4 text-h2-sm font-extrabold text-navy">
               Devenir partenaire de l'association
             </h2>
             <p className="mx-auto mb-8 max-w-xl text-navy/70">

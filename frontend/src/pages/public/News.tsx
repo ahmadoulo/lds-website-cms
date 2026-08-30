@@ -21,8 +21,8 @@ export const News = () => {
         description="Suivez l'évolution des projets, événements et bilans de Louga Développement Solidaire."
       />
 
-      <div className="min-h-screen bg-warm px-6 py-[90px]">
-        <div className="mx-auto max-w-[1280px]">
+      <div className="min-h-screen bg-warm section-y">
+        <div className="container-page">
           <SectionHeading
             eyebrow="Actualités"
             title="Toutes nos actions"

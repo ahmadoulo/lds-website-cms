@@ -12,10 +12,73 @@
   --font-montserrat: "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-lora: "Lora", ui-serif, Georgia, serif;
 
+  /*
+    Elevation scale. Sixteen hand-written shadows had accumulated across the
+    pages, all slightly different; these five cover every case and keep the
+    light source consistent.
+  */
   --shadow-soft: 0 12px 30px -14px rgba(23, 38, 66, 0.15);
   --shadow-soft-hover: 0 20px 40px -14px rgba(23, 38, 66, 0.22);
+  --shadow-e1: 0 2px 8px -2px rgba(23, 38, 66, 0.08);
+  --shadow-e2: 0 12px 30px -14px rgba(23, 38, 66, 0.15);
+  --shadow-e3: 0 20px 44px -16px rgba(23, 38, 66, 0.22);
+  --shadow-e4: 0 30px 60px -20px rgba(23, 38, 66, 0.3);
+  --shadow-header: 0 8px 30px -12px rgba(23, 38, 66, 0.14);
+  /* The primary call to action glows in its own colour rather than in grey. */
+  --shadow-cta: 0 12px 26px -10px rgba(238, 121, 0, 0.5);
+  --shadow-cta-hover: 0 16px 32px -10px rgba(238, 121, 0, 0.6);
 
   --radius-4xl: 2rem;
+  --radius-card: 1.25rem;
+  --radius-panel: 1.75rem;
+
+  /*
+    Type scale. Nineteen arbitrary pixel sizes were in use between 10 and 19px;
+    naming the steps is what keeps a page feeling composed rather than assembled.
+  */
+  --text-eyebrow: 0.8125rem;
+  --text-eyebrow--line-height: 1.2;
+  --text-eyebrow--letter-spacing: 0.08em;
+  --text-eyebrow--font-weight: 700;
+
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.5;
+
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.65;
+
+  --text-body-lg: 1.0625rem;
+  --text-body-lg--line-height: 1.7;
+
+  --text-lead: 1.1875rem;
+  --text-lead--line-height: 1.6;
+
+  /* Headings scale with the viewport so they never crowd a small screen. */
+  --text-h3: clamp(1.0625rem, 0.95rem + 0.5vw, 1.25rem);
+  --text-h3--line-height: 1.35;
+  --text-h3--font-weight: 800;
+
+  --text-h2: clamp(1.6875rem, 1.35rem + 1.6vw, 2.375rem);
+  --text-h2--line-height: 1.2;
+  --text-h2--font-weight: 800;
+
+  /* The step between a section title and a card title. */
+  --text-h2-sm: clamp(1.25rem, 1.05rem + 0.9vw, 1.625rem);
+  --text-h2-sm--line-height: 1.25;
+  --text-h2-sm--font-weight: 800;
+
+  --text-h1: clamp(2rem, 1.5rem + 2.4vw, 3.25rem);
+  --text-h1--line-height: 1.12;
+  --text-h1--font-weight: 800;
+
+  --text-stat: clamp(2.25rem, 1.6rem + 3vw, 3.5rem);
+  --text-stat--line-height: 1;
+  --text-stat--font-weight: 800;
+
+  /* One-off display size, used by the 404 numeral. */
+  --text-display: clamp(4.5rem, 3rem + 8vw, 7rem);
+  --text-display--line-height: 0.95;
+  --text-display--font-weight: 800;
 }
 
 @layer base {
@@ -52,6 +115,34 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /*
+    Vertical rhythm. Seven different section paddings were in use between 70 and
+    120px; one fluid step keeps the page breathing evenly and adapts to mobile,
+    where the fixed values were far too tall.
+  */
+  .section-y {
+    padding-block: clamp(3.5rem, 2.5rem + 4vw, 6.5rem);
+  }
+
+  .section-y-sm {
+    padding-block: clamp(2.5rem, 2rem + 2.5vw, 4.5rem);
+  }
+
+  /*
+    The page gutter. Narrow blocks (prose, a centred form) need it too, or they
+    sit flush against the screen edge once the section stops providing padding.
+  */
+  .gutter-x {
+    padding-inline: clamp(1.25rem, 0.75rem + 2vw, 2rem);
+  }
+
+  .container-page {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 0.75rem + 2vw, 2rem);
   }
 
   /*

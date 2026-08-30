@@ -50,10 +50,10 @@ export const ContactPage = () => {
         description="Contactez Louga Développement Solidaire : une question, une suggestion ou une envie de nous rejoindre."
       />
 
-      <div className="px-6 py-[80px]">
-        <div className="mx-auto max-w-[1000px]">
+      <div className="section-y-sm">
+        <div className="mx-auto max-w-[1000px] gutter-x">
           <div className="mb-12 text-center">
-            <h1 className="mb-4 text-[clamp(32px,4vw,44px)] font-extrabold text-navy">
+            <h1 className="mb-4 text-h1 font-extrabold text-navy">
               Contactez-nous
             </h1>
             <p className="text-lg text-navy/70">
@@ -146,7 +146,7 @@ interface ContactFormProps {
 const ContactForm = ({ error, errors, register, isPending, onSubmit }: ContactFormProps) => (
   <form
     onSubmit={onSubmit}
-    className="rounded-3xl bg-white p-6 shadow-[0_24px_50px_-18px_rgba(23,38,66,0.08)] sm:p-10"
+    className="rounded-3xl bg-white p-6 shadow-e3 sm:p-10"
     noValidate
   >
     {error && (

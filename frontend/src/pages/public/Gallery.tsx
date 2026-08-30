@@ -43,8 +43,8 @@ export const Gallery = () => {
         image={images[0]?.media.url}
       />
 
-      <div className="min-h-screen bg-white px-6 py-[90px]">
-        <div className="mx-auto max-w-[1280px]">
+      <div className="min-h-screen bg-white section-y">
+        <div className="container-page">
           <SectionHeading
             eyebrow="Galerie"
             title="Nos actions en images"
@@ -107,7 +107,7 @@ export const Gallery = () => {
                     type="button"
                     onClick={() => setLightboxIndex(index)}
                     aria-label={`Agrandir : ${t(image.caption, image.albumTitle)}`}
-                    className="group relative aspect-[4/3] overflow-hidden rounded-2xl shadow-[0_8px_20px_-10px_rgba(23,38,66,0.18)] transition-shadow hover:shadow-[0_16px_32px_-10px_rgba(23,38,66,0.3)]"
+                    className="group relative aspect-[4/3] overflow-hidden rounded-2xl shadow-e1 transition-shadow hover:shadow-e3"
                   >
                     <img
                       src={image.media.url}
@@ -115,7 +115,7 @@ export const Gallery = () => {
                       loading="lazy"
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-                    <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/85 to-transparent px-3.5 pb-3 pt-8 text-left text-[13px] font-semibold text-white">
+                    <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/85 to-transparent px-3.5 pb-3 pt-8 text-left text-caption font-semibold text-white">
                       {t(image.caption, image.albumTitle)}
                     </span>
                   </button>

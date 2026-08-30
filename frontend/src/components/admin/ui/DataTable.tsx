@@ -45,7 +45,7 @@ export function DataTable<T>({
                   key={column.key}
                   scope="col"
                   className={cn(
-                    'px-5 py-3.5 text-xs font-bold uppercase tracking-wide text-navy/55',
+                    'px-5 py-3.5 text-eyebrow uppercase text-navy/55',
                     column.align === 'right' && 'text-right',
                     column.className,
                   )}
@@ -54,7 +54,7 @@ export function DataTable<T>({
                 </th>
               ))}
               {actions && (
-                <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold uppercase tracking-wide text-navy/55">
+                <th scope="col" className="px-5 py-3.5 text-right text-eyebrow uppercase text-navy/55">
                   Actions
                 </th>
               )}

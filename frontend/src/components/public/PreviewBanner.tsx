@@ -26,7 +26,7 @@ export const PreviewBanner = () => {
   return (
     <div
       role="status"
-      className="sticky top-0 z-[60] flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-orange px-4 py-2 text-center text-[13px] font-semibold text-white"
+      className="sticky top-0 z-[60] flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-orange px-4 py-2 text-center text-caption font-semibold text-white"
     >
       <span className="flex items-center gap-2">
         <Eye className="h-4 w-4" aria-hidden />
@@ -37,7 +37,7 @@ export const PreviewBanner = () => {
       <button
         type="button"
         onClick={exit}
-        className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-[12px] transition-colors hover:bg-white/30"
+        className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-xs transition-colors hover:bg-white/30"
       >
         <X className="h-3 w-3" aria-hidden /> Quitter
       </button>

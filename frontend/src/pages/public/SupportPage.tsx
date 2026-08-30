@@ -26,8 +26,8 @@ export const SupportPage = () => {
         description="Don financier, bénévolat ou matériel : découvrez comment soutenir les actions de Louga Développement Solidaire."
       />
 
-      <div className="min-h-[60vh] px-6 py-[90px]">
-        <div className="mx-auto w-full max-w-[1280px]">
+      <div className="min-h-[60vh] section-y">
+        <div className="container-page">
           <SectionHeading
             eyebrow="Agir avec nous"
             title="Soutenez nos actions"
@@ -50,7 +50,7 @@ export const SupportPage = () => {
             <>
               {paymentMethods.length > 0 && (
                 <section className="mb-14">
-                  <h2 className="mb-6 text-center text-[clamp(20px,2.4vw,26px)] font-extrabold text-navy">
+                  <h2 className="mb-6 text-center text-h2-sm font-extrabold text-navy">
                     Envoyer un don
                   </h2>
                   <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -64,7 +64,7 @@ export const SupportPage = () => {
               {otherWays.length > 0 && (
                 <section>
                   {paymentMethods.length > 0 && (
-                    <h2 className="mb-6 text-center text-[clamp(20px,2.4vw,26px)] font-extrabold text-navy">
+                    <h2 className="mb-6 text-center text-h2-sm font-extrabold text-navy">
                       Autres façons d'aider
                     </h2>
                   )}
@@ -80,7 +80,7 @@ export const SupportPage = () => {
 
           {contact && (
             <div className="mt-16 rounded-2xl border border-navy/8 bg-white px-6 py-10 text-center">
-              <h2 className="mb-3 text-[clamp(20px,2.4vw,26px)] font-extrabold text-navy">
+              <h2 className="mb-3 text-h2-sm font-extrabold text-navy">
                 Une autre idée pour nous aider ?
               </h2>
               <p className="mx-auto mb-6 max-w-xl text-navy/70">

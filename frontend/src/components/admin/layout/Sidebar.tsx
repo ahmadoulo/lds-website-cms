@@ -43,7 +43,7 @@ export const Sidebar = ({ isOpen, onClose, unreadMessages = 0 }: SidebarProps) =
 
           return (
             <div key={group.title}>
-              <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-widest text-white/35">
+              <p className="mb-1.5 px-3 text-eyebrow uppercasest text-white/35">
                 {group.title}
               </p>
               <div className="space-y-0.5">
@@ -68,7 +68,7 @@ export const Sidebar = ({ isOpen, onClose, unreadMessages = 0 }: SidebarProps) =
                         {item.hint && (
                           <span
                             className={cn(
-                              'block truncate text-[11px] font-normal',
+                              'block truncate text-xs font-normal',
                               isActive ? 'text-white/70' : 'text-white/40',
                             )}
                           >
@@ -77,7 +77,7 @@ export const Sidebar = ({ isOpen, onClose, unreadMessages = 0 }: SidebarProps) =
                         )}
                       </span>
                       {item.badge === 'unreadMessages' && unreadMessages > 0 && (
-                        <span className="mt-0.5 rounded-full bg-orange px-2 py-0.5 text-[10px] font-bold text-white">
+                        <span className="mt-0.5 rounded-full bg-orange px-2 py-0.5 text-xs font-bold text-white">
                           {unreadMessages}
                         </span>
                       )}

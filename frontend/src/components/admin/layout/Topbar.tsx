@@ -50,7 +50,7 @@ export const Topbar = ({ onOpenMenu }: { onOpenMenu: () => void }) => {
           <UserCircle className="h-7 w-7 text-navy/35" />
           <span className="hidden text-left sm:block">
             <span className="block text-sm font-semibold leading-tight text-navy">{fullName}</span>
-            <span className="block text-[11px] text-navy/50">
+            <span className="block text-xs text-navy/50">
               {ROLE_LABELS[user?.role ?? ''] ?? user?.role}
             </span>
           </span>

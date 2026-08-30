@@ -232,24 +232,24 @@ export const MediaAdmin = () => {
                   <p className="truncate text-xs font-semibold text-navy" title={media.originalName}>
                     {media.originalName}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-navy/45">
+                  <p className="mt-0.5 text-xs text-navy/45">
                     {media.width && media.height ? `${media.width}×${media.height} · ` : ''}
                     {formatBytes(media.size)}
                   </p>
-                  <p className="text-[11px] text-navy/40">
+                  <p className="text-xs text-navy/40">
                     {media.folder} · {new Date(media.createdAt).toLocaleDateString('fr-FR')}
                   </p>
 
                   {media.usedIn && media.usedIn.length > 0 ? (
                     <p
-                      className="mt-1.5 flex items-start gap-1 text-[11px] font-medium text-[#4d7c0f]"
+                      className="mt-1.5 flex items-start gap-1 text-xs font-medium text-[#4d7c0f]"
                       title={media.usedIn.join(' · ')}
                     >
                       <Link2 className="mt-px h-3 w-3 shrink-0" aria-hidden />
                       <span className="line-clamp-2">Utilisée dans : {media.usedIn.join(' · ')}</span>
                     </p>
                   ) : (
-                    <p className="mt-1.5 text-[11px] text-navy/35">Non utilisée</p>
+                    <p className="mt-1.5 text-xs text-navy/35">Non utilisée</p>
                   )}
                 </figcaption>
               </figure>

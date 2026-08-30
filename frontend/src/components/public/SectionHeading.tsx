@@ -35,14 +35,14 @@ export const SectionHeading = ({
       className,
     )}
   >
-    <p className={cn('mb-3.5 text-[13px] font-bold uppercase tracking-wider', ACCENTS[accent])}>
+    <p className={cn('mb-3.5 text-eyebrow uppercase', ACCENTS[accent])}>
       {eyebrow}
     </p>
-    <Tag className="text-[clamp(27px,3.6vw,38px)] font-extrabold leading-[1.2] text-navy">
+    <Tag className="text-h2 font-extrabold leading-[1.2] text-navy">
       {title}
     </Tag>
     {description && (
-      <p className="mt-4 text-[16.5px] leading-relaxed text-navy/70">{description}</p>
+      <p className="mt-4 text-body-lg leading-relaxed text-navy/70">{description}</p>
     )}
   </div>
 );

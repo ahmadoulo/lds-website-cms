@@ -30,7 +30,7 @@ export const ImageReportPanel = ({ stats, slot }: { stats: ImageStats; slot: Ima
 
   return (
     <div className="space-y-2">
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-navy/60">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-navy/60">
         <div className="flex justify-between gap-2">
           <dt>Dimensions</dt>
           <dd className="font-semibold text-navy">
@@ -57,7 +57,7 @@ export const ImageReportPanel = ({ stats, slot }: { stats: ImageStats; slot: Ima
       </dl>
 
       {report.issues.length === 0 ? (
-        <p className="flex items-center gap-1.5 rounded-lg border border-green/25 bg-green/5 px-2.5 py-1.5 text-[11px] font-medium text-[#4d7c0f]">
+        <p className="flex items-center gap-1.5 rounded-lg border border-green/25 bg-green/5 px-2.5 py-1.5 text-xs font-medium text-[#4d7c0f]">
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
           Cette image convient parfaitement à cet emplacement.
         </p>
@@ -69,7 +69,7 @@ export const ImageReportPanel = ({ stats, slot }: { stats: ImageStats; slot: Ima
               <li
                 key={index}
                 className={cn(
-                  'flex items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] leading-snug',
+                  'flex items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs leading-snug',
                   style.row,
                 )}
               >
@@ -81,10 +81,10 @@ export const ImageReportPanel = ({ stats, slot }: { stats: ImageStats; slot: Ima
         </ul>
       )}
 
-      {slot.note && <p className="text-[11px] italic text-navy/45">{slot.note}</p>}
+      {slot.note && <p className="text-xs italic text-navy/45">{slot.note}</p>}
 
       {stats.width !== null && (
-        <p className="text-[11px] text-navy/45">
+        <p className="text-xs text-navy/45">
           Pensez à décrire l'image dans la bibliothèque de médias : cette description est
           lue par les lecteurs d'écran et affichée si l'image ne charge pas.
         </p>
