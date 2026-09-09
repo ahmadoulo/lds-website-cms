@@ -63,7 +63,7 @@ export const Lightbox = ({ slides, index, onIndexChange, onClose }: LightboxProp
         type="button"
         onClick={onClose}
         aria-label="Fermer"
-        className="absolute right-4 top-4 rounded-full bg-white/10 p-2.5 text-white transition-colors hover:bg-white/20"
+        className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 sm:right-4 sm:top-4"
       >
         <X className="h-5 w-5" />
       </button>
@@ -74,7 +74,7 @@ export const Lightbox = ({ slides, index, onIndexChange, onClose }: LightboxProp
             type="button"
             onClick={() => goTo(index - 1)}
             aria-label="Image précédente"
-            className="absolute left-3 rounded-full bg-white/10 p-2.5 text-white transition-colors hover:bg-white/20 sm:left-6"
+            className="absolute left-2 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 sm:left-6 sm:h-11 sm:w-11"
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
@@ -82,7 +82,7 @@ export const Lightbox = ({ slides, index, onIndexChange, onClose }: LightboxProp
             type="button"
             onClick={() => goTo(index + 1)}
             aria-label="Image suivante"
-            className="absolute right-3 rounded-full bg-white/10 p-2.5 text-white transition-colors hover:bg-white/20 sm:right-6"
+            className="absolute right-2 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 sm:right-6 sm:h-11 sm:w-11"
           >
             <ChevronRight className="h-6 w-6" />
           </button>
@@ -93,7 +93,10 @@ export const Lightbox = ({ slides, index, onIndexChange, onClose }: LightboxProp
         <img
           src={slide.src}
           alt={slide.alt}
-          className="max-h-[80vh] w-auto max-w-full rounded-lg object-contain"
+          decoding="async"
+          /* dvh, not vh: on a phone the browser chrome would push the bottom
+             of the photo and its caption off screen. */
+          className="max-h-[80dvh] w-auto max-w-full rounded-lg object-contain"
         />
         {slide.caption && (
           <figcaption className="text-center text-sm text-white/75">{slide.caption}</figcaption>

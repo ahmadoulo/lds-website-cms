@@ -65,7 +65,9 @@ export const Modal = ({
         aria-label={title}
         tabIndex={-1}
         className={cn(
-          'flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white shadow-2xl outline-none sm:rounded-2xl',
+          /* dvh: with vh the sheet is taller than the visible area on a phone and
+             the save button sits under the browser chrome. */
+          'flex max-h-[92dvh] w-full flex-col rounded-t-2xl bg-white shadow-2xl outline-none sm:rounded-2xl',
           SIZES[size],
         )}
       >
@@ -77,7 +79,7 @@ export const Modal = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-navy/40 transition-colors hover:bg-navy/5 hover:text-navy"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-navy/40 transition-colors hover:bg-navy/5 hover:text-navy sm:h-8 sm:w-8"
             aria-label="Fermer"
           >
             <X className="h-5 w-5" />

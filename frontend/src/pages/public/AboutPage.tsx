@@ -28,7 +28,7 @@ export const AboutPage = () => {
       />
 
       <section className="bg-white section-y">
-        <div className="container-page flex flex-wrap items-center gap-16">
+        <div className="container-page flex flex-wrap items-center gap-10 lg:gap-16">
           <div className="min-w-[min(100%,300px)] flex-[1_1_440px]">
             <SectionHeading
               eyebrow="Qui sommes-nous"
@@ -63,6 +63,10 @@ export const AboutPage = () => {
               <img
                 src={photo.url}
                 alt={photo.altText?.fr || "Action de l'association sur le terrain"}
+                loading="lazy"
+                decoding="async"
+                width={1200}
+                height={900}
                 className="aspect-[4/3] w-full rounded-2xl object-cover shadow-e4"
               />
             ) : (
@@ -81,7 +85,7 @@ export const AboutPage = () => {
           <p className="text-center text-body-lg leading-[1.8] text-navy/75">
             {organization?.mission}
           </p>
-          <div className="mt-10 text-center">
+          <div className="mt-8 text-center sm:mt-10">
             <Link
               to="/nos-actions"
               className="group inline-flex items-center gap-2 rounded-full bg-navy px-7 py-3.5 text-body font-bold text-white transition-colors hover:bg-blue"
@@ -97,10 +101,10 @@ export const AboutPage = () => {
       {impact && impact.length > 0 && (
         <section className="bg-navy section-y-sm">
           <div className="mx-auto max-w-[1080px] gutter-x">
-            <h2 className="mb-12 text-center text-h2 font-extrabold text-white">
+            <h2 className="mb-8 text-center text-h2 font-extrabold text-white sm:mb-12">
               Notre impact en chiffres
             </h2>
-            <dl className="grid grid-cols-2 gap-10 md:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-10">
               {impact.map((stat) => (
                 <div key={stat.id} className="text-center">
                   <dd
@@ -122,7 +126,7 @@ export const AboutPage = () => {
         <div className="mx-auto max-w-[900px] gutter-x">
           <SectionHeading eyebrow="Nous joindre" title="Nos coordonnées" />
 
-          <div className="grid gap-6 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-3 sm:gap-6">
             {contact?.address && (
               <div className="rounded-2xl border border-navy/8 p-6 text-center">
                 <MapPin className="mx-auto mb-4 h-6 w-6 text-green" aria-hidden />

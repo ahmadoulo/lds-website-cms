@@ -26,7 +26,7 @@ export const Sidebar = ({ isOpen, onClose, unreadMessages = 0 }: SidebarProps) =
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg p-1 text-white/60 hover:bg-white/10 hover:text-white lg:hidden"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white/60 hover:bg-white/10 hover:text-white lg:hidden"
           aria-label="Fermer le menu"
         >
           <X className="h-5 w-5" />
@@ -56,7 +56,7 @@ export const Sidebar = ({ isOpen, onClose, unreadMessages = 0 }: SidebarProps) =
                       to={item.href}
                       onClick={onClose}
                       className={cn(
-                        'group flex items-start gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                        'group flex min-h-11 items-start gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors lg:min-h-0',
                         isActive
                           ? 'bg-blue text-white'
                           : 'text-white/70 hover:bg-white/10 hover:text-white',
@@ -95,7 +95,7 @@ export const Sidebar = ({ isOpen, onClose, unreadMessages = 0 }: SidebarProps) =
           href="/"
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+          className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white lg:min-h-0"
         >
           <ExternalLink className="h-[18px] w-[18px]" />
           Voir le site public

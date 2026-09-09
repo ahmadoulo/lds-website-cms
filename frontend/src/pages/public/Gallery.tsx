@@ -53,7 +53,7 @@ export const Gallery = () => {
           />
 
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
               {Array.from({ length: 8 }).map((_, index) => (
                 <Skeleton key={index} className="aspect-[4/3]" />
               ))}
@@ -69,12 +69,12 @@ export const Gallery = () => {
           ) : (
             <>
               {visibleAlbums.length > 1 && (
-                <div className="mb-10 flex flex-wrap justify-center gap-2">
+                <div className="mb-6 flex flex-wrap justify-center gap-2 sm:mb-10">
                   <button
                     type="button"
                     onClick={() => setActiveAlbum('all')}
                     className={cn(
-                      'rounded-full px-4 py-2 text-sm font-semibold transition-colors',
+                      'rounded-full px-4 py-3 text-sm font-semibold transition-colors sm:py-2',
                       activeAlbum === 'all'
                         ? 'bg-navy text-white'
                         : 'bg-warm-muted text-navy/65 hover:text-navy',
@@ -88,7 +88,7 @@ export const Gallery = () => {
                       type="button"
                       onClick={() => setActiveAlbum(album.id)}
                       className={cn(
-                        'rounded-full px-4 py-2 text-sm font-semibold transition-colors',
+                        'rounded-full px-4 py-3 text-sm font-semibold transition-colors sm:py-2',
                         activeAlbum === album.id
                           ? 'bg-navy text-white'
                           : 'bg-warm-muted text-navy/65 hover:text-navy',
@@ -100,22 +100,28 @@ export const Gallery = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
                 {images.map((image, index) => (
                   <button
                     key={image.id}
                     type="button"
                     onClick={() => setLightboxIndex(index)}
                     aria-label={`Agrandir : ${t(image.caption, image.albumTitle)}`}
-                    className="group relative aspect-[4/3] overflow-hidden rounded-2xl shadow-e1 transition-shadow hover:shadow-e3"
+                    className={cn(
+                      'group relative aspect-[4/3] overflow-hidden rounded-2xl shadow-e1 transition-shadow hover:shadow-e3',
+                      index === 0 && 'col-span-2 aspect-[16/10] sm:col-span-1 sm:aspect-[4/3]',
+                    )}
                   >
                     <img
                       src={image.media.url}
                       alt={image.media.altText?.fr || t(image.caption, image.albumTitle)}
                       loading="lazy"
+                      decoding="async"
+                      width={800}
+                      height={600}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-                    <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/85 to-transparent px-3.5 pb-3 pt-8 text-left text-caption font-semibold text-white">
+                    <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/85 to-transparent px-2.5 pb-2 pt-6 text-left text-caption font-semibold text-white sm:px-3.5 sm:pb-3 sm:pt-8">
                       {t(image.caption, image.albumTitle)}
                     </span>
                   </button>

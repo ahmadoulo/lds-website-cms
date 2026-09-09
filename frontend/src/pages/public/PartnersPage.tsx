@@ -17,7 +17,7 @@ export const PartnersPage = () => {
         description="Les organisations qui accompagnent Louga Développement Solidaire."
       />
 
-      <div className="min-h-[60vh] bg-white section-y">
+      <div className="min-h-page bg-white section-y">
         <div className="container-page">
           <SectionHeading
             eyebrow="Nos partenaires"
@@ -28,7 +28,7 @@ export const PartnersPage = () => {
           />
 
           {isLoading ? (
-            <div className="flex flex-wrap justify-center gap-12">
+            <div className="flex flex-wrap justify-center gap-6 sm:gap-12">
               {[0, 1, 2, 3].map((index) => (
                 <Skeleton key={index} className="h-28 w-48" />
               ))}
@@ -53,6 +53,7 @@ export const PartnersPage = () => {
                           src={partner.logo.url}
                           alt={`Logo ${partner.name}`}
                           loading="lazy"
+                    decoding="async"
                           className="max-h-14 w-auto max-w-full object-contain"
                         />
                       ) : (
@@ -90,7 +91,7 @@ export const PartnersPage = () => {
             </ul>
           )}
 
-          <div className="mt-16 rounded-2xl bg-warm-muted px-6 py-12 text-center">
+          <div className="mt-10 rounded-2xl bg-warm-muted px-5 py-9 text-center sm:mt-16 sm:px-6 sm:py-12">
             <h2 className="mb-4 text-h2-sm font-extrabold text-navy">
               Devenir partenaire de l'association
             </h2>

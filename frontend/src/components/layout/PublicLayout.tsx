@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Heart, Mail, MapPin, Menu, Phone, X } from 'lucide-react';
 import {
@@ -36,6 +36,8 @@ export const PublicLayout = () => {
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   const contact = settings?.global_contact;
   const social = settings?.global_social;
@@ -50,6 +52,37 @@ export const PublicLayout = () => {
 
   // Close the mobile menu whenever the route changes.
   useEffect(() => setIsMenuOpen(false), [location.pathname]);
+
+  /*
+    An open panel has to answer the three gestures a phone user expects: the
+    back-equivalent (Escape, for a keyboard or an external one), a tap beside
+    it, and no page sliding underneath it. Focus returns to the button so a
+    keyboard user is not dropped at the top of the document.
+  */
+  useEffect(() => {
+    if (!isMenuOpen) return undefined;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setIsMenuOpen(false);
+      menuButtonRef.current?.focus();
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      if (headerRef.current?.contains(event.target as Node)) return;
+      setIsMenuOpen(false);
+    };
+
+    const { overflow } = document.body.style;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('pointerdown', onPointerDown);
+
+    return () => {
+      document.body.style.overflow = overflow;
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [isMenuOpen]);
 
   const activeSocial = SOCIAL_ICONS.filter(({ key }) => social?.[key]);
 
@@ -103,6 +136,7 @@ export const PublicLayout = () => {
 
       {/* Header */}
       <header
+        ref={headerRef}
         className={cn(
           'sticky top-0 z-50 border-b bg-white/95 backdrop-blur transition-[box-shadow,border-color] duration-300',
           isScrolled ? 'border-navy/8 shadow-header' : 'border-transparent',
@@ -110,8 +144,8 @@ export const PublicLayout = () => {
       >
         <div
           className={cn(
-            'container-page flex items-center justify-between gap-6 transition-[padding] duration-300',
-            isScrolled ? 'py-3' : 'py-4',
+            'container-page flex items-center justify-between gap-4 transition-[padding] duration-300 sm:gap-6',
+            isScrolled ? 'py-2 sm:py-3' : 'py-2.5 sm:py-4',
           )}
         >
           <Link to="/" className="flex items-center" aria-label="Accueil">
@@ -149,14 +183,20 @@ export const PublicLayout = () => {
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-expanded={isMenuOpen}
             aria-label={isMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
-            className="p-1 text-navy lg:hidden"
+            aria-controls="menu-mobile"
+            ref={menuButtonRef}
+            /* 44px of tappable area; the negative margin keeps the icon on the gutter. */
+            className="-mr-2.5 flex h-11 w-11 items-center justify-center rounded-xl text-navy transition-colors active:bg-navy/5 lg:hidden"
           >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMenuOpen ? <X className="h-6 w-6" aria-hidden /> : <Menu className="h-6 w-6" aria-hidden />}
           </button>
         </div>
 
         {isMenuOpen && (
-          <div className="absolute inset-x-0 top-full max-h-[calc(100dvh-5rem)] overflow-y-auto border-t border-navy/8 bg-white p-4 shadow-e3 lg:hidden">
+          <div
+            id="menu-mobile"
+            className="absolute inset-x-0 top-full max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain border-t border-navy/8 bg-white p-3 shadow-e3 lg:hidden"
+          >
             <nav className="flex flex-col" aria-label="Navigation mobile">
               {NAV.map((item) => (
                 <NavLink
@@ -186,13 +226,13 @@ export const PublicLayout = () => {
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto bg-navy px-6 pb-10 pt-16 text-white">
-        <div className="container-page grid gap-10 md:grid-cols-3 lg:gap-12">
+      <footer className="mt-auto bg-navy pb-8 pt-12 text-white sm:pb-10 sm:pt-16">
+        <div className="container-page grid gap-8 md:grid-cols-3 md:gap-10 lg:gap-12">
           <div>
-            <span className="mb-5 block">
+            <span className="mb-4 block sm:mb-5">
               <SiteLogo variant="dark" />
             </span>
-            <p className="mb-6 max-w-xs leading-relaxed text-white/65">
+            <p className="mb-5 max-w-xs leading-relaxed text-white/65 sm:mb-6">
               {organization?.tagline ||
                 "Association à but non lucratif engagée pour l'éducation, la santé et le développement durable des Lougatois."}
             </p>
@@ -205,7 +245,7 @@ export const PublicLayout = () => {
                     target="_blank"
                     rel="noreferrer noopener"
                     aria-label={label}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-blue"
+                    className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-blue sm:h-10 sm:w-10"
                   >
                     <Icon className="h-4 w-4" aria-hidden />
                   </a>
@@ -215,11 +255,14 @@ export const PublicLayout = () => {
           </div>
 
           <nav aria-label="Navigation du pied de page">
-            <h2 className="mb-5 text-body font-bold">Navigation</h2>
-            <ul className="flex flex-col gap-3 text-white/65">
+            <h2 className="mb-4 text-body font-bold sm:mb-5">Navigation</h2>
+            <ul className="grid grid-cols-2 gap-x-4 text-white/65 sm:flex sm:flex-col sm:gap-3">
               {NAV.map((item) => (
                 <li key={item.href}>
-                  <Link to={item.href} className="transition-colors hover:text-white">
+                  <Link
+                    to={item.href}
+                    className="inline-flex min-h-11 items-center transition-colors hover:text-white sm:min-h-0"
+                  >
                     {item.label}
                   </Link>
                 </li>
@@ -228,7 +271,7 @@ export const PublicLayout = () => {
           </nav>
 
           <div>
-            <h2 className="mb-5 text-body font-bold">Contact</h2>
+            <h2 className="mb-4 text-body font-bold sm:mb-5">Contact</h2>
             <address className="flex flex-col gap-4 not-italic text-white/65">
               {contact?.address && (
                 <span className="flex items-start gap-3">
@@ -261,10 +304,14 @@ export const PublicLayout = () => {
                 </a>
               )}
             </address>
+
+            <CtaLink to="/nous-soutenir" className="mt-6 w-full sm:w-auto">
+              <Heart className="h-4 w-4" aria-hidden /> Faire un don
+            </CtaLink>
           </div>
         </div>
 
-        <div className="container-page mt-14 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-8 text-sm text-white/45">
+        <div className="container-page mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6 text-sm text-white/45 sm:mt-14 sm:pt-8">
           <span>
             © {new Date().getFullYear()} {organization?.name || 'Louga Développement Solidaire'}. Tous
             droits réservés.

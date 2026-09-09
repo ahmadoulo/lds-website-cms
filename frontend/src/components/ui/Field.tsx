@@ -1,8 +1,16 @@
 import React from 'react';
 import { cn } from '../../lib/cn';
 
+/*
+  16px is not a style choice on a phone: iOS Safari zooms the whole page in when
+  a focused control is smaller, and the visitor is left scrolled sideways on a
+  form. The 14px desktop size is restored from `sm` up, so nothing above a phone
+  changes. The taller padding brings the control to a 44px target at the same
+  time.
+*/
 const CONTROL_CLASSES =
-  'w-full rounded-lg border border-navy/15 bg-white px-3 py-2.5 text-sm text-navy transition-colors ' +
+  'w-full rounded-lg border border-navy/15 bg-white px-3 py-3 text-base text-navy transition-colors ' +
+  'sm:py-2.5 sm:text-sm ' +
   'placeholder:text-navy/35 focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20 ' +
   'disabled:bg-navy/5 disabled:text-navy/50 aria-[invalid=true]:border-red-400 aria-[invalid=true]:ring-red-100';
 

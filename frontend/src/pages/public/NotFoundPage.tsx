@@ -7,12 +7,12 @@ export const NotFoundPage = () => (
   <>
     <Seo title="Page introuvable" noIndex />
 
-    <div className="flex min-h-[60vh] flex-col items-center justify-center section-y text-center">
+    <div className="flex min-h-page flex-col items-center justify-center section-y text-center">
       <p className="mb-4 text-display font-extrabold leading-none text-navy/15" aria-hidden>
         404
       </p>
       <h1 className="mb-6 text-3xl font-bold text-navy">Page introuvable</h1>
-      <p className="mx-auto mb-10 max-w-md text-lg text-navy/70">
+      <p className="mx-auto mb-8 max-w-md text-lg text-navy/70 sm:mb-10">
         La page que vous recherchez n'existe pas ou a été déplacée.
       </p>
       <div className="flex flex-wrap justify-center gap-4">

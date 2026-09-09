@@ -43,7 +43,7 @@ export const News = () => {
             />
           ) : (
             <>
-              <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3">
                 {articles.map((article) => (
                   <NewsCard key={article.id} article={article} />
                 ))}
@@ -52,7 +52,7 @@ export const News = () => {
               {meta && meta.totalPages > 1 && (
                 <nav
                   aria-label="Pagination des actualités"
-                  className="mt-12 flex items-center justify-center gap-4"
+                  className="mt-8 flex items-center justify-center gap-4 sm:mt-12"
                 >
                   <Button
                     variant="outline"

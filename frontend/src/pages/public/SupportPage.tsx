@@ -26,7 +26,7 @@ export const SupportPage = () => {
         description="Don financier, bénévolat ou matériel : découvrez comment soutenir les actions de Louga Développement Solidaire."
       />
 
-      <div className="min-h-[60vh] section-y">
+      <div className="min-h-page section-y">
         <div className="container-page">
           <SectionHeading
             eyebrow="Agir avec nous"
@@ -49,11 +49,11 @@ export const SupportPage = () => {
           ) : (
             <>
               {paymentMethods.length > 0 && (
-                <section className="mb-14">
-                  <h2 className="mb-6 text-center text-h2-sm font-extrabold text-navy">
+                <section className="mb-10 sm:mb-14">
+                  <h2 className="mb-4 text-center text-h2-sm font-extrabold text-navy sm:mb-6">
                     Envoyer un don
                   </h2>
-                  <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3">
                     {paymentMethods.map((method) => (
                       <PaymentMethodCard key={method.id} method={method} />
                     ))}
@@ -64,11 +64,11 @@ export const SupportPage = () => {
               {otherWays.length > 0 && (
                 <section>
                   {paymentMethods.length > 0 && (
-                    <h2 className="mb-6 text-center text-h2-sm font-extrabold text-navy">
+                    <h2 className="mb-4 text-center text-h2-sm font-extrabold text-navy sm:mb-6">
                       Autres façons d'aider
                     </h2>
                   )}
-                  <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3">
                     {otherWays.map((method) => (
                       <DonationCard key={method.id} method={method} />
                     ))}
@@ -79,18 +79,18 @@ export const SupportPage = () => {
           )}
 
           {contact && (
-            <div className="mt-16 rounded-2xl border border-navy/8 bg-white px-6 py-10 text-center">
+            <div className="mt-10 rounded-2xl border border-navy/8 bg-white px-5 py-8 text-center sm:mt-16 sm:px-6 sm:py-10">
               <h2 className="mb-3 text-h2-sm font-extrabold text-navy">
                 Une autre idée pour nous aider ?
               </h2>
               <p className="mx-auto mb-6 max-w-xl text-navy/70">
                 Écrivez-nous ou appelez-nous, nous étudions toutes les propositions.
               </p>
-              <div className="flex flex-wrap justify-center gap-4">
+              <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
                 {contact.email && (
                   <a
                     href={`mailto:${contact.email}`}
-                    className="rounded-full bg-navy px-7 py-3 font-bold text-white transition-colors hover:bg-blue"
+                    className="block break-words rounded-full bg-navy px-6 py-3.5 font-bold text-white transition-colors hover:bg-blue sm:px-7 sm:py-3"
                   >
                     {contact.email}
                   </a>
@@ -98,7 +98,7 @@ export const SupportPage = () => {
                 {contact.phone && (
                   <a
                     href={`tel:${contact.phone.replace(/\s+/g, '')}`}
-                    className="rounded-full border-[1.5px] border-navy/15 px-7 py-3 font-bold text-navy transition-colors hover:border-navy"
+                    className="block rounded-full border-[1.5px] border-navy/15 px-6 py-3.5 font-bold text-navy transition-colors hover:border-navy sm:px-7 sm:py-3"
                   >
                     {contact.phone}
                   </a>

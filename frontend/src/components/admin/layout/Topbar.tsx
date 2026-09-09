@@ -29,7 +29,7 @@ export const Topbar = ({ onOpenMenu }: { onOpenMenu: () => void }) => {
         <button
           type="button"
           onClick={onOpenMenu}
-          className="rounded-lg p-2 text-navy/60 hover:bg-navy/5 lg:hidden"
+          className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-navy/60 hover:bg-navy/5 lg:hidden"
           aria-label="Ouvrir le menu"
         >
           <Menu className="h-5 w-5" />

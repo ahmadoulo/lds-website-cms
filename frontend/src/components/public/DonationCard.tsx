@@ -27,7 +27,7 @@ export const DonationCard = ({ method }: { method: DonationMethod }) => {
   };
 
   return (
-    <div className="flex flex-col rounded-card border border-navy/6 bg-white p-8 shadow-e2 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-e3">
+    <div className="flex flex-col rounded-card border border-navy/6 bg-white p-5 shadow-e2 transition-all sm:p-8 duration-300 hover:-translate-y-1.5 hover:shadow-e3">
       <span
         className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg ${colors.bg}`}
         aria-hidden

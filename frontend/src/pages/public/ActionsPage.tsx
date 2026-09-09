@@ -17,7 +17,7 @@ export const ActionsPage = () => {
         description="Les domaines d'intervention de Louga Développement Solidaire : éducation, santé, environnement, insertion professionnelle et solidarité."
       />
 
-      <div className="min-h-[60vh] bg-warm-muted section-y">
+      <div className="min-h-page bg-warm-muted section-y">
         <div className="container-page">
           <SectionHeading
             eyebrow="Nos actions"
@@ -38,7 +38,7 @@ export const ActionsPage = () => {
               description="Nos domaines d'intervention seront présentés ici prochainement."
             />
           ) : (
-            <div className="flex flex-wrap justify-center gap-8">
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-8">
               {missions.map((mission, index) => (
                 <div
                   key={mission.id}
@@ -50,7 +50,7 @@ export const ActionsPage = () => {
             </div>
           )}
 
-          <div className="mt-16 rounded-2xl bg-navy px-6 py-12 text-center">
+          <div className="mt-10 rounded-2xl bg-navy px-5 py-9 text-center sm:mt-16 sm:px-6 sm:py-12">
             <h2 className="mb-4 text-h2 font-extrabold text-white">
               Vous souhaitez soutenir nos actions ?
             </h2>

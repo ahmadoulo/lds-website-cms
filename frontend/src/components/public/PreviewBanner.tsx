@@ -37,7 +37,7 @@ export const PreviewBanner = () => {
       <button
         type="button"
         onClick={exit}
-        className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-xs transition-colors hover:bg-white/30"
+        className="inline-flex min-h-11 items-center gap-1 rounded-full bg-white/20 px-3.5 text-xs transition-colors hover:bg-white/30 sm:min-h-0 sm:px-2.5 sm:py-0.5"
       >
         <X className="h-3 w-3" aria-hidden /> Quitter
       </button>

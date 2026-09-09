@@ -32,7 +32,7 @@ export const PaymentMethodCard = ({ method }: { method: DonationMethod }) => {
   };
 
   return (
-    <article className="flex flex-col rounded-card border border-navy/8 bg-white p-7 shadow-e2">
+    <article className="flex flex-col rounded-card border border-navy/8 bg-white p-5 shadow-e2 sm:p-7">
       <div className="mb-5 flex items-center gap-3">
         <span
           className="flex h-11 w-11 items-center justify-center rounded-xl text-white"
@@ -70,7 +70,7 @@ export const PaymentMethodCard = ({ method }: { method: DonationMethod }) => {
             href={method.paymentLink}
             target="_blank"
             rel="noreferrer noopener"
-            className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white shadow-lg transition-all hover:brightness-110"
+            className="flex w-full items-center justify-center gap-2 rounded-xl py-4 font-bold text-white shadow-cta transition-all hover:brightness-110 sm:py-3.5"
             style={{ backgroundColor: provider.color }}
           >
             {t(method.actionLabel, `Payer avec ${provider.label}`)}

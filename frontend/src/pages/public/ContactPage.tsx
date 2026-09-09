@@ -52,7 +52,7 @@ export const ContactPage = () => {
 
       <div className="section-y-sm">
         <div className="mx-auto max-w-[1000px] gutter-x">
-          <div className="mb-12 text-center">
+          <div className="mb-8 text-center sm:mb-12">
             <h1 className="mb-4 text-h1 font-extrabold text-navy">
               Contactez-nous
             </h1>
@@ -61,10 +61,10 @@ export const ContactPage = () => {
             </p>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+          <div className="grid gap-6 lg:grid-cols-[1fr_340px] lg:gap-8">
             <div>
               {isSent ? (
-                <div className="rounded-3xl border border-green/20 bg-green/10 px-8 py-16 text-center">
+                <div className="rounded-3xl border border-green/20 bg-green/10 px-6 py-12 text-center sm:px-8 sm:py-16">
                   <span className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green text-white">
                     <CheckCircle className="h-10 w-10" aria-hidden />
                   </span>

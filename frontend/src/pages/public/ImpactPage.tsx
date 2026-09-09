@@ -40,7 +40,7 @@ export const ImpactPage = () => {
         />
 
         <div className="relative z-10 container-page">
-          <div className="mb-16 text-center">
+          <div className="mb-10 text-center sm:mb-16">
             <p className="mb-3.5 text-eyebrow uppercase text-green">Notre impact</p>
             <h1 className="mb-4 text-h1 text-white">Notre impact en chiffres</h1>
             <p className="mx-auto max-w-2xl text-body-lg text-white/70">
@@ -50,7 +50,7 @@ export const ImpactPage = () => {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-4 md:gap-8">
               {[0, 1, 2, 3].map((index) => (
                 <Skeleton key={index} className="h-32 bg-white/10" />
               ))}

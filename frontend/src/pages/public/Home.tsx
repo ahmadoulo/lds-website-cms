@@ -75,9 +75,9 @@ const Home = () => {
           aria-hidden
         />
 
-        <div className="relative z-10 container-page flex flex-wrap items-center gap-16">
+        <div className="relative z-10 container-page flex flex-wrap items-center gap-10 lg:gap-16">
           <div className="min-w-[min(100%,320px)] flex-[1_1_460px]">
-            <span className="mb-6 inline-flex items-center rounded-full bg-green/15 px-4 py-2 text-eyebrow uppercase"
+            <span className="mb-4 inline-flex items-center rounded-full bg-green/15 px-3.5 py-1.5 text-eyebrow uppercase sm:mb-6 sm:px-4 sm:py-2"
               style={{ color: readableOn(BRAND.green, WARM_SURFACE) }}>
               {organization?.name ?? 'Louga Développement Solidaire'}
             </span>
@@ -90,16 +90,17 @@ const Home = () => {
               </>
             ) : (
               <>
-                <h1 className="mb-[22px] text-h1 font-extrabold leading-[1.14] text-navy">
+                {/* The line height belongs to the --text-h1 token, not here. */}
+                <h1 className="mb-4 text-h1 font-extrabold text-navy sm:mb-5">
                   {homepage?.heroTitle}
                 </h1>
-                <p className="mb-9 max-w-[520px] text-lead leading-relaxed text-navy/70">
+                <p className="mb-7 max-w-[520px] text-lead leading-relaxed text-navy/70 sm:mb-9">
                   {homepage?.heroSubtitle}
                 </p>
               </>
             )}
 
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
               <CtaLink to="/nous-soutenir" size="lg">
                 <Heart className="h-4 w-4" aria-hidden /> Faire un don
               </CtaLink>
@@ -109,10 +110,10 @@ const Home = () => {
             </div>
           </div>
 
-          <div className="relative min-w-[min(100%,280px)] max-w-[400px] flex-[1_1_320px]">
+          <div className="relative mx-auto min-w-[min(100%,280px)] max-w-[400px] flex-[1_1_320px]">
             {/* Offset frame: one accent colour, squared off behind the photo. */}
             <div
-              className="absolute -bottom-4 -right-4 top-8 left-8 rounded-panel bg-green/20"
+              className="absolute -bottom-3 -right-3 left-6 top-6 rounded-panel bg-green/20 sm:-bottom-4 sm:-right-4 sm:left-8 sm:top-8"
               aria-hidden
             />
             {heroImage ? (
@@ -123,18 +124,18 @@ const Home = () => {
                 height={1200}
                 fetchPriority="high"
                 decoding="async"
-                className="relative aspect-[3/4] w-full rounded-panel object-cover shadow-e4"
+                className="relative aspect-[5/4] w-full rounded-panel object-cover shadow-e4 sm:aspect-[3/4]"
               />
             ) : (
-              <div className="relative flex aspect-[3/4] w-full items-center justify-center rounded-panel bg-warm-muted shadow-e4">
+              <div className="relative flex aspect-[5/4] w-full items-center justify-center rounded-panel bg-warm-muted shadow-e4 sm:aspect-[3/4]">
                 <ImageIcon className="h-10 w-10 text-navy/15" aria-hidden />
               </div>
             )}
 
             {homepage?.heroBadgeTitle && (
-              <div className="absolute -bottom-5 -left-5 flex items-center gap-3 rounded-2xl bg-white px-5 py-3.5 shadow-e3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green text-white">
-                  <Users className="h-5 w-5" aria-hidden />
+              <div className="absolute -bottom-4 left-2 flex items-center gap-2.5 rounded-2xl bg-white px-4 py-3 shadow-e3 sm:-bottom-5 sm:-left-5 sm:gap-3 sm:px-5 sm:py-3.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green text-white sm:h-10 sm:w-10">
+                  <Users className="h-4.5 w-4.5 sm:h-5 sm:w-5" aria-hidden />
                 </span>
                 <span>
                   <span className="block text-body font-extrabold leading-tight text-navy">
@@ -152,7 +153,7 @@ const Home = () => {
 
       {/* -------------------------------------------------------- Association */}
       <section className="bg-white section-y">
-        <div className="container-page flex flex-wrap items-center gap-16">
+        <div className="container-page flex flex-wrap items-center gap-10 lg:gap-16">
           <div className="min-w-[min(100%,300px)] flex-[1_1_440px]">
             <SectionHeading
               eyebrow="Qui sommes-nous"
@@ -194,6 +195,9 @@ const Home = () => {
                 src={aboutImage.url}
                 alt={aboutImage.altText?.fr || "Action de l'association sur le terrain"}
                 loading="lazy"
+                decoding="async"
+                width={1200}
+                height={900}
                 className="aspect-[4/3] w-full rounded-2xl object-cover shadow-e4"
               />
             ) : (
@@ -222,7 +226,7 @@ const Home = () => {
               Les domaines d'action seront publiés prochainement.
             </p>
           ) : (
-            <div className="flex flex-wrap justify-center gap-8">
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-8">
               {missions.map((mission, index) => (
                 <div
                   key={mission.id}
@@ -244,7 +248,7 @@ const Home = () => {
             aria-hidden
           />
           <div className="relative z-10 container-page">
-            <div className="mb-14 text-center">
+            <div className="mb-9 text-center sm:mb-14">
               <p className="mb-3.5 text-eyebrow uppercase text-green">
                 Notre impact
               </p>
@@ -253,7 +257,7 @@ const Home = () => {
               </h2>
             </div>
 
-            <dl className="grid grid-cols-2 gap-10 md:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-10">
               {impact.map((stat) => {
                 const Icon = stat.icon ? resolveIcon(stat.icon) : null;
                 // The band is navy: a statistic stored as navy would vanish.
@@ -284,7 +288,7 @@ const Home = () => {
               })}
             </dl>
 
-            <div className="mt-12 text-center">
+            <div className="mt-8 text-center sm:mt-12">
               <Link
                 to="/impact"
                 className="group inline-flex items-center gap-2 text-body font-bold text-green"
@@ -308,13 +312,13 @@ const Home = () => {
               accent="green"
             />
 
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3">
               {news.map((article) => (
                 <NewsCard key={article.id} article={article} />
               ))}
             </div>
 
-            <div className="mt-12 text-center">
+            <div className="mt-8 text-center sm:mt-12">
               <Link
                 to="/actualites"
                 className="rounded-full border-[1.5px] border-navy/15 px-7 py-3 text-body font-bold text-navy transition-colors hover:border-navy"
@@ -349,6 +353,9 @@ const Home = () => {
                     src={image.media.url}
                     alt={image.media.altText?.fr || t(image.caption, 'Action de LDS')}
                     loading="lazy"
+                    decoding="async"
+                    width={800}
+                    height={600}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   {image.caption && (
@@ -360,7 +367,7 @@ const Home = () => {
               ))}
             </div>
 
-            <div className="mt-12 text-center">
+            <div className="mt-8 text-center sm:mt-12">
               <Link
                 to="/galerie"
                 className="rounded-full border-[1.5px] border-navy/15 bg-white px-7 py-3 text-body font-bold text-navy transition-colors hover:border-navy"
@@ -379,6 +386,8 @@ const Home = () => {
             src={ctaImage.url}
             alt=""
             aria-hidden
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 h-full w-full object-cover brightness-[0.45]"
           />
         ) : (
@@ -407,7 +416,7 @@ const Home = () => {
               accent="orange"
             />
 
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3">
               {donations.slice(0, 3).map((method) =>
                 method.provider ? (
                   <PaymentMethodCard key={method.id} method={method} />
@@ -427,7 +436,7 @@ const Home = () => {
             <p className="mb-3.5 text-eyebrow uppercase text-green">
               Partenaires
             </p>
-            <h2 className="mb-10 text-h2 font-extrabold text-navy">
+            <h2 className="mb-7 text-h2 font-extrabold text-navy sm:mb-10">
               Ils nous accompagnent
             </h2>
 
@@ -441,6 +450,7 @@ const Home = () => {
                         src={partner.logo.url}
                         alt=""
                         loading="lazy"
+                        decoding="async"
                         className="h-8 w-auto max-w-[120px] object-contain"
                       />
                     ) : (

@@ -54,29 +54,29 @@
   --text-lead--line-height: 1.6;
 
   /* Headings scale with the viewport so they never crowd a small screen. */
-  --text-h3: clamp(1.0625rem, 0.95rem + 0.5vw, 1.25rem);
+  --text-h3: clamp(1rem, 0.9rem + 0.45vw, 1.25rem);
   --text-h3--line-height: 1.35;
   --text-h3--font-weight: 800;
 
-  --text-h2: clamp(1.6875rem, 1.35rem + 1.6vw, 2.375rem);
+  --text-h2: clamp(1.5rem, 1.16rem + 1.62vw, 2.375rem);
   --text-h2--line-height: 1.2;
   --text-h2--font-weight: 800;
 
   /* The step between a section title and a card title. */
-  --text-h2-sm: clamp(1.25rem, 1.05rem + 0.9vw, 1.625rem);
+  --text-h2-sm: clamp(1.125rem, 0.95rem + 0.83vw, 1.625rem);
   --text-h2-sm--line-height: 1.25;
   --text-h2-sm--font-weight: 800;
 
-  --text-h1: clamp(2rem, 1.5rem + 2.4vw, 3.25rem);
-  --text-h1--line-height: 1.12;
+  --text-h1: clamp(1.75rem, 1.13rem + 2.65vw, 3.25rem);
+  --text-h1--line-height: 1.15;
   --text-h1--font-weight: 800;
 
-  --text-stat: clamp(2.25rem, 1.6rem + 3vw, 3.5rem);
+  --text-stat: clamp(2rem, 1.3rem + 3.1vw, 3.5rem);
   --text-stat--line-height: 1;
   --text-stat--font-weight: 800;
 
   /* One-off display size, used by the 404 numeral. */
-  --text-display: clamp(4.5rem, 3rem + 8vw, 7rem);
+  --text-display: clamp(3.5rem, 2rem + 8vw, 7rem);
   --text-display--line-height: 0.95;
   --text-display--font-weight: 800;
 }
@@ -123,11 +123,29 @@
     where the fixed values were far too tall.
   */
   .section-y {
-    padding-block: clamp(3.5rem, 2.5rem + 4vw, 6.5rem);
+    /*
+      The lower bound drives the phone. At 375px the previous 3.5rem meant 56px
+      above and below every section: eight sections of the homepage spent close
+      to 900px on padding alone, which is what "a huge gap, a little
+      information, another huge gap" describes. The desktop end is untouched.
+    */
+    padding-block: clamp(2.5rem, 1.2rem + 5.45vw, 6.5rem);
   }
 
   .section-y-sm {
-    padding-block: clamp(2.5rem, 2rem + 2.5vw, 4.5rem);
+    padding-block: clamp(1.75rem, 0.87rem + 3.76vw, 4.5rem);
+  }
+
+  /*
+    Pages whose content can be short still need to colour the whole viewport,
+    otherwise the section background stops mid-screen. `vh` is the wrong unit
+    on a phone: it measures the viewport with the browser chrome retracted, so
+    a page reserves height the visitor never sees. `svh` measures the smallest
+    viewport, and falls back to `vh` where it is unsupported.
+  */
+  .min-h-page {
+    min-height: 60vh;
+    min-height: 60svh;
   }
 
   /*

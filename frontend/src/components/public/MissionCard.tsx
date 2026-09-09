@@ -9,46 +9,68 @@ import { t, type Mission } from '../../lib/types';
  */
 const ACCENTS = ['bg-green', 'bg-blue', 'bg-orange'];
 
+/**
+ * One component, two compositions.
+ *
+ * On a phone, five stacked boxes with a wide image on top read as a pile of
+ * squares and push the last pillar far below the fold, so the item becomes an
+ * editorial row: a small square thumbnail, the title beside it, the description
+ * under. From `sm` upwards it is the validated desktop card, unchanged.
+ */
 export const MissionCard = ({ mission, index }: { mission: Mission; index: number }) => {
   const Icon = resolveIcon(mission.icon);
   const accent = ACCENTS[index % ACCENTS.length];
 
+  const image = mission.image ? (
+    <img
+      src={mission.image.url}
+      alt={mission.image.altText?.fr || t(mission.title)}
+      loading="lazy"
+      decoding="async"
+      width={1200}
+      height={750}
+      className="h-full w-full object-cover transition-transform duration-500 sm:group-hover:scale-[1.04]"
+    />
+  ) : (
+    <div className="flex h-full w-full items-center justify-center">
+      <ImageIcon className="h-6 w-6 text-navy/15 sm:h-8 sm:w-8" aria-hidden />
+    </div>
+  );
+
   return (
-    <article className="group flex h-full flex-col rounded-card bg-white shadow-e2 ring-1 ring-navy/5 transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-e3">
-      {/*
-        The clipping lives on this wrapper, not on the element that holds the
-        badge: `overflow-hidden` on the parent was slicing the badge in half.
-      */}
-      <div className="relative">
-        <div className="aspect-[16/10] overflow-hidden rounded-t-card bg-warm-muted">
-          {mission.image ? (
-            <img
-              src={mission.image.url}
-              alt={mission.image.altText?.fr || t(mission.title)}
-              loading="lazy"
-              decoding="async"
-              width={1200}
-              height={750}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <ImageIcon className="h-8 w-8 text-navy/15" aria-hidden />
-            </div>
-          )}
+    <article className="group flex h-full items-start gap-4 rounded-card bg-white p-3 shadow-e1 ring-1 ring-navy/5 transition-[transform,box-shadow] duration-300 sm:block sm:p-0 sm:shadow-e2 sm:hover:-translate-y-1.5 sm:hover:shadow-e3">
+      <div className="relative w-24 shrink-0 sm:w-auto">
+        {/*
+          The clipping lives here, not on the element holding the badge:
+          `overflow-hidden` on the parent was slicing the badge in half.
+        */}
+        <div className="aspect-square overflow-hidden rounded-xl bg-warm-muted sm:aspect-[16/10] sm:rounded-b-none sm:rounded-t-card">
+          {image}
         </div>
 
+        {/* The overlapping badge only has room in the vertical composition. */}
         <span
-          className={`absolute -bottom-6 left-6 flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-e2 ring-4 ring-white ${accent}`}
+          className={`absolute -bottom-6 left-6 hidden h-14 w-14 items-center justify-center rounded-2xl text-white shadow-e2 ring-4 ring-white sm:flex ${accent}`}
           aria-hidden
         >
           <Icon className="h-6 w-6" />
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col px-6 pb-7 pt-11">
-        <h3 className="mb-3 text-h3 text-navy">{t(mission.title)}</h3>
-        <p className="text-body text-navy/70">{t(mission.description)}</p>
+      <div className="flex min-w-0 flex-1 flex-col py-0.5 sm:px-6 sm:pb-7 sm:pt-11">
+        <h3 className="mb-1.5 flex items-center gap-2 text-h3 text-navy sm:mb-3 sm:block">
+          {/* On the row layout the accent travels with the title instead. */}
+          <span
+            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-white sm:hidden ${accent}`}
+            aria-hidden
+          >
+            <Icon className="h-3.5 w-3.5" />
+          </span>
+          <span className="min-w-0">{t(mission.title)}</span>
+        </h3>
+        <p className="line-clamp-3 text-caption text-navy/70 sm:line-clamp-none sm:text-body">
+          {t(mission.description)}
+        </p>
       </div>
     </article>
   );

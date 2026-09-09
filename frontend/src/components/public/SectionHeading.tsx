@@ -30,7 +30,7 @@ export const SectionHeading = ({
 }: SectionHeadingProps) => (
   <div
     className={cn(
-      'mb-12 max-w-[640px]',
+      'mb-8 max-w-[640px] sm:mb-12',
       align === 'center' ? 'mx-auto text-center' : 'text-left',
       className,
     )}

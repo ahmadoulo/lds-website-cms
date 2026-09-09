@@ -18,7 +18,7 @@ export const NewsDetail = () => {
     return (
       <div className="mx-auto max-w-[800px] section-y gutter-x">
         <Skeleton className="mb-6 h-10 w-3/4" />
-        <Skeleton className="mb-10 aspect-[16/9] w-full" />
+        <Skeleton className="mb-8 aspect-[16/9] w-full sm:mb-10" />
         <div className="space-y-3">
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-full" />
@@ -92,7 +92,7 @@ export const NewsDetail = () => {
             {t(article.title)}
           </h1>
 
-          <p className="mb-10 border-l-4 border-green pl-5 text-lead leading-relaxed text-navy/70">
+          <p className="mb-8 border-l-4 border-green pl-4 text-lead leading-relaxed text-navy/70 sm:mb-10 sm:pl-5">
             {t(article.excerpt)}
           </p>
 
@@ -100,7 +100,12 @@ export const NewsDetail = () => {
             <img
               src={article.image.url}
               alt={article.image.altText?.fr || t(article.title)}
-              className="mb-10 aspect-[16/9] w-full rounded-2xl object-cover shadow-e3"
+              /* The lead image of the article being read: it is the LCP here. */
+              fetchPriority="high"
+              decoding="async"
+              width={1600}
+              height={900}
+              className="mb-8 aspect-[16/9] w-full rounded-2xl object-cover shadow-e3 sm:mb-10"
             />
           )}
 
@@ -118,10 +123,10 @@ export const NewsDetail = () => {
       {related.length > 0 && (
         <section className="bg-warm-muted section-y-sm">
           <div className="container-page">
-            <h2 className="mb-10 text-center text-h2 font-extrabold text-navy">
+            <h2 className="mb-7 text-center text-h2 font-extrabold text-navy sm:mb-10">
               À lire également
             </h2>
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3">
               {related.map((item) => (
                 <NewsCard key={item.id} article={item} />
               ))}
