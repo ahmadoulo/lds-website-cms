@@ -4,8 +4,8 @@ import { Building2 } from 'lucide-react';
 import { usePartners } from '../../lib/queries/publicHooks';
 import { Seo } from '../../components/seo/Seo';
 import { SectionHeading } from '../../components/public/SectionHeading';
+import { PartnerCard } from '../../components/public/PartnerCard';
 import { EmptyState, ErrorState, Skeleton } from '../../components/ui/States';
-import { resolveIcon } from '../../lib/icons';
 
 export const PartnersPage = () => {
   const { data: partners, isLoading, isError, refetch } = usePartners();
@@ -42,52 +42,12 @@ export const PartnersPage = () => {
               description="Nos partenaires seront présentés ici prochainement."
             />
           ) : (
-            <ul className="flex flex-wrap justify-center gap-6">
-              {partners.map((partner) => {
-                const Icon = resolveIcon(partner.icon);
-                const inner = (
-                  <>
-                    <span className="mb-4 flex h-14 w-full items-center justify-center">
-                      {partner.logo ? (
-                        <img
-                          src={partner.logo.url}
-                          alt={`Logo ${partner.name}`}
-                          loading="lazy"
-                    decoding="async"
-                          className="max-h-14 w-auto max-w-full object-contain"
-                        />
-                      ) : (
-                        <Icon className="h-8 w-8 text-navy/30" aria-hidden />
-                      )}
-                    </span>
-                    <span className="text-balance text-center text-caption font-bold text-navy">
-                      {partner.name}
-                    </span>
-                  </>
-                );
-
-                return (
-                  <li
-                    key={partner.id}
-                    className="w-[calc(50%-0.75rem)] sm:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1.125rem)]"
-                  >
-                    {partner.url ? (
-                      <a
-                        href={partner.url}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                        className="flex h-full flex-col items-center justify-center rounded-card bg-white p-5 shadow-e1 ring-1 ring-navy/5 transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-e2"
-                      >
-                        {inner}
-                      </a>
-                    ) : (
-                      <div className="flex h-full flex-col items-center justify-center rounded-card bg-white p-5 shadow-e1 ring-1 ring-navy/5">
-                        {inner}
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
+            <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
+              {partners.map((partner) => (
+                <li key={partner.id}>
+                  <PartnerCard partner={partner} />
+                </li>
+              ))}
             </ul>
           )}
 

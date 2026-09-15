@@ -19,8 +19,14 @@ export interface ImageSlot {
   minWidth: number;
   /** How the image is fitted: `cover` crops, `contain` never does. */
   fit: 'cover' | 'contain';
-  /** An icon slot also accepts .ico. */
+  /** An icon slot also accepts .ico. A format flag, not a shape one. */
   allowIcon?: boolean;
+  /**
+   * The slot is unusable unless the source is square. `fit: 'contain'` never
+   * crops, so a wide logo dropped into a favicon field would be letterboxed
+   * down to an unreadable strip without any other check catching it.
+   */
+  requiresSquare?: boolean;
   note?: string;
 }
 
@@ -104,6 +110,7 @@ const SLOTS = {
     minWidth: 32,
     fit: 'contain',
     allowIcon: true,
+    requiresSquare: true,
     note: 'Icône de l’onglet du navigateur. Un .ico multi-tailles (16, 32, 48 px) ou un PNG carré de 512 px conviennent.',
   },
   ogImage: {
@@ -195,6 +202,22 @@ export function analyseImage(
         `Format différent du cadrage (${slot.ratioLabel}) : environ ` +
         `${Math.round(croppedAway * 100)} % de l'image sera masquée ${side}. ` +
         "Utilisez « Voir l'image entière » pour vérifier ce qui reste visible.",
+    });
+  }
+
+  /*
+    A square slot is the one case where the ratio is not cosmetic. The crop
+    warning above only fires for `cover`, and the favicon is `contain`, so a
+    horizontal lockup dropped here produced no warning at all and ended up as
+    an unreadable strip in the browser tab.
+  */
+  if (slot.requiresSquare && ratioGap > RATIO_TOLERANCE) {
+    issues.push({
+      level: 'warning',
+      message:
+        `Image de ${width}×${height} px : cet emplacement est carré. ` +
+        'Un logo horizontal y sera réduit à une bandelette illisible. ' +
+        'Utilisez un symbole carré (le pictogramme seul, sans le texte).',
     });
   }
 

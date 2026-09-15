@@ -377,11 +377,13 @@ const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
           value={favicon}
           onChange={setFavicon}
           label="Icône du site (favicon)"
-            slot="favicon"
+          slot="favicon"
         />
         <p className="mt-1 text-xs text-navy/50">
-          Icône de l'onglet du navigateur. Utilisez une image carrée, idéalement 512×512,
-          au format PNG ou WebP.
+          Icône de l'onglet du navigateur. Elle doit être <strong>carrée</strong> : utilisez le
+          pictogramme seul, sans le texte du logo — un logo horizontal devient une bandelette
+          illisible à 16 px. PNG ou WebP de 512×512, ou un .ico multi-tailles. Un PNG carré sert
+          aussi d'icône lors de l'ajout à l'écran d'accueil sur iPhone.
         </p>
       </div>
 

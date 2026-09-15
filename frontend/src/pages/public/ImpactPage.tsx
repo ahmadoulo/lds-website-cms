@@ -3,10 +3,10 @@ import { BarChart3 } from 'lucide-react';
 import { useGalleryImages, useImpactStats, useMissions } from '../../lib/queries/publicHooks';
 import { Seo } from '../../components/seo/Seo';
 import { CtaLink } from '../../components/public/CtaLink';
-import { ImpactCounter } from '../../components/public/ImpactCounter';
+import { ImpactFigures } from '../../components/public/ImpactFigures';
 import { SectionHeading } from '../../components/public/SectionHeading';
 import { resolveIcon } from '../../lib/icons';
-import { BRAND, readableOn } from '../../lib/brand';
+import { BRAND } from '../../lib/brand';
 import { EmptyState, ErrorState, Skeleton } from '../../components/ui/States';
 import { t } from '../../lib/types';
 
@@ -64,36 +64,7 @@ export const ImpactPage = () => {
               description="Nos indicateurs d'impact seront publiés prochainement."
             />
           ) : (
-            <dl className="grid grid-cols-2 gap-8 md:grid-cols-4 md:gap-12">
-              {stats.map((stat) => {
-                const Icon = stat.icon ? resolveIcon(stat.icon) : null;
-                // The band is navy: a statistic stored as navy would vanish.
-                const color = readableOn(stat.color, BRAND.navy);
-
-                return (
-                  <div key={stat.id} className="group flex flex-col items-center text-center">
-                    {Icon && (
-                      <span
-                        className="mb-5 flex h-14 w-14 items-center justify-center rounded-full"
-                        style={{ backgroundColor: `${color}1f`, color }}
-                        aria-hidden
-                      >
-                        <Icon className="h-7 w-7" />
-                      </span>
-                    )}
-                    <dd
-                      className="mb-3 text-stat tabular-nums transition-transform duration-500 group-hover:scale-105"
-                      style={{ color }}
-                    >
-                      <ImpactCounter value={stat.value} />
-                    </dd>
-                    <dt className="text-balance text-caption font-medium uppercase tracking-wide text-white/80">
-                      {t(stat.label)}
-                    </dt>
-                  </div>
-                );
-              })}
-            </dl>
+            <ImpactFigures stats={stats} size="lg" />
           )}
         </div>
       </section>

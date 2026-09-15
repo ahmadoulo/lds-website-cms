@@ -95,6 +95,7 @@ export const IMPACT_ICON_OPTIONS: Array<{ value: string; label: string }> = [
 
 export const PARTNER_ICON_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'Landmark', label: 'Institution' },
+  { value: 'TreePine', label: 'Environnement / forêts' },
   { value: 'Building2', label: 'Entreprise' },
   { value: 'HeartPulse', label: 'Santé' },
   { value: 'Smartphone', label: 'Opérateur mobile' },

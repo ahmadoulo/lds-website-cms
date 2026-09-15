@@ -123,7 +123,13 @@ export const IconButton = ({ tone = 'default', label, icon: Icon, className, ...
     title={label}
     aria-label={label}
     className={cn(
-      'rounded-lg p-2 transition-colors',
+      /*
+        32px was under the 44px a thumb can hit, and these buttons sit side by
+        side in the mobile card of every admin list. The compact size comes
+        back from md, where a mouse is doing the pointing.
+      */
+      'inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 transition-colors',
+      'md:min-h-0 md:min-w-0',
       tone === 'danger'
         ? 'text-red-500 hover:bg-red-50 hover:text-red-700'
         : 'text-navy/50 hover:bg-navy/5 hover:text-blue',

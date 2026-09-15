@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMissionDto } from './dto/create-mission.dto';
 import { UpdateMissionDto } from './dto/update-mission.dto';
-import { sanitizeLocalized, sanitizePlainText } from '../common/sanitize';
+import { sanitizeLocalized, sanitizePlainText, sanitizeRichText } from '../common/sanitize';
 
 @Injectable()
 export class MissionsService {
@@ -16,6 +16,11 @@ export class MissionsService {
       data: {
         title: sanitizeLocalized(dto.title, sanitizePlainText) as any,
         description: sanitizeLocalized(dto.description, sanitizePlainText) as any,
+        // The long form carries formatting, so it goes through the rich-text
+        // sanitiser the news body already uses - never stored raw.
+        content: dto.content
+          ? (sanitizeLocalized(dto.content, sanitizeRichText) as any)
+          : undefined,
         icon: dto.icon,
         order,
         isPublished: dto.isPublished ?? false,
@@ -46,6 +51,10 @@ export class MissionsService {
     const data: any = {};
     if (dto.title) data.title = sanitizeLocalized(dto.title, sanitizePlainText);
     if (dto.description) data.description = sanitizeLocalized(dto.description, sanitizePlainText);
+    // null clears the long form, an object sets it, omitting it leaves it alone.
+    if (dto.content !== undefined) {
+      data.content = dto.content ? sanitizeLocalized(dto.content, sanitizeRichText) : null;
+    }
     if (dto.icon !== undefined) data.icon = dto.icon;
     if (dto.order !== undefined) data.order = dto.order;
     if (dto.isPublished !== undefined) data.isPublished = dto.isPublished;

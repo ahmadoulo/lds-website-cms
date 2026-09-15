@@ -21,6 +21,7 @@ import { t, type Mission } from '../../lib/types';
 interface FormValues {
   title: string;
   description: string;
+  content: string;
   icon: string;
   isPublished: boolean;
 }
@@ -28,6 +29,7 @@ interface FormValues {
 const EMPTY_FORM: FormValues = {
   title: '',
   description: '',
+  content: '',
   icon: MISSION_ICON_OPTIONS[0].value,
   isPublished: true,
 };
@@ -63,6 +65,7 @@ export const MissionsAdmin = () => {
     reset({
       title: t(mission.title),
       description: t(mission.description),
+      content: mission.content ? t(mission.content) : '',
       icon: mission.icon ?? MISSION_ICON_OPTIONS[0].value,
       isPublished: mission.isPublished,
     });
@@ -84,6 +87,9 @@ export const MissionsAdmin = () => {
       const payload = {
         title: { fr: values.title },
         description: { fr: values.description },
+        // null clears the long form server-side; omitting the key would leave
+        // whatever was there.
+        content: values.content.trim() ? { fr: values.content } : null,
         icon: values.icon,
         imageId: uploaded?.id ?? null,
         isPublished: values.isPublished,
@@ -284,6 +290,22 @@ export const MissionsAdmin = () => {
               {...register('description', {
                 required: 'La description est obligatoire',
                 maxLength: { value: 1200, message: '1200 caractères maximum' },
+              })}
+            />
+          </Field>
+
+          <Field
+            label="Contenu détaillé (facultatif)"
+            htmlFor="mission-content"
+            hint="Affiché quand le visiteur ouvre la fiche du domaine. Le HTML simple est accepté (paragraphes, gras, listes, liens, images). Laissez vide pour n'afficher que la description."
+            error={errors.content?.message}
+          >
+            <Textarea
+              id="mission-content"
+              rows={8}
+              aria-invalid={Boolean(errors.content)}
+              {...register('content', {
+                maxLength: { value: 20000, message: '20000 caractères maximum' },
               })}
             />
           </Field>

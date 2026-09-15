@@ -22,6 +22,8 @@ export interface Mission {
   id: string;
   title: Localized;
   description: Localized;
+  /** Optional HTML long form, shown only in the detail dialog. */
+  content: Localized | null;
   icon: string | null;
   order: number;
   isPublished: boolean;

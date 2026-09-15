@@ -3,8 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <!--
+      The association's own mark, cropped square from the logo it supplied.
+      A PNG rather than an SVG because iOS Safari accepts only a raster image
+      for the home screen. A favicon uploaded from the administration replaces
+      both links at runtime - see src/components/seo/Favicon.tsx.
+    -->
+    <link rel="icon" type="image/png" sizes="512x512" href="/logo-mark.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo-mark.png" />
     <meta name="theme-color" content="#172642" />
 
     <title>Louga Développement Solidaire</title>

@@ -5,14 +5,14 @@ import { useHomepage } from '../../lib/queries/publicHooks';
 import { Seo } from '../../components/seo/Seo';
 import { CtaLink } from '../../components/public/CtaLink';
 import { SectionHeading } from '../../components/public/SectionHeading';
-import { MissionCard } from '../../components/public/MissionCard';
+import { MissionGrid } from '../../components/public/MissionGrid';
+import { PartnerCarousel } from '../../components/public/PartnerCarousel';
+import { ImpactFigures } from '../../components/public/ImpactFigures';
 import { NewsCard } from '../../components/public/NewsCard';
-import { ImpactCounter } from '../../components/public/ImpactCounter';
 import { Lightbox } from '../../components/public/Lightbox';
 import { DonationCard } from '../../components/public/DonationCard';
 import { PaymentMethodCard } from '../../components/public/PaymentMethodCard';
 import { ErrorState, SkeletonCards, Skeleton } from '../../components/ui/States';
-import { resolveIcon } from '../../lib/icons';
 import { BRAND, WARM_SURFACE, readableOn } from '../../lib/brand';
 import { t } from '../../lib/types';
 import type { GalleryImage } from '../../lib/types';
@@ -20,6 +20,17 @@ import type { GalleryImage } from '../../lib/types';
 const Home = () => {
   const { data, isLoading, isError, refetch } = useHomepage();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  // Declared once: the loading, empty and loaded branches show the same
+  // heading, and duplicated copies are one edit away from drifting apart.
+  const missionsHeading = (
+    <SectionHeading
+      eyebrow="Nos domaines d'action"
+      title="Nos piliers d'intervention à Louga"
+      description="Nous améliorons les conditions de vie à Louga à travers des domaines d'intervention complémentaires."
+      accent="green"
+    />
+  );
 
   if (isError) {
     return (
@@ -212,30 +223,25 @@ const Home = () => {
       {/* ------------------------------------------------------------ Missions */}
       <section className="bg-warm-muted section-y">
         <div className="container-page">
-          <SectionHeading
-            eyebrow="Nos domaines d'action"
-            title="Nos piliers d'intervention à Louga"
-            description="Nous améliorons les conditions de vie à Louga à travers des domaines d'intervention complémentaires."
-            accent="green"
-          />
-
           {isLoading ? (
-            <SkeletonCards count={3} />
+            <>
+              {missionsHeading}
+              <SkeletonCards count={3} />
+            </>
           ) : missions.length === 0 ? (
-            <p className="text-center text-navy/50">
-              Les domaines d'action seront publiés prochainement.
-            </p>
+            <>
+              {missionsHeading}
+              <p className="text-center text-navy/50">
+                Les domaines d'action seront publiés prochainement.
+              </p>
+            </>
           ) : (
-            <div className="flex flex-wrap justify-center gap-3 sm:gap-8">
-              {missions.map((mission, index) => (
-                <div
-                  key={mission.id}
-                  className="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.334rem)]"
-                >
-                  <MissionCard mission={mission} index={index} />
-                </div>
-              ))}
-            </div>
+            <MissionGrid
+              missions={missions}
+              eyebrow="Nos domaines d'action"
+              title="Nos piliers d'intervention à Louga"
+              description="Nous améliorons les conditions de vie à Louga à travers des domaines d'intervention complémentaires."
+            />
           )}
         </div>
       </section>
@@ -257,36 +263,7 @@ const Home = () => {
               </h2>
             </div>
 
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-10">
-              {impact.map((stat) => {
-                const Icon = stat.icon ? resolveIcon(stat.icon) : null;
-                // The band is navy: a statistic stored as navy would vanish.
-                const color = readableOn(stat.color, BRAND.navy);
-
-                return (
-                  <div key={stat.id} className="flex flex-col items-center text-center">
-                    {Icon && (
-                      <span
-                        className="mb-4 flex h-12 w-12 items-center justify-center rounded-full"
-                        style={{ backgroundColor: `${color}1f`, color }}
-                        aria-hidden
-                      >
-                        <Icon className="h-6 w-6" />
-                      </span>
-                    )}
-                    <dd
-                      className="mb-3 text-stat tabular-nums"
-                      style={{ color }}
-                    >
-                      <ImpactCounter value={stat.value} />
-                    </dd>
-                    <dt className="text-sm font-medium uppercase tracking-wide text-white/75">
-                      {t(stat.label)}
-                    </dt>
-                  </div>
-                );
-              })}
-            </dl>
+            <ImpactFigures stats={impact} />
 
             <div className="mt-8 text-center sm:mt-12">
               <Link
@@ -440,46 +417,7 @@ const Home = () => {
               Ils nous accompagnent
             </h2>
 
-            <ul className="flex flex-wrap justify-center gap-4">
-              {partners.map((partner) => {
-                const Icon = resolveIcon(partner.icon);
-                const content = (
-                  <>
-                    {partner.logo ? (
-                      <img
-                        src={partner.logo.url}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        className="h-8 w-auto max-w-[120px] object-contain"
-                      />
-                    ) : (
-                      <Icon className="h-5 w-5 text-navy/50" aria-hidden />
-                    )}
-                    <span className="text-body font-bold text-navy">{partner.name}</span>
-                  </>
-                );
-
-                return (
-                  <li key={partner.id}>
-                    {partner.url ? (
-                      <a
-                        href={partner.url}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                        className="flex items-center gap-3 rounded-full bg-white px-6 py-3.5 shadow-sm transition-shadow hover:shadow-md"
-                      >
-                        {content}
-                      </a>
-                    ) : (
-                      <span className="flex items-center gap-3 rounded-full bg-white px-6 py-3.5 shadow-sm">
-                        {content}
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+            <PartnerCarousel partners={partners} />
           </div>
         </section>
       )}

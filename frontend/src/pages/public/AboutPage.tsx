@@ -4,10 +4,9 @@ import { ArrowRight, ImageIcon, Mail, MapPin, Phone } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
 import { useImpactStats } from '../../lib/queries/publicHooks';
 import { Seo } from '../../components/seo/Seo';
+import { ImpactFigures } from '../../components/public/ImpactFigures';
 import { SectionHeading } from '../../components/public/SectionHeading';
-import { ImpactCounter } from '../../components/public/ImpactCounter';
 import { Skeleton } from '../../components/ui/States';
-import { t } from '../../lib/types';
 
 export const AboutPage = () => {
   const { settings, isLoading } = useSettings();
@@ -104,19 +103,7 @@ export const AboutPage = () => {
             <h2 className="mb-8 text-center text-h2 font-extrabold text-white sm:mb-12">
               Notre impact en chiffres
             </h2>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-10">
-              {impact.map((stat) => (
-                <div key={stat.id} className="text-center">
-                  <dd
-                    className="mb-2 text-h1 font-extrabold tabular-nums"
-                    style={{ color: stat.color }}
-                  >
-                    <ImpactCounter value={stat.value} />
-                  </dd>
-                  <dt className="text-sm text-white/70">{t(stat.label)}</dt>
-                </div>
-              ))}
-            </dl>
+            <ImpactFigures stats={impact} />
           </div>
         </section>
       )}

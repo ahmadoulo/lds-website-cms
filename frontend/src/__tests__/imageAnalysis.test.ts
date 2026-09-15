@@ -115,3 +115,20 @@ describe('formatRatio', () => {
     expect(formatRatio(0)).toBe('—');
   });
 });
+
+describe('square slots', () => {
+  it('warns when a horizontal logo is dropped into the favicon field', () => {
+    // The real trap: lds-logo.png is 796x252. The favicon slot is `contain`, so
+    // no crop warning fires, and the file ends up as a strip in the browser tab.
+    const report = analyseImage(image(796, 252, 29_000), IMAGE_SLOTS.favicon);
+
+    expect(report.issues.some((issue) => issue.level === 'warning')).toBe(true);
+    expect(report.issues.map((issue) => issue.message).join(' ')).toContain('carré');
+  });
+
+  it('says nothing about the shape of a square icon', () => {
+    const report = analyseImage(image(512, 512, 30_000), IMAGE_SLOTS.favicon);
+
+    expect(report.issues.filter((issue) => issue.level === 'warning')).toEqual([]);
+  });
+});

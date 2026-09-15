@@ -1,5 +1,5 @@
 import React from 'react';
-import { ImageIcon } from 'lucide-react';
+import { ChevronRight, ImageIcon } from 'lucide-react';
 import { resolveIcon } from '../../lib/icons';
 import { t, type Mission } from '../../lib/types';
 
@@ -17,7 +17,15 @@ const ACCENTS = ['bg-green', 'bg-blue', 'bg-orange'];
  * editorial row: a small square thumbnail, the title beside it, the description
  * under. From `sm` upwards it is the validated desktop card, unchanged.
  */
-export const MissionCard = ({ mission, index }: { mission: Mission; index: number }) => {
+export const MissionCard = ({
+  mission,
+  index,
+  onOpen,
+}: {
+  mission: Mission;
+  index: number;
+  onOpen: () => void;
+}) => {
   const Icon = resolveIcon(mission.icon);
   const accent = ACCENTS[index % ACCENTS.length];
 
@@ -38,7 +46,12 @@ export const MissionCard = ({ mission, index }: { mission: Mission; index: numbe
   );
 
   return (
-    <article className="group flex h-full items-start gap-4 rounded-card bg-white p-3 shadow-e1 ring-1 ring-navy/5 transition-[transform,box-shadow] duration-300 sm:block sm:p-0 sm:shadow-e2 sm:hover:-translate-y-1.5 sm:hover:shadow-e3">
+    /*
+      The whole card opens the domain, but only the title is a real button: its
+      ::after covers the card, so there is exactly one tab stop and no
+      interactive element nested inside another.
+    */
+    <article className="group relative flex h-full items-start gap-4 rounded-card bg-white p-3 shadow-e1 ring-1 ring-navy/5 transition-[transform,box-shadow] duration-300 focus-within:ring-2 focus-within:ring-blue sm:block sm:p-0 sm:shadow-e2 sm:hover:-translate-y-1.5 sm:hover:shadow-e3">
       <div className="relative w-24 shrink-0 sm:w-auto">
         {/*
           The clipping lives here, not on the element holding the badge:
@@ -66,11 +79,37 @@ export const MissionCard = ({ mission, index }: { mission: Mission; index: numbe
           >
             <Icon className="h-3.5 w-3.5" />
           </span>
-          <span className="min-w-0">{t(mission.title)}</span>
+          <button
+            type="button"
+            onClick={onOpen}
+            aria-haspopup="dialog"
+            /* `cursor` is inherited, so the ::after overlay that covers the card
+               takes the pointer with it. Without this the whole card is
+               clickable but nothing says so. */
+            className="min-w-0 cursor-pointer text-left outline-none after:absolute after:inset-0 after:rounded-card after:content-['']"
+          >
+            {/* No extra label here: the text of this button is also the text of
+                the heading that wraps it, and anything added would be read as
+                part of the heading in a screen reader's headings list. */}
+            {t(mission.title)}
+          </button>
         </h3>
         <p className="line-clamp-3 text-caption text-navy/70 sm:line-clamp-none sm:text-body">
           {t(mission.description)}
         </p>
+
+        {/*
+          On a phone the whole card is already tappable and the fold is what the
+          mobile pass was fighting for, so the affordance costs a line there for
+          nothing. On desktop it is what tells the visitor the card opens.
+        */}
+        <span className="mt-4 hidden items-center text-caption font-bold text-orange sm:inline-flex">
+          En savoir plus
+          <ChevronRight
+            className="ml-1 h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1"
+            aria-hidden
+          />
+        </span>
       </div>
     </article>
   );

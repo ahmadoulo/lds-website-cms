@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { Building2, Edit2, Eye, EyeOff, ExternalLink, Plus, Trash2 } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  Building2,
+  Edit2,
+  Eye,
+  EyeOff,
+  ExternalLink,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import api from '../../lib/api/axios';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PARTNER_ICON_OPTIONS, resolveIcon } from '../../lib/icons';
@@ -107,6 +117,26 @@ export const PartnersAdmin = () => {
     invalidate: [['admin', 'partners']],
   });
 
+  // PATCH /partners/reorder existed already; only the buttons were missing.
+  const reorderMutation = useAdminMutation<string[]>({
+    mutationFn: async (ids) => (await api.patch('/partners/reorder', { ids })).data,
+    successMessage: 'Ordre des partenaires mis à jour.',
+    invalidate: [['admin', 'partners']],
+  });
+
+  /** Swaps a partner with its neighbour and persists the whole order. */
+  const move = (index: number, direction: -1 | 1) => {
+    const items = listQuery.data;
+    if (!items) return;
+
+    const target = index + direction;
+    if (target < 0 || target >= items.length) return;
+
+    const ids = items.map((item) => item.id);
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    reorderMutation.mutate(ids);
+  };
+
   const deleteMutation = useAdminMutation<string>({
     mutationFn: async (id) => (await api.delete(`/partners/${id}`)).data,
     successMessage: 'Partenaire supprimé.',
@@ -209,6 +239,23 @@ export const PartnersAdmin = () => {
           mobileTitle={(partner) => partner.name}
           actions={(partner) => (
             <>
+              <IconButton
+                label="Monter"
+                icon={ArrowUp}
+                disabled={
+                  listQuery.data.indexOf(partner) === 0 || reorderMutation.isPending
+                }
+                onClick={() => move(listQuery.data!.indexOf(partner), -1)}
+              />
+              <IconButton
+                label="Descendre"
+                icon={ArrowDown}
+                disabled={
+                  listQuery.data.indexOf(partner) === listQuery.data.length - 1 ||
+                  reorderMutation.isPending
+                }
+                onClick={() => move(listQuery.data!.indexOf(partner), 1)}
+              />
               <IconButton
                 label={partner.isPublished ? 'Masquer' : 'Afficher'}
                 icon={partner.isPublished ? EyeOff : Eye}

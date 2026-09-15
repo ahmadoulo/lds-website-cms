@@ -118,6 +118,9 @@ model Mission {
   id          String  @id @default(uuid())
   title       Json // { "fr": "...", "en": "..." }
   description Json
+  /// Optional long form shown when a visitor opens the domain. HTML, sanitised
+  /// like a news body. NULL means the dialog shows the description alone.
+  content     Json?
   icon        String? // e.g., lucide-react icon name
   order       Int     @default(0)
   isPublished Boolean @default(false)

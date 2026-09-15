@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Louga Développement Solidaire">
-  <rect width="64" height="64" rx="14" fill="#172642"/>
-  <!-- Hand supporting a heart: solidarity, the association's core symbol. -->
-  <path d="M32 43.5c-.5 0-1-.18-1.38-.53l-9.1-8.4c-3.02-2.79-3.28-7.5-.58-10.6a7.32 7.32 0 0 1 10.62-.4l.44.43.44-.43a7.32 7.32 0 0 1 10.62.4c2.7 3.1 2.44 7.81-.58 10.6l-9.1 8.4c-.38.35-.88.53-1.38.53Z" fill="#EE7900"/>
-  <path d="M15 46.5h6.2c.7 0 1.4.2 2 .58l3.1 1.92h8.9a2.6 2.6 0 0 1 0 5.2H26" stroke="#87CE18" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M35.2 52.5h6.9c.8 0 1.58-.25 2.22-.72L49 48.2" stroke="#00A4DE" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-</svg>

@@ -21,7 +21,7 @@ export const Sidebar = ({ isOpen, onClose, unreadMessages = 0 }: SidebarProps) =
     <>
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
         <NavLink to="/admin" className="flex min-w-0 items-center gap-2" aria-label="Tableau de bord">
-          <SiteLogo variant="dark" className="max-h-9" />
+          <SiteLogo variant="dark" />
         </NavLink>
         <button
           type="button"

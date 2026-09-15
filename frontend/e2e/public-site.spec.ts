@@ -33,6 +33,54 @@ test.describe('Public site', () => {
     }
   });
 
+  test('a domain of intervention opens its own detail', async ({ page }) => {
+    await page.goto('/nos-actions');
+
+    const first = page.locator('article').first().getByRole('button').first();
+    await expect(first).toBeVisible();
+    await first.click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    // The card is a real button, so the keyboard closes what the mouse opened.
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+  });
+
+  test('no section overflows sideways, at any width', async ({ page }) => {
+    /*
+      Measuring document.documentElement is useless here: the PublicLayout
+      wrapper carries overflow-x-hidden, so the document can never report an
+      overflow and the assertion would pass whatever happens. Sections do still
+      report it through scrollWidth, which is what is measured instead - minus
+      the carousels, whose horizontal scroll is the feature.
+    */
+    const widths = [375, 768, 1280];
+    const routes = ['/', '/nos-actions', '/partenaires', '/impact', '/galerie'];
+
+    for (const width of widths) {
+      await page.setViewportSize({ width, height: 900 });
+
+      for (const route of routes) {
+        await page.goto(route);
+        await page.waitForLoadState('networkidle');
+
+        const offenders = await page.evaluate(() => {
+          const bad: string[] = [];
+          document.querySelectorAll('main section, main > div, footer').forEach((element) => {
+            if (element.querySelector('[role="group"]')) return; // a carousel scrolls on purpose
+            if (element.scrollWidth > element.clientWidth + 1) {
+              bad.push(`${element.tagName}.${element.className} ${element.scrollWidth}>${element.clientWidth}`);
+            }
+          });
+          return bad;
+        });
+
+        expect(offenders, `${route} @ ${width}px`).toEqual([]);
+      }
+    }
+  });
+
   test('an article can be opened from the news listing', async ({ page }) => {
     await page.goto('/actualites');
 

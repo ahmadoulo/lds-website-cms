@@ -342,6 +342,60 @@ describe('Content workflow (e2e)', () => {
     });
   });
 
+  describe('a domain of intervention can carry a long form', () => {
+    it('stores it, sanitises it, and hands it to the public site', async () => {
+      const created = await request(http)
+        .post('/api/v1/missions')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          title: { fr: 'Éducation' },
+          description: { fr: 'Distribution de kits scolaires.' },
+          content: { fr: '<p>Le programme complet.</p><script>alert(1)</script>' },
+          isPublished: true,
+        })
+        .expect(201);
+
+      // The long form goes through the same rich-text sanitiser as a news body.
+      expect(created.body.content.fr).toContain('<p>Le programme complet.</p>');
+      expect(created.body.content.fr).not.toContain('<script');
+
+      const listed = await request(http).get('/api/v1/public/missions').expect(200);
+      const mission = listed.body.find((m: any) => m.id === created.body.id);
+      expect(mission.content.fr).toContain('Le programme complet.');
+    });
+
+    it('leaves a domain without a long form untouched', async () => {
+      const created = await request(http)
+        .post('/api/v1/missions')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title: { fr: 'Santé' }, description: { fr: 'Consultations gratuites.' } })
+        .expect(201);
+
+      // Nothing sent, nothing stored: the dialog then shows the description alone.
+      expect(created.body.content ?? null).toBeNull();
+    });
+
+    it('clears the long form when the editor empties the field', async () => {
+      const created = await request(http)
+        .post('/api/v1/missions')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          title: { fr: 'Environnement' },
+          description: { fr: 'Reboisement.' },
+          content: { fr: '<p>À supprimer.</p>' },
+        })
+        .expect(201);
+
+      const updated = await request(http)
+        .patch(`/api/v1/missions/${created.body.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ content: null })
+        .expect(200);
+
+      expect(updated.body.content ?? null).toBeNull();
+    });
+  });
+
   describe('key figures carry a pictogram', () => {
     let statId: string;
 

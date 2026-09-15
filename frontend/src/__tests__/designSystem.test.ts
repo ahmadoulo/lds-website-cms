@@ -83,6 +83,46 @@ describe('mobile ergonomics', () => {
     expect(field.content).toContain('sm:py-2.5 sm:text-sm');
   });
 
+  it('tells the browser how to fetch every public image', () => {
+    /*
+      An image with neither `loading` nor `fetchPriority` is fetched eagerly and
+      competes with the content on a phone connection. The two exceptions are
+      named rather than pattern-matched, so adding a third is a decision.
+    */
+    const EXEMPT = new Set([
+      // Opened by the visitor, on purpose: deferring it would be the bug.
+      'components/public/Lightbox.tsx',
+      // The header mark: it is part of the first paint.
+      'components/public/SiteLogo.tsx',
+    ]);
+
+    const offending = FILES.flatMap(({ path, content }) => {
+      if (!/^(?:pages\/public|components\/(?:public|layout))\//.test(path)) return [];
+      if (EXEMPT.has(path)) return [];
+
+      return [...content.matchAll(/<img\b[\s\S]*?\/>/g)].flatMap((match) => {
+        const tag = match[0];
+        if (/loading=|fetchPriority=/.test(tag)) return [];
+        return [`${path}:${content.slice(0, match.index).split(NEWLINE).length}`];
+      });
+    });
+
+    expect(offending).toEqual([]);
+  });
+
+  it('gives every public image an alt attribute', () => {
+    const offending = FILES.flatMap(({ path, content }) => {
+      if (!/^(?:pages\/public|components\/(?:public|layout))\//.test(path)) return [];
+
+      return [...content.matchAll(/<img\b[\s\S]*?\/>/g)].flatMap((match) => {
+        if (/\balt=/.test(match[0])) return [];
+        return [`${path}:${content.slice(0, match.index).split(NEWLINE).length}`];
+      });
+    });
+
+    expect(offending).toEqual([]);
+  });
+
   it('gives every interactive element a finger-sized target', () => {
     /*
       A control whose only vertical padding is p-1 or py-2 lands around 32px.

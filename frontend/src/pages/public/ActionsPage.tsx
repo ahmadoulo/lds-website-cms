@@ -4,11 +4,23 @@ import { useMissions } from '../../lib/queries/publicHooks';
 import { Seo } from '../../components/seo/Seo';
 import { CtaLink } from '../../components/public/CtaLink';
 import { SectionHeading } from '../../components/public/SectionHeading';
-import { MissionCard } from '../../components/public/MissionCard';
+import { MissionGrid } from '../../components/public/MissionGrid';
 import { EmptyState, ErrorState, SkeletonCards } from '../../components/ui/States';
 
 export const ActionsPage = () => {
   const { data: missions, isLoading, isError, refetch } = useMissions();
+
+  // Declared once: the loading, empty and loaded branches all show the same
+  // heading, and three copies of an <h1> is one edit away from two in the DOM.
+  const heading = (
+    <SectionHeading
+      eyebrow="Nos actions"
+      title="Nos domaines d'intervention à Louga"
+      description="Nous améliorons les conditions de vie à Louga à travers des domaines d'intervention complémentaires."
+      accent="green"
+      as="h1"
+    />
+  );
 
   return (
     <>
@@ -19,35 +31,35 @@ export const ActionsPage = () => {
 
       <div className="min-h-page bg-warm-muted section-y">
         <div className="container-page">
-          <SectionHeading
-            eyebrow="Nos actions"
-            title="Nos domaines d'intervention à Louga"
-            description="Nous améliorons les conditions de vie à Louga à travers des domaines d'intervention complémentaires."
-            accent="green"
-            as="h1"
-          />
-
           {isLoading ? (
-            <SkeletonCards count={6} />
+            <>
+              {heading}
+              <SkeletonCards count={6} />
+            </>
           ) : isError ? (
-            <ErrorState onRetry={() => void refetch()} />
+            // The error branch needs the heading too, or the page ships with
+            // no <h1> at all exactly when something has gone wrong.
+            <>
+              {heading}
+              <ErrorState onRetry={() => void refetch()} />
+            </>
           ) : !missions?.length ? (
-            <EmptyState
-              icon={Target}
-              title="Aucun domaine d'action publié"
-              description="Nos domaines d'intervention seront présentés ici prochainement."
-            />
+            <>
+              {heading}
+              <EmptyState
+                icon={Target}
+                title="Aucun domaine d'action publié"
+                description="Nos domaines d'intervention seront présentés ici prochainement."
+              />
+            </>
           ) : (
-            <div className="flex flex-wrap justify-center gap-3 sm:gap-8">
-              {missions.map((mission, index) => (
-                <div
-                  key={mission.id}
-                  className="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.334rem)]"
-                >
-                  <MissionCard mission={mission} index={index} />
-                </div>
-              ))}
-            </div>
+            <MissionGrid
+              missions={missions}
+              eyebrow="Nos actions"
+              title="Nos domaines d'intervention à Louga"
+              description="Nous améliorons les conditions de vie à Louga à travers des domaines d'intervention complémentaires."
+              as="h1"
+            />
           )}
 
           <div className="mt-10 rounded-2xl bg-navy px-5 py-9 text-center sm:mt-16 sm:px-6 sm:py-12">

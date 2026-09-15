@@ -217,6 +217,10 @@ async function seedImpact() {
     { label: { fr: 'Élèves accompagnés', en: 'Students supported' }, value: 240, color: '#EE7900', icon: 'GraduationCap', order: 1, isPublished: true },
     { label: { fr: 'Patients soignés gratuitement', en: 'Patients treated for free' }, value: 608, color: '#00A4DE', icon: 'Stethoscope', order: 2, isPublished: true },
     { label: { fr: 'Arbres plantés', en: 'Trees planted' }, value: 20, color: '#87CE18', icon: 'Trees', order: 3, isPublished: true },
+    // Non publiee et a zero : le chiffre reel est une donnee de terrain que
+    // seule l'association detient. Elle apparait dans l'administration, prete
+    // a recevoir son nombre, plutot que de publier un chiffre invente.
+    { label: { fr: 'Cantines scolaires', en: 'School canteens' }, value: 0, color: '#EE7900', icon: 'Utensils', order: 4, isPublished: false },
   ];
 
   for (const stat of stats) await prisma.impactStatistic.create({ data: stat });
@@ -228,10 +232,22 @@ async function seedImpact() {
 async function seedPartners() {
   if ((await prisma.partner.count()) > 0) return;
 
+  // Les icones ne sont qu'un repli : des qu'un logo est televerse depuis
+  // l'administration, c'est lui qui s'affiche. Aucune URL n'est inventee.
   const partners = [
     { name: 'Institut Islamique Manar Al Houda', icon: 'Landmark', isPublished: true, order: 0 },
     { name: 'LaMe', icon: 'HeartPulse', isPublished: true, order: 1 },
     { name: 'YOM France (Ya Oummata Mouhamad)', icon: 'Users', isPublished: true, order: 2 },
+    { name: 'Carrefour', icon: 'Building2', isPublished: true, order: 3 },
+    { name: 'GIZ', icon: 'Landmark', isPublished: true, order: 4 },
+    { name: "Inspection d'académie (IA de Louga)", icon: 'GraduationCap', isPublished: true, order: 5 },
+    {
+      name: "Inspections de l'Éducation et de la Formation (IEF de Louga)",
+      icon: 'GraduationCap',
+      isPublished: true,
+      order: 6,
+    },
+    { name: 'Eaux et Forêts', icon: 'TreePine', isPublished: true, order: 7 },
   ];
 
   for (const partner of partners) await prisma.partner.create({ data: partner });
