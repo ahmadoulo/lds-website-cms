@@ -77,8 +77,19 @@ export const SiteLogo = ({ variant = 'light', className }: SiteLogoProps) => {
           variant === 'dark' ? 'text-white' : 'text-navy',
         )}
       >
-        <span className="text-body-lg font-extrabold tracking-tight">{first}</span>
-        {tail && <span className="text-caption font-semibold opacity-80">{tail}</span>}
+        <span className="whitespace-nowrap text-body-lg font-extrabold tracking-tight">
+          {first}
+        </span>
+        {tail && (
+          /*
+            Between 1024 and 1279px the eight nav entries and the donate button
+            need every pixel: the second line stands down there and comes back
+            once there is room for it.
+          */
+          <span className="block whitespace-nowrap text-caption font-semibold opacity-80 lg:hidden xl:block">
+            {tail}
+          </span>
+        )}
       </span>
     </span>
   );

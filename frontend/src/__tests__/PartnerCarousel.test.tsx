@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 vi.mock('../context/SettingsContext', () => ({
   useSettings: () => ({ settings: undefined, isLoading: false, error: null }),
@@ -80,5 +81,58 @@ describe('partner carousel', () => {
     expect(logo!.getAttribute('alt')).toBe('');
     expect(logo!.getAttribute('loading')).toBe('lazy');
     expect(logo!.getAttribute('width')).toBe('300');
+  });
+});
+
+describe('partner carousel — automatic drift', () => {
+  /** jsdom reports every scrollWidth as 0; this makes the track overflow. */
+  const withOverflow = (scrollWidth = 2000, clientWidth = 800) => {
+    const track = screen.getByRole('group', { name: 'Nos partenaires' });
+    Object.defineProperty(track, 'scrollWidth', { value: scrollWidth, configurable: true });
+    Object.defineProperty(track, 'clientWidth', { value: clientWidth, configurable: true });
+    return track;
+  };
+
+  it('hides the platform scrollbar without giving up scrolling', () => {
+    renderWithProviders(<PartnerCarousel partners={EIGHT} />);
+    const track = screen.getByRole('group', { name: 'Nos partenaires' });
+
+    // The grey slab across the section is what the association objected to.
+    expect(track.className).toContain('scrollbar-hidden');
+    // It is still a scroll container: wheel, drag, keyboard and arrows work.
+    expect(track.className).toContain('overflow-x-auto');
+  });
+
+  it('does not drift while everything already fits', async () => {
+    renderWithProviders(<PartnerCarousel partners={EIGHT.slice(0, 2)} />);
+    const track = screen.getByRole('group', { name: 'Nos partenaires' });
+
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(track.scrollLeft).toBe(0);
+  });
+
+  it('leaves the order readable the same way round', () => {
+    renderWithProviders(<PartnerCarousel partners={EIGHT} />);
+    const names = screen
+      .getAllByRole('listitem')
+      .map((item) => item.textContent);
+
+    // The drift rewinds to the start rather than reversing, so the order the
+    // association set in the administration is never read backwards.
+    expect(names[0]).toContain('Institut Islamique Manar Al Houda');
+    expect(names[names.length - 1]).toContain('Eaux et Forêts');
+  });
+
+  it('suspends the drift while the pointer is over the track', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<PartnerCarousel partners={EIGHT} />);
+    const track = withOverflow();
+
+    await user.hover(track);
+    const settled = track.scrollLeft;
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    // A visitor reading a partner name must not have it slide away.
+    expect(track.scrollLeft).toBe(settled);
   });
 });

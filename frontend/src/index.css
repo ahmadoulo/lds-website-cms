@@ -168,6 +168,21 @@
     light on a navy panel and cuts a bright strip down the edge, so it is
     replaced by a thin one that only appears while pointing at the menu.
   */
+  /*
+    A track that scrolls by itself has no use for a scrollbar: the platform one
+    is drawn as a grey slab across the section and reads as a defect. The track
+    stays scrollable - by wheel, by drag, by keyboard and by its own buttons -
+    it simply stops drawing the handle.
+  */
+  .scrollbar-hidden {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+
   .scrollbar-dark {
     scrollbar-width: thin;
     scrollbar-color: transparent transparent;

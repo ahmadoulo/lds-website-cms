@@ -3,6 +3,12 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PartnerCard } from './PartnerCard';
 import type { Partner } from '../../lib/types';
 
+/** Pixels per frame. Slow enough to read a name as it goes past. */
+const DRIFT = 0.35;
+
+/** How long a manual gesture suspends the drift. */
+const RESUME_DELAY = 2500;
+
 /**
  * A horizontal track of partners that only behaves like a carousel when it has
  * to.
@@ -18,6 +24,8 @@ export const PartnerCarousel = ({ partners }: { partners: Partner[] }) => {
   const [overflows, setOverflows] = useState(false);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const resumeTimer = useRef<number | undefined>(undefined);
 
   const measure = useCallback(() => {
     const track = trackRef.current;
@@ -49,11 +57,64 @@ export const PartnerCarousel = ({ partners }: { partners: Partner[] }) => {
     return () => observer.disconnect();
   }, [measure, partners.length]);
 
+  /** Suspends the drift for a moment after any manual gesture. */
+  const holdDrift = useCallback(() => {
+    setPaused(true);
+    window.clearTimeout(resumeTimer.current);
+    resumeTimer.current = window.setTimeout(() => setPaused(false), RESUME_DELAY);
+  }, []);
+
+  /*
+    The drift moves `scrollLeft` rather than animating a transform, so the track
+    stays a real scroll container: the wheel, a drag, the arrows and the keyboard
+    all keep working, and the list is never trapped behind an animation that a
+    reduced-motion setting would have to stop.
+  */
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || !overflows || paused) return undefined;
+
+    // Someone who asked their system for less motion did not ask for this.
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
+    if (typeof requestAnimationFrame === 'undefined') return undefined;
+
+    let frame = 0;
+    let carry = 0;
+
+    const step = () => {
+      const scrollable = track.scrollWidth - track.clientWidth;
+
+      if (track.scrollLeft >= scrollable - 1) {
+        // Back to the first partner rather than reversing, so the order the
+        // association chose is always read the same way round.
+        track.scrollLeft = 0;
+        carry = 0;
+      } else {
+        // scrollLeft rounds to whole pixels; the remainder is carried over so
+        // a sub-pixel speed is not silently floored to a standstill.
+        carry += DRIFT;
+        const whole = Math.floor(carry);
+        if (whole >= 1) {
+          track.scrollLeft += whole;
+          carry -= whole;
+        }
+      }
+
+      frame = requestAnimationFrame(step);
+    };
+
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [overflows, paused]);
+
+  useEffect(() => () => window.clearTimeout(resumeTimer.current), []);
+
   const scrollBy = (direction: -1 | 1) => {
     const track = trackRef.current;
     if (!track) return;
 
-    // Someone who asked their system for less motion means it here too.
+    holdDrift();
+
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
     // A little under one viewport, so the card at the edge stays visible and
@@ -75,7 +136,13 @@ export const PartnerCarousel = ({ partners }: { partners: Partner[] }) => {
   };
 
   return (
-    <div className="relative">
+    <div
+      className="relative"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={() => setPaused(false)}
+    >
       <div
         /* The group, not the list: putting role="group" on the <ul> would strip
            its implicit list role and stop it being announced as N items. */
@@ -85,16 +152,18 @@ export const PartnerCarousel = ({ partners }: { partners: Partner[] }) => {
         tabIndex={overflows ? 0 : -1}
         onKeyDown={onKeyDown}
         onScroll={measure}
+        onPointerDown={holdDrift}
+        onWheel={holdDrift}
         ref={trackRef}
         /* py-3 rather than pb-2: the cards lift on hover and draw a focus ring
            outside their box, and a scroll container clips both. */
-        className="snap-x snap-mandatory overflow-x-auto scroll-px-5 py-3 outline-none focus-visible:ring-2 focus-visible:ring-blue"
+        className="scrollbar-hidden overflow-x-auto scroll-px-5 py-3 outline-none focus-visible:ring-2 focus-visible:ring-blue"
       >
         {/* Safari strips the implicit list role when list-style is none, which
             Tailwind's reset sets: the role has to be stated. */}
         <ul role="list" className="mx-auto flex w-fit max-w-full gap-4 sm:gap-6">
           {partners.map((partner) => (
-            <li key={partner.id} className="w-40 shrink-0 snap-start sm:w-48">
+            <li key={partner.id} className="w-40 shrink-0 sm:w-48">
               <PartnerCard partner={partner} />
             </li>
           ))}

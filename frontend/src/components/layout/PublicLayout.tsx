@@ -148,11 +148,20 @@ export const PublicLayout = () => {
             isScrolled ? 'py-2 sm:py-3' : 'py-2.5 sm:py-4',
           )}
         >
-          <Link to="/" className="flex items-center" aria-label="Accueil">
+          <Link to="/" className="flex shrink-0 items-center" aria-label="Accueil">
             <SiteLogo />
           </Link>
 
-          <nav className="hidden items-center gap-7 lg:flex" aria-label="Navigation principale">
+          {/*
+            shrink-0 is the actual fix: with justify-between the nav was a
+            shrinkable flex item, so it was compressed until "À propos",
+            "Nos actions" and even the donate button broke over two lines,
+            while empty space sat beside them.
+          */}
+          <nav
+            className="hidden shrink-0 items-center gap-4 lg:flex xl:gap-7"
+            aria-label="Navigation principale"
+          >
             {NAV.map((item) => (
               <NavLink
                 key={item.href}
@@ -160,7 +169,7 @@ export const PublicLayout = () => {
                 end={item.href === '/'}
                 className={({ isActive }) =>
                   cn(
-                    'relative py-1 text-body font-semibold transition-colors',
+                    'relative whitespace-nowrap py-1 text-body font-semibold transition-colors',
                     'after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-blue',
                     'after:origin-left after:transition-transform after:duration-300',
                     isActive
@@ -173,7 +182,7 @@ export const PublicLayout = () => {
                 {item.label}
               </NavLink>
             ))}
-            <CtaLink to="/nous-soutenir" className="ml-1">
+            <CtaLink to="/nous-soutenir" className="ml-1 shrink-0 whitespace-nowrap">
               <Heart className="h-4 w-4" aria-hidden /> Faire un don
             </CtaLink>
           </nav>

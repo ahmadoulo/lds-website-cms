@@ -11,16 +11,27 @@ const ACCENTS = ['bg-green', 'bg-blue', 'bg-orange'];
   Written out in full because Tailwind reads literal strings from the source:
   a class name assembled at runtime is never generated.
 */
+
+/*
+  From the first breakpoint the heading stops being a banner above the grid and
+  becomes a tile of it: left-aligned on the same line as the cards, centred on
+  its row's height, and without the bottom margin a banner needs. Below `sm`
+  the section is a single column and the heading keeps its centred form.
+*/
+const TILE = 'sm:mb-0 sm:mx-0 sm:max-w-none sm:self-center sm:text-left';
+
 const SM_SPAN: Record<number, string> = {
   1: 'sm:col-span-1',
-  2: 'sm:col-span-2',
+  // Spanning both columns puts the heading back on its own line, so the tile
+  // treatment would centre a full-width banner: it stays a banner.
+  2: 'sm:col-span-2 sm:mb-8 sm:mx-auto sm:text-center',
 };
 
 const LG_SPAN: Record<number, string> = {
-  1: 'lg:col-span-1 lg:mb-0 lg:self-center lg:mx-0 lg:max-w-none lg:text-left',
-  2: 'lg:col-span-2 lg:mb-0 lg:self-center lg:mx-0 lg:max-w-none lg:text-left',
+  1: 'lg:col-span-1',
+  2: 'lg:col-span-2 lg:mb-0 lg:mx-0 lg:self-center lg:text-left',
   // A full-width banner is the composition the section already had.
-  3: 'lg:col-span-3',
+  3: 'lg:col-span-3 lg:mb-8 lg:mx-auto lg:text-center',
 };
 
 interface MissionGridProps {
@@ -50,7 +61,7 @@ export const MissionGrid = ({ missions, eyebrow, title, description, as }: Missi
           description={description}
           accent="green"
           as={as}
-          className={`${SM_SPAN[smSpan]} ${LG_SPAN[lgSpan]}`}
+          className={`${TILE} ${SM_SPAN[smSpan]} ${LG_SPAN[lgSpan]}`}
         />
 
         {missions.map((mission, index) => (
