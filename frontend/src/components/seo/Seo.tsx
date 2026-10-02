@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext';
 import { DEFAULT_LOCALE, LOCALES, LOCALE_PARAM, type Locale } from '../../lib/i18n/locale';
 import { useShellLocale } from '../../lib/i18n/dictionaries/adminShell';
@@ -94,10 +95,17 @@ export const Seo = ({ title, description, image, noIndex, type = 'website' }: Se
   const metaDescription = description || settings?.seo.description || '';
   const shareImage = image ?? settings?.seo.ogImage?.url ?? null;
 
-  // Read during render so the effect re-runs on navigation, not only on a change
-  // of language.
+  /*
+    The path comes from the router, not from window.location.
+    The two agree in a browser, because pushState rewrites the address bar, but
+    reading the window made the canonical and the alternates depend on
+    something outside React's knowledge: they could not be asserted at all, and
+    nothing would have caught them drifting during a transition. The origin
+    still comes from the window, which is the one part the router does not know.
+  */
+  const location = useLocation();
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
-  const path = typeof window === 'undefined' ? '' : window.location.pathname;
+  const path = location.pathname;
 
   useEffect(() => {
     const canonical = addressFor(locale, origin, path);
