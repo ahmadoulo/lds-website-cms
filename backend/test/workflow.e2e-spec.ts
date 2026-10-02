@@ -571,6 +571,93 @@ describe('Content workflow (e2e)', () => {
       request(http).delete('/api/v1/media/orphans').expect(401));
   });
 
+  describe('editorial settings carry both languages', () => {
+    const auth = () => ({ Authorization: `Bearer ${token}` });
+
+    it('ships a French and an Arabic default for the homepage headline', async () => {
+      const res = await request(http).get('/api/v1/public/settings').expect(200);
+
+      // The H1 of the site. A French H1 on an Arabic page is the first thing a
+      // visitor reads, and was the last French string left in the Arabic site.
+      expect(res.body.homepage.heroTitle.fr).toBeTruthy();
+      expect(res.body.homepage.heroTitle.ar).toBeTruthy();
+    });
+
+    it('keeps the phone numbers and the email single-valued', async () => {
+      const res = await request(http).get('/api/v1/public/settings').expect(200);
+
+      // Dialled and clicked, not read: duplicating them would be inventing data.
+      expect(typeof res.body.global_contact.phone).toBe('string');
+      expect(typeof res.body.global_contact.email).toBe('string');
+      // The postal address is read, so it is editorial.
+      expect(typeof res.body.global_contact.address).toBe('object');
+    });
+
+    it('leaves the registered name common to both languages', async () => {
+      const res = await request(http).get('/api/v1/public/settings').expect(200);
+      expect(typeof res.body.organization.name).toBe('string');
+    });
+
+    it('adds Arabic to a draft without touching the published French', async () => {
+      const published = await request(http).get('/api/v1/public/settings').expect(200);
+      const frenchBefore = published.body.homepage.heroTitle.fr;
+
+      await request(http)
+        .patch('/api/v1/settings/homepage')
+        .set(auth())
+        .send({ value: { heroTitle: { ar: 'عنوان جديد' } } })
+        .expect(200);
+
+      // Still a draft: the public site has not moved.
+      const during = await request(http).get('/api/v1/public/settings').expect(200);
+      expect(during.body.homepage.heroTitle.fr).toBe(frenchBefore);
+
+      await request(http).post('/api/v1/settings/homepage/publish').set(auth()).expect(201);
+
+      const after = await request(http).get('/api/v1/public/settings').expect(200);
+      // The French the form never sent is still there, beside the new Arabic.
+      expect(after.body.homepage.heroTitle.fr).toBe(frenchBefore);
+      expect(after.body.homepage.heroTitle.ar).toBe('عنوان جديد');
+    });
+
+    it('edits one language of a draft without dropping the other', async () => {
+      await request(http)
+        .patch('/api/v1/settings/organization')
+        .set(auth())
+        .send({ value: { tagline: { fr: 'Nouvelle accroche', ar: 'شعار جديد' } } })
+        .expect(200);
+
+      await request(http)
+        .patch('/api/v1/settings/organization')
+        .set(auth())
+        .send({ value: { tagline: { fr: 'Accroche révisée' } } })
+        .expect(200);
+
+      await request(http).post('/api/v1/settings/organization/publish').set(auth()).expect(201);
+
+      const res = await request(http).get('/api/v1/public/settings').expect(200);
+      expect(res.body.organization.tagline).toEqual({
+        fr: 'Accroche révisée',
+        ar: 'شعار جديد',
+      });
+    });
+
+    it('leaves the rest of a section alone when one field is edited', async () => {
+      const before = await request(http).get('/api/v1/public/settings').expect(200);
+
+      await request(http)
+        .patch('/api/v1/settings/seo')
+        .set(auth())
+        .send({ value: { title: { fr: 'LDS', ar: 'لوغا' } } })
+        .expect(200);
+      await request(http).post('/api/v1/settings/seo/publish').set(auth()).expect(201);
+
+      const after = await request(http).get('/api/v1/public/settings').expect(200);
+      expect(after.body.seo.description).toEqual(before.body.seo.description);
+      expect(after.body.seo.keywords).toEqual(before.body.seo.keywords);
+    });
+  });
+
   describe('site settings drive the public pages', () => {
     it('serves the defaults before anything is saved', async () => {
       const res = await request(http).get('/api/v1/public/settings').expect(200);

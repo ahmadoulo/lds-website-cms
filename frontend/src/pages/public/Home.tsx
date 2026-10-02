@@ -116,7 +116,6 @@ const Home = () => {
   return (
     <>
       <Seo
-        description={settings?.seo.description}
         image={settings?.seo.ogImage?.url ?? heroImage?.url}
       />
 
@@ -148,10 +147,10 @@ const Home = () => {
               <>
                 {/* The line height belongs to the --text-h1 token, not here. */}
                 <h1 className="mb-4 text-h1 font-extrabold text-navy sm:mb-5">
-                  {homepage?.heroTitle}
+                  {localized(homepage?.heroTitle, locale)}
                 </h1>
                 <p className="mb-7 max-w-[520px] text-lead leading-relaxed text-navy/70 sm:mb-9">
-                  {homepage?.heroSubtitle}
+                  {localized(homepage?.heroSubtitle, locale)}
                 </p>
               </>
             )}
@@ -200,10 +199,10 @@ const Home = () => {
                 </span>
                 <span>
                   <span className="block text-body font-extrabold leading-tight text-navy">
-                    {homepage.heroBadgeTitle}
+                    {localized(homepage.heroBadgeTitle, locale)}
                   </span>
                   <span className="block text-xs text-navy/60">
-                    {homepage.heroBadgeSubtitle}
+                    {localized(homepage.heroBadgeSubtitle, locale)}
                   </span>
                 </span>
               </div>
@@ -232,13 +231,13 @@ const Home = () => {
               </>
             ) : (
               <>
-                <p className="mb-5 text-body-lg leading-[1.75] text-navy/75">{organization?.about}</p>
-                <p className="mb-9 text-body-lg leading-[1.75] text-navy/75">{organization?.mission}</p>
+                <p className="mb-5 text-body-lg leading-[1.75] text-navy/75">{localized(organization?.about, locale)}</p>
+                <p className="mb-9 text-body-lg leading-[1.75] text-navy/75">{localized(organization?.mission, locale)}</p>
                 {organization?.quote && (
                   // The rule hangs where the text begins, in either script.
                   <blockquote className="flex items-start gap-4 border-s-4 border-green bg-warm-muted/60 p-6">
                     <p className="font-lora text-lead italic leading-relaxed text-navy">
-                      {organization.quote}
+                      {localized(organization.quote, locale)}
                     </p>
                   </blockquote>
                 )}
@@ -440,7 +439,7 @@ const Home = () => {
               around the quote.
             */}
             {isRtl ? '«' : '« '}
-            {homepage?.ctaQuote ?? p.home.ctaQuote}
+            {localized(homepage?.ctaQuote, locale) || p.home.ctaQuote}
             {isRtl ? '»' : ' »'}
           </p>
           <CtaLink to="/nous-soutenir" size="lg">

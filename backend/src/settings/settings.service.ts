@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { mergeLocalized } from '../common/sanitize';
 import { UpdateSettingDto } from './dto/update-setting.dto';
-import { DEFAULT_SETTINGS, SETTING_KEYS, type SettingKey } from './settings.constants';
+import { DEFAULT_SETTINGS, LOCALIZED_SETTINGS, SETTING_KEYS, type SettingKey } from './settings.constants';
 
 type SettingsRow = {
   key: string;
@@ -80,8 +81,29 @@ export class SettingsService {
     this.assertKnownKey(key);
 
     const existing = await this.prisma.siteSettings.findUnique({ where: { key } });
-    const base = (existing?.draftValue ?? existing?.value ?? {}) as object;
-    const merged = { ...base, ...dto.value };
+    /*
+      The defaults, not an empty object: a section that has never been saved has
+      no row, so starting from {} meant the first edit to one field published a
+      section containing only that field and dropped every default beside it.
+      The create branch below already says a draft starts from its defaults;
+      this is the half that was missing.
+    */
+    const base = (existing?.draftValue ??
+      existing?.value ??
+      DEFAULT_SETTINGS[key as SettingKey]) as Record<string, any>;
+    const merged: Record<string, any> = { ...base, ...dto.value };
+
+    /*
+      The section-level spread above replaces a field outright, which is right
+      for a phone number and wrong for a translation: a form that shows only
+      French would overwrite `{ fr, ar }` with `{ fr }` and take the Arabic with
+      it. Every editorial field is folded into what is stored instead, and an
+      empty string remains the one deliberate way to drop a language.
+    */
+    for (const field of LOCALIZED_SETTINGS[key as SettingKey] ?? []) {
+      if (merged[field] === undefined) continue;
+      merged[field] = mergeLocalized(base[field], merged[field] as Record<string, string>);
+    }
 
     await this.prisma.siteSettings.upsert({
       where: { key },

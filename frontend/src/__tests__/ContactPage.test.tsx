@@ -15,7 +15,7 @@ vi.mock('../context/SettingsContext', () => ({
         email: 'lougasolidaire@gmail.com',
         phone: '+221 77 472 33 64',
         phoneSecondary: '',
-        address: 'Louga, Sénégal',
+        address: { fr: 'Louga, Sénégal' },
       },
       seo: { title: 'LDS', description: '', keywords: '', ogImageId: null },
     },

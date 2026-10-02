@@ -7,6 +7,7 @@ import api from '../../lib/api/axios';
 import { useT } from '../../lib/i18n/useT';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
+import { LocalizedFormField } from '../../components/i18n/LocalizedFormField';
 import { MediaPicker } from '../../components/admin/ui/MediaPicker';
 import { openPreview } from '../../components/admin/ui/PreviewButton';
 import { Button } from '../../components/ui/Button';
@@ -425,6 +426,7 @@ const OrganizationForm = ({ settings }: { settings: SiteSettings }) => {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm({ defaultValues: settings.organization });
 
@@ -453,25 +455,45 @@ const OrganizationForm = ({ settings }: { settings: SiteSettings }) => {
         </Field>
       </div>
 
-      <Field
+      {/* The registered name and the acronym above stay single-valued: they
+          are the same in both languages. Everything from here down is the
+          association's own voice and exists in each. */}
+      <LocalizedFormField
+        control={control}
+        name="tagline"
+        id="org-tagline"
         label={t.admin.settings.tagline}
-        htmlFor="org-tagline"
         hint={t.admin.settings.taglineHint}
-      >
-        <Input id="org-tagline" {...register('tagline')} />
-      </Field>
+      />
 
-      <Field label={t.admin.settings.about} htmlFor="org-about" hint={t.admin.settings.aboutHint}>
-        <Textarea id="org-about" rows={5} {...register('about')} />
-      </Field>
+      <LocalizedFormField
+        control={control}
+        name="about"
+        id="org-about"
+        label={t.admin.settings.about}
+        hint={t.admin.settings.aboutHint}
+        multiline
+        rows={5}
+      />
 
-      <Field label={t.admin.settings.mission} htmlFor="org-mission">
-        <Textarea id="org-mission" rows={4} {...register('mission')} />
-      </Field>
+      <LocalizedFormField
+        control={control}
+        name="mission"
+        id="org-mission"
+        label={t.admin.settings.mission}
+        multiline
+        rows={4}
+      />
 
-      <Field label={t.admin.settings.quote} htmlFor="org-quote" hint={t.admin.settings.quoteHint}>
-        <Textarea id="org-quote" rows={2} {...register('quote')} />
-      </Field>
+      <LocalizedFormField
+        control={control}
+        name="quote"
+        id="org-quote"
+        label={t.admin.settings.quote}
+        hint={t.admin.settings.quoteHint}
+        multiline
+        rows={2}
+      />
 
       <Field label={t.admin.settings.foundedYear} htmlFor="org-year">
         <Input id="org-year" placeholder="2019" {...register('foundedYear')} />
@@ -486,6 +508,7 @@ const ContactForm = ({ settings }: { settings: SiteSettings }) => {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm({ defaultValues: settings.global_contact });
 
@@ -532,9 +555,16 @@ const ContactForm = ({ settings }: { settings: SiteSettings }) => {
         </Field>
       </div>
 
-      <Field label={t.admin.settings.address} htmlFor="contact-address">
-        <Textarea id="contact-address" rows={2} {...register('address')} />
-      </Field>
+      {/* Read, not dialled: the postal address is editorial. The email and
+          the phone numbers above are not, and stay single-valued. */}
+      <LocalizedFormField
+        control={control}
+        name="address"
+        id="contact-address"
+        label={t.admin.settings.address}
+        multiline
+        rows={2}
+      />
     </SettingsCard>
   );
 };
@@ -608,7 +638,7 @@ function useMediaById(ids: Array<string | null>) {
 const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
   const t = useT();
   const mutation = useSettingsMutation('homepage');
-  const { register, handleSubmit } = useForm({ defaultValues: settings.homepage });
+  const { register, handleSubmit, control } = useForm({ defaultValues: settings.homepage });
 
   const stored = useMediaById([
     settings.homepage.heroImageId,
@@ -656,13 +686,24 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
         });
       })}
     >
-      <Field label={t.admin.settings.heroTitle} htmlFor="home-hero-title">
-        <Textarea id="home-hero-title" rows={2} {...register('heroTitle')} />
-      </Field>
+      {/* The H1 of the homepage: the first thing anyone reads on the site. */}
+      <LocalizedFormField
+        control={control}
+        name="heroTitle"
+        id="home-hero-title"
+        label={t.admin.settings.heroTitle}
+        multiline
+        rows={2}
+      />
 
-      <Field label={t.admin.settings.heroSubtitle} htmlFor="home-hero-sub">
-        <Textarea id="home-hero-sub" rows={3} {...register('heroSubtitle')} />
-      </Field>
+      <LocalizedFormField
+        control={control}
+        name="heroSubtitle"
+        id="home-hero-sub"
+        label={t.admin.settings.heroSubtitle}
+        multiline
+        rows={3}
+      />
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field
@@ -670,10 +711,20 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
           htmlFor="home-badge-title"
           hint={t.admin.settings.badgeTitleHint}
         >
-          <Input id="home-badge-title" {...register('heroBadgeTitle')} />
+          <LocalizedFormField
+            control={control}
+            name="heroBadgeTitle"
+            id="home-badge-title"
+            label={t.admin.settings.badgeTitle}
+          />
         </Field>
         <Field label={t.admin.settings.badgeSubtitle} htmlFor="home-badge-sub">
-          <Input id="home-badge-sub" {...register('heroBadgeSubtitle')} />
+          <LocalizedFormField
+            control={control}
+            name="heroBadgeSubtitle"
+            id="home-badge-sub"
+            label={t.admin.settings.badgeSubtitle}
+          />
         </Field>
       </div>
 
@@ -692,10 +743,14 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
         />
       </div>
 
-      <Field label={t.admin.settings.ctaQuote} htmlFor="home-cta-quote">
-        <Textarea id="home-cta-quote" rows={2} {...register('ctaQuote')} />
-      </Field>
-
+      <LocalizedFormField
+        control={control}
+        name="ctaQuote"
+        id="home-cta-quote"
+        label={t.admin.settings.ctaQuote}
+        multiline
+        rows={2}
+      />
       <MediaPicker
         value={ctaImage}
         onChange={setCtaImage}
@@ -709,7 +764,7 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
 const SeoForm = ({ settings }: { settings: SiteSettings }) => {
   const t = useT();
   const mutation = useSettingsMutation('seo');
-  const { register, handleSubmit, watch } = useForm({ defaultValues: settings.seo });
+  const { register, handleSubmit, watch, control } = useForm({ defaultValues: settings.seo });
 
   const stored = useMediaById([settings.seo.ogImageId]);
   const [ogImage, setOgImage] = useState<ImageSelection>(null);
@@ -721,7 +776,10 @@ const SeoForm = ({ settings }: { settings: SiteSettings }) => {
     setIsHydrated(true);
   }, [stored, isHydrated, settings.seo]);
 
-  const description = watch('description') ?? '';
+  // The meta description has a length budget in each language, so the counter
+  // follows the French one - the Arabic is counted on its own tab.
+  const description = watch('description') ?? {};
+  const descriptionLength = (description as Record<string, string>).fr?.length ?? 0;
 
   return (
     <SettingsCard
@@ -735,29 +793,32 @@ const SeoForm = ({ settings }: { settings: SiteSettings }) => {
         mutation.mutate({ ...values, ogImageId: stored?.id ?? null });
       })}
     >
-      <Field
+      {/* An Arabic page indexed under a French title is a page nobody finds. */}
+      <LocalizedFormField
+        control={control}
+        name="title"
+        id="seo-title"
         label={t.admin.settings.siteTitle}
-        htmlFor="seo-title"
         hint={t.admin.settings.siteTitleHint}
-      >
-        <Input id="seo-title" {...register('title')} />
-      </Field>
+      />
 
-      <Field
+      <LocalizedFormField
+        control={control}
+        name="description"
+        id="seo-description"
         label={t.admin.settings.seoDescriptionLabel}
-        htmlFor="seo-description"
-        hint={t.admin.settings.seoDescriptionHint(description.length)}
-      >
-        <Textarea id="seo-description" rows={3} {...register('description')} />
-      </Field>
+        hint={t.admin.settings.seoDescriptionHint(descriptionLength)}
+        multiline
+        rows={3}
+      />
 
-      <Field
+      <LocalizedFormField
+        control={control}
+        name="keywords"
+        id="seo-keywords"
         label={t.admin.settings.keywords}
-        htmlFor="seo-keywords"
         hint={t.admin.settings.keywordsHint}
-      >
-        <Input id="seo-keywords" {...register('keywords')} />
-      </Field>
+      />
 
       <MediaPicker
         value={ogImage}

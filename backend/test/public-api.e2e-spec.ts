@@ -56,7 +56,10 @@ describe('Public API and media (e2e)', () => {
 
     expect(res.body.organization.name).toContain('Louga');
     expect(res.body.global_contact.email).toEqual(expect.any(String));
-    expect(res.body.seo.description).toEqual(expect.any(String));
+    // Editorial settings carry both languages now; the email beside it does not,
+    // because it is dialled rather than read.
+    expect(res.body.seo.description.fr).toEqual(expect.any(String));
+    expect(res.body.seo.description.ar).toEqual(expect.any(String));
   });
 
   it('exposes the branding section so the site can render a logo and favicon', async () => {

@@ -25,7 +25,12 @@ services:
       retries: 5
 
   minio:
-    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    # quay.io, not Docker Hub: MinIO stopped publishing to docker.io, and an
+    # unqualified `minio/minio` now resolves to a repository that denies access,
+    # which fails the deploy with what reads like a credentials error. This is
+    # the same image, at the same tag, from the registry that still serves it -
+    # and the one already present on the server.
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
     container_name: lds-minio
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { localized } from '../../lib/i18n/resolve';
 import { useLocation } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext';
 import { DEFAULT_LOCALE, LOCALES, LOCALE_PARAM, type Locale } from '../../lib/i18n/locale';
@@ -90,9 +91,11 @@ export const Seo = ({ title, description, image, noIndex, type = 'website' }: Se
   const { locale } = useShellLocale();
   const t = useShellT();
 
-  const siteName = settings?.seo.title || t.common.organizationName;
+  /* The SEO settings carry both languages now: an Arabic page indexed under
+     a French title is an Arabic page nobody finds. */
+  const siteName = localized(settings?.seo.title, locale) || t.common.organizationName;
   const fullTitle = title ? `${title} — ${siteName}` : siteName;
-  const metaDescription = description || settings?.seo.description || '';
+  const metaDescription = description || localized(settings?.seo.description, locale) || '';
   const shareImage = image ?? settings?.seo.ogImage?.url ?? null;
 
   /*

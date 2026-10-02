@@ -34,7 +34,7 @@ export const AboutPage = () => {
     <>
       <Seo
         title={p.about.seoTitle}
-        description={organization?.about?.slice(0, 160)}
+        description={localized(organization?.about, locale).slice(0, 160)}
         image={settings?.seo.ogImage?.url ?? photo?.url}
       />
 
@@ -59,12 +59,12 @@ export const AboutPage = () => {
               </div>
             ) : (
               <>
-                <p className="mb-6 text-body-lg leading-[1.75] text-navy/75">{organization?.about}</p>
+                <p className="mb-6 text-body-lg leading-[1.75] text-navy/75">{localized(organization?.about, locale)}</p>
                 {organization?.quote && (
                   // The rule hangs where the text begins, in either script.
                   <blockquote className="border-s-4 border-green bg-warm-muted/60 p-6">
                     <p className="font-lora text-lead italic leading-relaxed text-navy">
-                      {organization.quote}
+                      {localized(organization.quote, locale)}
                     </p>
                   </blockquote>
                 )}
@@ -102,7 +102,7 @@ export const AboutPage = () => {
             accent="blue"
           />
           <p className="text-center text-body-lg leading-[1.8] text-navy/75">
-            {organization?.mission}
+            {localized(organization?.mission, locale)}
           </p>
           <div className="mt-8 text-center sm:mt-10">
             <Link
@@ -147,7 +147,7 @@ export const AboutPage = () => {
             {contact?.address && (
               <div className="rounded-2xl border border-navy/8 p-6 text-center">
                 <MapPin className="mx-auto mb-4 h-6 w-6 text-green" aria-hidden />
-                <p className="text-sm leading-relaxed text-navy/70">{contact.address}</p>
+                <p className="text-sm leading-relaxed text-navy/70">{localized(contact.address, locale)}</p>
               </div>
             )}
             {contact?.phone && (

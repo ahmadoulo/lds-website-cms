@@ -169,19 +169,22 @@ export interface SiteSettings {
     favicon?: Media | null;
   };
   organization: {
+    /* The registered name is the same in both languages; its Arabic reading
+       lives in the interface dictionary, not in the database. */
     name: string;
     shortName: string;
-    tagline: string;
-    about: string;
-    mission: string;
-    quote: string;
+    tagline: Localized;
+    about: Localized;
+    mission: Localized;
+    quote: Localized;
     foundedYear: string;
   };
   global_contact: {
+    /* Dialled and clicked, not read: these stay single-valued. */
     email: string;
     phone: string;
     phoneSecondary: string;
-    address: string;
+    address: Localized;
   };
   global_social: {
     facebook: string;
@@ -190,13 +193,13 @@ export interface SiteSettings {
     youtube: string;
   };
   homepage: {
-    heroTitle: string;
-    heroSubtitle: string;
-    heroBadgeTitle: string;
-    heroBadgeSubtitle: string;
+    heroTitle: Localized;
+    heroSubtitle: Localized;
+    heroBadgeTitle: Localized;
+    heroBadgeSubtitle: Localized;
     heroImageId: string | null;
     aboutImageId: string | null;
-    ctaQuote: string;
+    ctaQuote: Localized;
     ctaImageId: string | null;
     /** Resolved by the public API from the ids above. */
     heroImage?: Media | null;
@@ -204,9 +207,9 @@ export interface SiteSettings {
     ctaImage?: Media | null;
   };
   seo: {
-    title: string;
-    description: string;
-    keywords: string;
+    title: Localized;
+    description: Localized;
+    keywords: Localized;
     ogImageId: string | null;
     /** Resolved by the public API from the id above. */
     ogImage?: Media | null;

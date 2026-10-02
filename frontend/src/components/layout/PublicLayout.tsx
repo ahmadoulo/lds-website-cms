@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { localized } from '../../lib/i18n/resolve';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Heart, Mail, MapPin, Menu, Phone, X } from 'lucide-react';
 import {
@@ -64,7 +65,9 @@ export const PublicLayout = () => {
     that arrives.
   */
   const organizationName = (locale === 'fr' && organization?.name) || t.common.organizationName;
-  const tagline = (locale === 'fr' && organization?.tagline) || layout.footer.tagline;
+  // The setting now carries both languages; the dictionary covers the case of
+  // a database where the Arabic has not been written yet.
+  const tagline = localized(organization?.tagline, locale) || layout.footer.tagline;
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 16);
@@ -327,7 +330,7 @@ export const PublicLayout = () => {
               {contact?.address && (
                 <span className="flex items-start gap-3">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-green" aria-hidden />
-                  <bdi>{contact.address}</bdi>
+                  <bdi>{localized(contact.address, locale)}</bdi>
                 </span>
               )}
               {contact?.phone && (
