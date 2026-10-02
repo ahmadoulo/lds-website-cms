@@ -342,6 +342,70 @@ describe('Content workflow (e2e)', () => {
     });
   });
 
+  describe('translations already stored are never silently dropped', () => {
+    it('keeps a locale the form did not send', async () => {
+      // The seed writes { fr, en }; the admin forms only ever send the locales
+      // they display. An update used to assign the payload straight onto the
+      // column, so editing a seeded record destroyed its other translations.
+      const created = await request(http)
+        .post('/api/v1/missions')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          title: { fr: 'Éducation', en: 'Education' },
+          description: { fr: 'Kits scolaires.', en: 'School kits.' },
+        })
+        .expect(201);
+
+      // Where a locale is lost matters: at creation, or at the edit.
+      expect(created.body.description).toEqual({ fr: 'Kits scolaires.', en: 'School kits.' });
+
+      const updated = await request(http)
+        .patch(`/api/v1/missions/${created.body.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title: { fr: 'Éducation et formation' } })
+        .expect(200);
+
+      expect(updated.body.title.fr).toBe('Éducation et formation');
+      expect(updated.body.title.en).toBe('Education');
+      // Untouched fields keep every locale too.
+      expect(updated.body.description).toEqual({ fr: 'Kits scolaires.', en: 'School kits.' });
+    });
+
+    it('adds a second language beside the first without disturbing it', async () => {
+      const created = await request(http)
+        .post('/api/v1/missions')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title: { fr: 'Santé' }, description: { fr: 'Consultations.' } })
+        .expect(201);
+
+      const updated = await request(http)
+        .patch(`/api/v1/missions/${created.body.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title: { fr: 'Santé', ar: 'الصحة' } })
+        .expect(200);
+
+      expect(updated.body.title).toEqual({ fr: 'Santé', ar: 'الصحة' });
+    });
+
+    it('removes a translation when it is sent empty', async () => {
+      const created = await request(http)
+        .post('/api/v1/missions')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title: { fr: 'Environnement', ar: 'البيئة' }, description: { fr: 'Reboisement.' } })
+        .expect(201);
+
+      const updated = await request(http)
+        .patch(`/api/v1/missions/${created.body.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title: { fr: 'Environnement', ar: '' } })
+        .expect(200);
+
+      // Emptying the field is the deliberate way to drop a translation; it is
+      // the only way, which is what makes the merge safe.
+      expect(updated.body.title).toEqual({ fr: 'Environnement' });
+    });
+  });
+
   describe('a domain of intervention can carry a long form', () => {
     it('stores it, sanitises it, and hands it to the public site', async () => {
       const created = await request(http)

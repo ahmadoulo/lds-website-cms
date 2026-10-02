@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDonationDto } from './dto/create-donation.dto';
 import { UpdateDonationDto } from './dto/update-donation.dto';
-import { sanitizeLocalized, sanitizePlainText } from '../common/sanitize';
+import { mergeLocalized, sanitizeLocalized, sanitizePlainText } from '../common/sanitize';
 
 @Injectable()
 export class DonationsService {
@@ -27,8 +27,11 @@ export class DonationsService {
   }
 
   async update(id: string, dto: UpdateDonationDto) {
-    await this.findOne(id);
-    return this.prisma.donationMethod.update({ where: { id }, data: this.clean(dto) as any });
+    const stored = await this.findOne(id);
+    return this.prisma.donationMethod.update({
+      where: { id },
+      data: this.clean(dto, stored as any) as any,
+    });
   }
 
   async remove(id: string) {
@@ -44,11 +47,21 @@ export class DonationsService {
     return this.findAll(true);
   }
 
-  private clean(dto: CreateDonationDto | UpdateDonationDto) {
+  /**
+   * `stored` is the row being updated, absent on a create. The translations are
+   * merged into it rather than assigned: the form sends only the locales it
+   * shows, and an assignment would drop every other one on the row.
+   */
+  private clean(dto: CreateDonationDto | UpdateDonationDto, stored?: Record<string, any>) {
     const data: any = { ...dto };
-    if (dto.title) data.title = sanitizeLocalized(dto.title, sanitizePlainText);
-    if (dto.description) data.description = sanitizeLocalized(dto.description, sanitizePlainText);
-    if (dto.actionLabel) data.actionLabel = sanitizeLocalized(dto.actionLabel, sanitizePlainText);
+    for (const field of ['title', 'description', 'actionLabel'] as const) {
+      if (dto[field]) {
+        data[field] = mergeLocalized(
+          stored?.[field],
+          sanitizeLocalized(dto[field], sanitizePlainText),
+        );
+      }
+    }
     if (dto.actionData) data.actionData = sanitizePlainText(dto.actionData);
     if (dto.beneficiary !== undefined) data.beneficiary = dto.beneficiary?.trim() || null;
     // An empty provider or link means "not a mobile money method", stored as NULL

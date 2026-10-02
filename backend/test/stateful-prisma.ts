@@ -116,6 +116,22 @@ function applyDefaults(table: string, data: any) {
  * sentinel rather than a plain null. Storing the sentinel as-is would leave a
  * truthy object where the database would hold NULL.
  */
+/**
+ * Identity lookup for update/upsert.
+ *
+ * This used to read `item.id === where.id || item.key === where.key`, which is
+ * true for the FIRST row of any table whose rows carry no `key` column, because
+ * `undefined === undefined`. Every update by id therefore hit row zero. The
+ * tests passed only because most of them create exactly one row before editing
+ * it; the moment a table already held seeded rows, the edit landed on the wrong
+ * one and the assertions were checking a record nobody had touched.
+ */
+function matchesWhere(item: any, where: any) {
+  if (where?.id !== undefined) return item.id === where.id;
+  if (where?.key !== undefined) return item.key === where.key;
+  return false;
+}
+
 function normalizeWrite(data: any) {
   if (!data || typeof data !== 'object') return data;
 
@@ -217,14 +233,14 @@ export function createStatefulPrisma() {
     },
 
     update: async ({ where, data, include, select }: any) => {
-      const row = store[table].find((item) => item.id === where.id || item.key === where.key);
+      const row = store[table].find((item) => matchesWhere(item, where));
       if (!row) throw Object.assign(new Error('Record not found'), { code: 'P2025' });
       Object.assign(row, normalizeWrite(data), { updatedAt: new Date() });
       return project(hydrate(table, row, include), select);
     },
 
     upsert: async ({ where, create, update }: any) => {
-      const row = store[table].find((item) => item.id === where.id || item.key === where.key);
+      const row = store[table].find((item) => matchesWhere(item, where));
       if (row) {
         Object.assign(row, normalizeWrite(update), { updatedAt: new Date() });
         return row;

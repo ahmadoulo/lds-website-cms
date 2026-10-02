@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { mergeLocalized } from '../common/sanitize';
 import { MinioService } from '../common/minio.service';
 import { paginated, type Paginated } from '../common/dto/pagination.dto';
 import type { QueryMediaDto } from './dto/query-media.dto';
@@ -201,8 +202,12 @@ export class MediaService {
   }
 
   async updateAltText(id: string, altText: any) {
-    await this.findOne(id);
-    return this.prisma.media.update({ where: { id }, data: { altText } });
+    const stored = await this.findOne(id);
+    // Merged, not replaced: the library edits one locale at a time.
+    return this.prisma.media.update({
+      where: { id },
+      data: { altText: mergeLocalized(stored.altText, altText) as any },
+    });
   }
 
   async remove(id: string) {

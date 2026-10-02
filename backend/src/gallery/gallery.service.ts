@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { mergeLocalizedFields } from '../common/sanitize';
 import { CreateGalleryAlbumDto } from './dto/create-gallery.dto';
 import { UpdateGalleryAlbumDto } from './dto/update-gallery.dto';
 import { AddGalleryImageDto, UpdateGalleryImageDto } from './dto/gallery-image.dto';
@@ -43,10 +44,10 @@ export class GalleryService {
   }
 
   async updateAlbum(id: string, dto: UpdateGalleryAlbumDto) {
-    await this.findAlbum(id);
+    const stored = await this.findAlbum(id);
     return this.prisma.galleryAlbum.update({
       where: { id },
-      data: dto,
+      data: mergeLocalizedFields(stored, { ...dto }, ['title', 'description']),
       include: ALBUM_INCLUDE,
     });
   }

@@ -5,7 +5,13 @@ import { UpdateNewsDto } from './dto/update-news.dto';
 import { QueryNewsDto } from './dto/query-news.dto';
 import { CreateNewsCategoryDto, UpdateNewsCategoryDto } from './dto/news-category.dto';
 import { paginated, type Paginated } from '../common/dto/pagination.dto';
-import { sanitizeLocalized, sanitizePlainText, sanitizeRichText } from '../common/sanitize';
+import {
+  mergeLocalized,
+  mergeLocalizedFields,
+  sanitizeLocalized,
+  sanitizePlainText,
+  sanitizeRichText,
+} from '../common/sanitize';
 import { slugify, uniqueSlug } from '../common/slug';
 
 const NEWS_INCLUDE = { category: true, image: true };
@@ -106,9 +112,12 @@ export class NewsService {
 
     const data: any = await this.buildWriteData(dto);
 
-    if (dto.title) data.title = dto.title;
-    if (dto.excerpt) data.excerpt = dto.excerpt;
-    if (dto.content) data.content = dto.content;
+    // Merged, not replaced: the form sends only the locales it shows, and an
+    // assignment would drop every other translation stored on the row. The
+    // sanitised values live on `dto`, which buildWriteData rewrites in place.
+    for (const field of ['title', 'excerpt', 'content'] as const) {
+      if (dto[field]) data[field] = mergeLocalized(existing[field], dto[field] as any);
+    }
 
     if (dto.slug && dto.slug !== existing.slug) {
       data.slug = await uniqueSlug(
@@ -163,7 +172,7 @@ export class NewsService {
     if (!existing) throw new NotFoundException('Catégorie introuvable');
 
     const data: any = {};
-    if (dto.name) data.name = dto.name;
+    if (dto.name) data.name = mergeLocalized(existing.name, dto.name);
     if (dto.slug && dto.slug !== existing.slug) {
       data.slug = await uniqueSlug(
         dto.slug,

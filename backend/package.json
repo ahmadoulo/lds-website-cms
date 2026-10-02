@@ -22,7 +22,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:generate": "prisma generate",
-    "admin:reset": "ts-node --project prisma/tsconfig.json prisma/reset-admin-password.ts"
+    "admin:reset": "ts-node --project prisma/tsconfig.json prisma/reset-admin-password.ts",
+    "i18n:audit": "ts-node --project prisma/tsconfig.json prisma/scripts/audit-locales.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { mergeLocalizedFields } from '../common/sanitize';
 import { CreateNavigationDto } from './dto/create-navigation.dto';
 import { UpdateNavigationDto } from './dto/update-navigation.dto';
 
@@ -43,7 +44,11 @@ export class NavigationService {
       await this.assertExists(dto.parentId);
     }
 
-    return this.prisma.navigationItem.update({ where: { id }, data: dto });
+    const stored = await this.prisma.navigationItem.findUnique({ where: { id } });
+    return this.prisma.navigationItem.update({
+      where: { id },
+      data: mergeLocalizedFields(stored, { ...dto }, ['label']),
+    });
   }
 
   async remove(id: string) {

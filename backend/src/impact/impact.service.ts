@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { mergeLocalizedFields } from '../common/sanitize';
 import { CreateImpactDto } from './dto/create-impact.dto';
 import { UpdateImpactDto } from './dto/update-impact.dto';
 
@@ -30,8 +31,10 @@ export class ImpactService {
   }
 
   async update(id: string, dto: UpdateImpactDto) {
-    await this.findOne(id);
-    const data: any = { ...dto };
+    const stored = await this.findOne(id);
+    // Merged, not replaced: the form sends only the locales it shows, and an
+    // assignment would drop every other translation stored on the row.
+    const data: any = mergeLocalizedFields(stored, { ...dto }, ['label']);
     if (dto.icon !== undefined) data.icon = dto.icon || null;
     return this.prisma.impactStatistic.update({ where: { id }, data });
   }

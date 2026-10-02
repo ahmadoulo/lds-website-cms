@@ -2,7 +2,12 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMissionDto } from './dto/create-mission.dto';
 import { UpdateMissionDto } from './dto/update-mission.dto';
-import { sanitizeLocalized, sanitizePlainText, sanitizeRichText } from '../common/sanitize';
+import {
+  mergeLocalized,
+  sanitizeLocalized,
+  sanitizePlainText,
+  sanitizeRichText,
+} from '../common/sanitize';
 
 @Injectable()
 export class MissionsService {
@@ -45,15 +50,25 @@ export class MissionsService {
   }
 
   async update(id: string, dto: UpdateMissionDto) {
-    await this.findOne(id);
+    const stored = await this.findOne(id);
     await this.assertImageExists(dto.imageId);
 
     const data: any = {};
-    if (dto.title) data.title = sanitizeLocalized(dto.title, sanitizePlainText);
-    if (dto.description) data.description = sanitizeLocalized(dto.description, sanitizePlainText);
+    // Merged, not replaced: the form sends only the locales it shows.
+    if (dto.title) {
+      data.title = mergeLocalized(stored.title, sanitizeLocalized(dto.title, sanitizePlainText));
+    }
+    if (dto.description) {
+      data.description = mergeLocalized(
+        stored.description,
+        sanitizeLocalized(dto.description, sanitizePlainText),
+      );
+    }
     // null clears the long form, an object sets it, omitting it leaves it alone.
     if (dto.content !== undefined) {
-      data.content = dto.content ? sanitizeLocalized(dto.content, sanitizeRichText) : null;
+      data.content = dto.content
+        ? mergeLocalized(stored.content, sanitizeLocalized(dto.content, sanitizeRichText))
+        : null;
     }
     if (dto.icon !== undefined) data.icon = dto.icon;
     if (dto.order !== undefined) data.order = dto.order;
