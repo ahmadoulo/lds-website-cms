@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { LocaleProvider } from './context/LocaleContext';
 import { ToastProvider } from './components/ui/Toast';
 import { ScrollToTop } from './components/layout/ScrollToTop';
 import { Favicon } from './components/seo/Favicon';
@@ -96,6 +97,7 @@ const RouteFallback = () => (
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <LocaleProvider>
       <BrowserRouter>
         <ToastProvider>
           <PreviewProvider>
@@ -159,6 +161,7 @@ function App() {
           </PreviewProvider>
         </ToastProvider>
       </BrowserRouter>
+      </LocaleProvider>
     </QueryClientProvider>
   );
 }

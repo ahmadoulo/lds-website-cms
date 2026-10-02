@@ -174,6 +174,27 @@
     stays scrollable - by wheel, by drag, by keyboard and by its own buttons -
     it simply stops drawing the handle.
   */
+  /*
+    Montserrat has no Arabic coverage, so an Arabic page would fall through to
+    whatever the system happens to have. Cairo is geometric like Montserrat and
+    carries the same weights, so the two read as one identity rather than two.
+    It applies from the document language, which the locale provider sets, so no
+    component has to know which font it is using.
+  */
+  :root:lang(ar) body,
+  [lang='ar'] {
+    font-family: 'Cairo', 'Montserrat', system-ui, sans-serif;
+  }
+
+  /*
+    Arabic sits lower and taller in its line than Latin: at the same size and
+    leading it reads cramped. A little more line height, applied only to Arabic,
+    costs the French layout nothing.
+  */
+  [lang='ar'] {
+    line-height: 1.75;
+  }
+
   .scrollbar-hidden {
     scrollbar-width: none;
     -ms-overflow-style: none;
