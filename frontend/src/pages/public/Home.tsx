@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Heart, ImageIcon, Users } from 'lucide-react';
 import { useHomepage } from '../../lib/queries/publicHooks';
@@ -16,7 +16,7 @@ import { ErrorState, SkeletonCards, Skeleton } from '../../components/ui/States'
 import { BRAND, WARM_SURFACE, readableOn } from '../../lib/brand';
 import { cn } from '../../lib/cn';
 import { useLocale } from '../../context/LocaleContext';
-import { hasTranslation, localized, localizedOrSource } from '../../lib/i18n/resolve';
+import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { useT } from '../../lib/i18n/useT';
 import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 import type { GalleryImage } from '../../lib/types';
@@ -46,40 +46,23 @@ const Home = () => {
   const partners = data?.partners ?? [];
 
   /*
-    Every list the homepage shows is filtered to the displayed language.
+    Nothing is filtered by language.
 
-    A card whose title has no Arabic would sit in an Arabic grid reading French,
-    which is exactly the "looks translated when it is not" the resolver was
-    written to prevent. `hasTranslation` is false only when the requested
-    language is empty, so at `fr` none of these filters removes anything and the
-    French homepage is byte-for-byte the page it was.
+    Hiding a record whose Arabic is missing emptied whole sections of the Arabic
+    site - the pillars, the key figures - while the hero beside them fell back
+    to French, so the page read as broken rather than as untranslated. The rule
+    is the same everywhere now: show the record, in the original where the
+    translation is absent, and say so. The cards already do exactly that, down
+    to marking the untranslated run `lang="fr" dir="ltr"` so it is laid out the
+    way French is meant to be read inside a right-to-left page.
 
-    Photographs are the exception: an image says the same thing in both
-    languages, so the gallery strip is never filtered - only its captions are
-    read strictly, and a caption with no Arabic is simply not drawn, the way an
-    uncaptioned photo already behaves.
-
-    Partners are the other exception: a partner is a name and a logo. GIZ is GIZ.
+    Photographs and partners never needed a rule: an image and a logo say the
+    same thing in both languages. GIZ is GIZ.
   */
-  const missions = useMemo(
-    () => (data?.missions ?? []).filter((mission) => hasTranslation(mission.title, locale)),
-    [data?.missions, locale],
-  );
-
-  const impact = useMemo(
-    () => (data?.impact ?? []).filter((stat) => hasTranslation(stat.label, locale)),
-    [data?.impact, locale],
-  );
-
-  const news = useMemo(
-    () => (data?.news ?? []).filter((article) => hasTranslation(article.title, locale)),
-    [data?.news, locale],
-  );
-
-  const donations = useMemo(
-    () => (data?.donations ?? []).filter((method) => hasTranslation(method.title, locale)),
-    [data?.donations, locale],
-  );
+  const missions = data?.missions ?? [];
+  const impact = data?.impact ?? [];
+  const news = data?.news ?? [];
+  const donations = data?.donations ?? [];
 
   if (isError) {
     return (
@@ -292,9 +275,7 @@ const Home = () => {
                   statements, and the Arabic visitor is owed the second one
                   rather than being told the association does no work.
                 */}
-                {(data?.missions ?? []).length > 0
-                  ? p.shared.untranslatedDescription
-                  : p.home.missionsEmpty}
+                {p.home.missionsEmpty}
               </p>
             </>
           ) : (

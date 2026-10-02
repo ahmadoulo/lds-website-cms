@@ -13,7 +13,7 @@ import { openPreview } from '../../components/admin/ui/PreviewButton';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { Field, Input, Textarea } from '../../components/ui/Field';
+import { Field, Input } from '../../components/ui/Field';
 import { ErrorState, LoadingState } from '../../components/ui/States';
 import { cn } from '../../lib/cn';
 import { commitImage, type ImageSelection } from '../../lib/pendingImage';
@@ -638,7 +638,7 @@ function useMediaById(ids: Array<string | null>) {
 const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
   const t = useT();
   const mutation = useSettingsMutation('homepage');
-  const { register, handleSubmit, control } = useForm({ defaultValues: settings.homepage });
+  const { handleSubmit, control } = useForm({ defaultValues: settings.homepage });
 
   const stored = useMediaById([
     settings.homepage.heroImageId,
@@ -764,7 +764,7 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
 const SeoForm = ({ settings }: { settings: SiteSettings }) => {
   const t = useT();
   const mutation = useSettingsMutation('seo');
-  const { register, handleSubmit, watch, control } = useForm({ defaultValues: settings.seo });
+  const { handleSubmit, watch, control } = useForm({ defaultValues: settings.seo });
 
   const stored = useMediaById([settings.seo.ogImageId]);
   const [ogImage, setOgImage] = useState<ImageSelection>(null);

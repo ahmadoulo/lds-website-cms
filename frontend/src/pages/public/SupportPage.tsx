@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { HeartHandshake } from 'lucide-react';
 import { useDonations } from '../../lib/queries/publicHooks';
 import { useSettings } from '../../context/SettingsContext';
@@ -7,14 +7,13 @@ import { SectionHeading } from '../../components/public/SectionHeading';
 import { DonationCard } from '../../components/public/DonationCard';
 import { PaymentMethodCard } from '../../components/public/PaymentMethodCard';
 import { EmptyState, ErrorState, SkeletonCards } from '../../components/ui/States';
-import { useLocale } from '../../context/LocaleContext';
-import { hasTranslation } from '../../lib/i18n/resolve';
+
+
 import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 
 export const SupportPage = () => {
   const { data: donations, isLoading, isError, refetch } = useDonations();
   const { settings } = useSettings();
-  const { locale } = useLocale();
   const p = usePagesT();
 
   const contact = settings?.global_contact;
@@ -24,10 +23,13 @@ export const SupportPage = () => {
     Arabic is left out instead of being shown half-translated. Nothing is
     filtered at `fr`.
   */
-  const translated = useMemo(
-    () => (donations ?? []).filter((method) => hasTranslation(method.title, locale)),
-    [donations, locale],
-  );
+  /*
+    Nothing is filtered by language: a record with no Arabic is shown in the
+    original and marked as such, rather than hidden. Hiding emptied whole
+    sections of the Arabic site while the headings above them stayed, which
+    read as broken rather than as untranslated.
+  */
+  const translated = donations ?? [];
 
   // A method with a provider is a way to send money and gets the richer card;
   // the rest keep the generic presentation.
@@ -61,8 +63,8 @@ export const SupportPage = () => {
           ) : !translated.length ? (
             <EmptyState
               icon={HeartHandshake}
-              title={p.shared.untranslatedTitle}
-              description={p.shared.untranslatedDescription}
+              title={p.support.emptyTitle}
+              description={p.support.emptyDescription}
             />
           ) : (
             <>

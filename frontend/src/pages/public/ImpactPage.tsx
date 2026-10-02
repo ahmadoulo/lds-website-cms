@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { BarChart3 } from 'lucide-react';
 import { useGalleryImages, useImpactStats, useMissions } from '../../lib/queries/publicHooks';
 import { Seo } from '../../components/seo/Seo';
@@ -9,7 +9,7 @@ import { resolveIcon } from '../../lib/icons';
 import { BRAND } from '../../lib/brand';
 import { EmptyState, ErrorState, Skeleton } from '../../components/ui/States';
 import { useLocale } from '../../context/LocaleContext';
-import { hasTranslation, localized } from '../../lib/i18n/resolve';
+import { localized } from '../../lib/i18n/resolve';
 import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 
 /**
@@ -32,15 +32,15 @@ export const ImpactPage = () => {
     label in an Arabic column says nothing, so an untranslated indicator is left
     out. Same for the domains below. Neither filter removes anything at `fr`.
   */
-  const visibleStats = useMemo(
-    () => (stats ?? []).filter((stat) => hasTranslation(stat.label, locale)),
-    [stats, locale],
-  );
+  /*
+    Nothing is filtered by language: a record with no Arabic is shown in the
+    original and marked as such, rather than hidden. Hiding emptied whole
+    sections of the Arabic site while the headings above them stayed, which
+    read as broken rather than as untranslated.
+  */
+  const visibleStats = stats ?? [];
 
-  const visibleMissions = useMemo(
-    () => (missions ?? []).filter((mission) => hasTranslation(mission.title, locale)),
-    [missions, locale],
-  );
+  const visibleMissions = missions ?? [];
 
   // Photographs need no translation, so the proof strip is never filtered.
   const evidence = (gallery ?? []).slice(0, 6);
@@ -80,8 +80,8 @@ export const ImpactPage = () => {
           ) : !visibleStats.length ? (
             <EmptyState
               icon={BarChart3}
-              title={p.shared.untranslatedTitle}
-              description={p.shared.untranslatedDescription}
+              title={p.impact.emptyTitle}
+              description={p.impact.emptyDescription}
             />
           ) : (
             <ImpactFigures stats={visibleStats} size="lg" />
@@ -102,8 +102,8 @@ export const ImpactPage = () => {
 
             {visibleMissions.length === 0 ? (
               <EmptyState
-                title={p.shared.untranslatedTitle}
-                description={p.shared.untranslatedDescription}
+                title={p.impact.emptyTitle}
+                description={p.impact.emptyDescription}
               />
             ) : (
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

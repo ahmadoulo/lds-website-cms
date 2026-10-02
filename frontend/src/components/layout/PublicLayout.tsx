@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { localized, localizedOrSource } from '../../lib/i18n/resolve';
+import { localizedOrSource } from '../../lib/i18n/resolve';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Heart, Mail, MapPin, Menu, Phone, X } from 'lucide-react';
 import {

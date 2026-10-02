@@ -42,14 +42,21 @@ describe('incomplete translations', () => {
     expect(screen.getByText('Arbres plantés')).toBeInTheDocument();
   });
 
-  it('never shows a French label on the Arabic page', async () => {
+  it('shows every figure in Arabic too, marking the untranslated ones', async () => {
     respond();
     renderWithProviders(<ImpactPage />, { route: '/impact?lang=ar' });
 
     expect(await screen.findByText('الحقائب المدرسية')).toBeInTheDocument();
-    // The untranslated figure is left out rather than shown in French: a page
-    // that mixes the two reads as translated when it is not.
-    expect(screen.queryByText('Arbres plantés')).toBeNull();
+
+    /*
+      Hiding the untranslated figure emptied the section while its heading
+      stayed above it, so the page read as broken rather than as untranslated.
+      It is shown in the original instead, and marked `lang="fr"` so a screen
+      reader switches voice and the bidi algorithm lays the run out as French.
+    */
+    const untranslated = screen.getByText('Arbres plantés');
+    expect(untranslated).toBeInTheDocument();
+    expect(untranslated.closest('[lang="fr"]')).not.toBeNull();
   });
 });
 

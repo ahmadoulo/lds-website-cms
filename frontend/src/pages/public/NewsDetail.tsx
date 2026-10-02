@@ -8,7 +8,7 @@ import { EmptyState, ErrorState, Skeleton } from '../../components/ui/States';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/cn';
 import { useLocale } from '../../context/LocaleContext';
-import { hasTranslation, localized, localizedOrSource } from '../../lib/i18n/resolve';
+import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 import type { Locale } from '../../lib/i18n/locale';
 
@@ -98,10 +98,13 @@ export const NewsDetail = () => {
   const content = localizedOrSource(article.content, locale);
   const isUntranslated = title.untranslated || content.untranslated;
 
-  // The related strip is suggestions, not navigation: an article with no Arabic
-  // is dropped, and an empty strip simply does not appear - the same thing that
-  // already happens in French when an article has no siblings in its category.
-  const relatedTranslated = related.filter((item) => hasTranslation(item.title, locale));
+  /*
+    Nothing is filtered by language: a record with no Arabic is shown in the
+    original and marked as such, rather than hidden. Hiding emptied whole
+    sections of the Arabic site while the headings above them stayed, which
+    read as broken rather than as untranslated.
+  */
+  const relatedTranslated = related;
 
   return (
     <>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { localized, localizedOrSource } from '../../lib/i18n/resolve';
+import { localizedOrSource } from '../../lib/i18n/resolve';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { AlertCircle, CheckCircle, Mail, MapPin, Phone, Send } from 'lucide-react';

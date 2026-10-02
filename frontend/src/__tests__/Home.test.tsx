@@ -173,3 +173,48 @@ describe('Home', () => {
     expect(screen.queryByText('Comment nous soutenir ?')).not.toBeInTheDocument();
   });
 });
+
+describe('the Arabic homepage when nothing has been translated yet', () => {
+  /*
+    The state every site is in the day Arabic is switched on: the interface is
+    translated, the association's records are not. Hiding the untranslated ones
+    emptied the pillars and the key figures while their headings stayed above
+    them, and the page read as broken rather than as untranslated.
+  */
+  beforeEach(() => {
+    mockedApi.get.mockResolvedValue({ data: HOMEPAGE });
+  });
+
+  it('still shows every section', async () => {
+    renderWithProviders(<Home />, { route: '/?lang=ar' });
+
+    // The pillars, with their French title shown rather than hidden.
+    expect(await screen.findByRole('heading', { name: 'Éducation' })).toBeInTheDocument();
+    // The key figures.
+    expect(screen.getByText('Kits distribués')).toBeInTheDocument();
+    // The news.
+    expect(screen.getByRole('heading', { name: 'Rétrospective 2026' })).toBeInTheDocument();
+    // The ways to give.
+    expect(screen.getByRole('heading', { name: 'Faire un don financier' })).toBeInTheDocument();
+    // The partners, which never needed a translation: GIZ is GIZ.
+    expect(screen.getByText('Orange Money')).toBeInTheDocument();
+  });
+
+  it('marks what it had to show untranslated', async () => {
+    renderWithProviders(<Home />, { route: '/?lang=ar' });
+
+    // `lang="fr"` makes a screen reader switch voice and lets the bidi
+    // algorithm lay the French run out the way French is read.
+    const pillar = await screen.findByRole('heading', { name: 'Éducation' });
+    expect(pillar.closest('[lang="fr"]') ?? pillar.querySelector('[lang="fr"]')).not.toBeNull();
+  });
+
+  it('keeps the French homepage exactly as it was', async () => {
+    renderWithProviders(<Home />, { route: '/' });
+
+    expect(await screen.findByRole('heading', { name: 'Éducation' })).toBeInTheDocument();
+    expect(screen.getByText('Kits distribués')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Rétrospective 2026' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Faire un don financier' })).toBeInTheDocument();
+  });
+});

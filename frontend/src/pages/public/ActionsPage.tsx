@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Target } from 'lucide-react';
 import { useMissions } from '../../lib/queries/publicHooks';
 import { Seo } from '../../components/seo/Seo';
@@ -6,13 +6,12 @@ import { CtaLink } from '../../components/public/CtaLink';
 import { SectionHeading } from '../../components/public/SectionHeading';
 import { MissionGrid } from '../../components/public/MissionGrid';
 import { EmptyState, ErrorState, SkeletonCards } from '../../components/ui/States';
-import { useLocale } from '../../context/LocaleContext';
-import { hasTranslation } from '../../lib/i18n/resolve';
+
+
 import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 
 export const ActionsPage = () => {
   const { data: missions, isLoading, isError, refetch } = useMissions();
-  const { locale } = useLocale();
   const p = usePagesT();
 
   /*
@@ -21,10 +20,13 @@ export const ActionsPage = () => {
     mixed in. At `fr` every record has its French, and the filter keeps the list
     exactly as it was.
   */
-  const visible = useMemo(
-    () => (missions ?? []).filter((mission) => hasTranslation(mission.title, locale)),
-    [missions, locale],
-  );
+  /*
+    Nothing is filtered by language: a record with no Arabic is shown in the
+    original and marked as such, rather than hidden. Hiding emptied whole
+    sections of the Arabic site while the headings above them stayed, which
+    read as broken rather than as untranslated.
+  */
+  const visible = missions ?? [];
 
   // Declared once: the loading, empty and loaded branches all show the same
   // heading, and three copies of an <h1> is one edit away from two in the DOM.
@@ -66,14 +68,14 @@ export const ActionsPage = () => {
               />
             </>
           ) : !visible.length ? (
-            // There are domains, none of them in this language: say so, rather
-            // than claiming the association publishes nothing.
+            // Nothing is filtered by language any more, so an empty list means
+            // what it says: the association has not published a domain yet.
             <>
               {heading}
               <EmptyState
                 icon={Target}
-                title={p.shared.untranslatedTitle}
-                description={p.shared.untranslatedDescription}
+                title={p.actions.emptyTitle}
+                description={p.actions.emptyDescription}
               />
             </>
           ) : (

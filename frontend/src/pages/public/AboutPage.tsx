@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ImageIcon, Mail, MapPin, Phone } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
@@ -9,7 +9,7 @@ import { SectionHeading } from '../../components/public/SectionHeading';
 import { Skeleton } from '../../components/ui/States';
 import { cn } from '../../lib/cn';
 import { useLocale } from '../../context/LocaleContext';
-import { hasTranslation, localized, localizedOrSource } from '../../lib/i18n/resolve';
+import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 
 export const AboutPage = () => {
@@ -24,11 +24,13 @@ export const AboutPage = () => {
   // unrelated image appear here, with no way for the administrator to trace it.
   const photo = settings?.homepage.aboutImage ?? null;
 
-  // A figure whose label has no Arabic is left out rather than shown in French.
-  const visibleImpact = useMemo(
-    () => (impact ?? []).filter((stat) => hasTranslation(stat.label, locale)),
-    [impact, locale],
-  );
+  /*
+    Nothing is filtered by language: a record with no Arabic is shown in the
+    original and marked as such, rather than hidden. Hiding emptied whole
+    sections of the Arabic site while the headings above them stayed, which
+    read as broken rather than as untranslated.
+  */
+  const visibleImpact = impact ?? [];
 
   return (
     <>

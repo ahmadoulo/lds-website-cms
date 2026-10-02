@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { FileText } from 'lucide-react';
 import { useNews } from '../../lib/queries/publicHooks';
 import { Seo } from '../../components/seo/Seo';
@@ -6,15 +6,14 @@ import { SectionHeading } from '../../components/public/SectionHeading';
 import { NewsCard } from '../../components/public/NewsCard';
 import { EmptyState, ErrorState, SkeletonCards } from '../../components/ui/States';
 import { Button } from '../../components/ui/Button';
-import { useLocale } from '../../context/LocaleContext';
-import { hasTranslation } from '../../lib/i18n/resolve';
+
+
 import { useT } from '../../lib/i18n/useT';
 import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 
 export const News = () => {
   const [page, setPage] = useState(1);
   const { data, isLoading, isError, refetch, isPlaceholderData } = useNews(page, 9);
-  const { locale } = useLocale();
   const t = useT();
   const p = usePagesT();
 
@@ -28,10 +27,13 @@ export const News = () => {
     told so and keeps the pagination, instead of being shown an empty grid or
     sent back to the first page. At `fr` nothing is ever removed.
   */
-  const visible = useMemo(
-    () => articles.filter((article) => hasTranslation(article.title, locale)),
-    [articles, locale],
-  );
+  /*
+    Nothing is filtered by language: a record with no Arabic is shown in the
+    original and marked as such, rather than hidden. Hiding emptied whole
+    sections of the Arabic site while the headings above them stayed, which
+    read as broken rather than as untranslated.
+  */
+  const visible = articles;
 
   return (
     <>
@@ -62,8 +64,8 @@ export const News = () => {
               {visible.length === 0 ? (
                 <EmptyState
                   icon={FileText}
-                  title={p.news.untranslatedTitle}
-                  description={p.news.untranslatedDescription}
+                  title={p.news.emptyTitle}
+                  description={p.news.emptyDescription}
                 />
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3">
