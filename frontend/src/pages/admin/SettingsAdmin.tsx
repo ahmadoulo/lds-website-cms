@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { CloudUpload, Eye, RotateCcw, Save } from 'lucide-react';
 import api from '../../lib/api/axios';
+import { useT } from '../../lib/i18n/useT';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
 import { MediaPicker } from '../../components/admin/ui/MediaPicker';
@@ -27,33 +28,45 @@ type GroupKey = 'accueil' | 'a-propos' | 'site';
  * the same screen. Each group is now its own page, and every tab belongs to
  * exactly one of them, so nothing becomes unreachable.
  */
-const TABS: Array<{ key: TabKey; label: string; preview: string; group: GroupKey }> = [
-  { key: 'homepage', label: "Page d'accueil", preview: '/', group: 'accueil' },
-  { key: 'organization', label: "L'association", preview: '/a-propos', group: 'a-propos' },
-  { key: 'branding', label: 'Identité visuelle', preview: '/', group: 'site' },
-  { key: 'global_contact', label: 'Coordonnées', preview: '/contact', group: 'site' },
-  { key: 'global_social', label: 'Réseaux sociaux', preview: '/', group: 'site' },
-  { key: 'seo', label: 'Référencement', preview: '/', group: 'site' },
+const TABS: Array<{ key: TabKey; preview: string; group: GroupKey }> = [
+  { key: 'homepage', preview: '/', group: 'accueil' },
+  { key: 'organization', preview: '/a-propos', group: 'a-propos' },
+  { key: 'branding', preview: '/', group: 'site' },
+  { key: 'global_contact', preview: '/contact', group: 'site' },
+  { key: 'global_social', preview: '/', group: 'site' },
+  { key: 'seo', preview: '/', group: 'site' },
 ];
 
-const GROUPS: Record<GroupKey, { title: string; description: string; fallback: TabKey }> = {
-  accueil: {
-    title: 'Accueil',
-    description:
-      "Le bandeau, l'illustration de présentation et l'appel à l'action de la page d'accueil.",
-    fallback: 'homepage',
-  },
-  'a-propos': {
-    title: 'À propos',
-    description: "Les textes de présentation de l'association.",
-    fallback: 'organization',
-  },
-  site: {
-    title: 'Paramètres du site',
-    description: 'Logo, coordonnées, réseaux sociaux et référencement.',
-    fallback: 'branding',
-  },
-};
+/** The tab strip and the page title, in the language on screen. */
+function useSettingsLabels() {
+  const t = useT();
+
+  const tabs: Record<TabKey, string> = {
+    homepage: t.admin.settings.tabHomepage,
+    organization: t.admin.settings.tabOrganization,
+    branding: t.admin.settings.tabBranding,
+    global_contact: t.admin.settings.tabContact,
+    global_social: t.admin.settings.tabSocial,
+    seo: t.admin.settings.tabSeo,
+  };
+
+  const groups: Record<GroupKey, { title: string; description: string }> = {
+    accueil: {
+      title: t.admin.settings.groupHomeTitle,
+      description: t.admin.settings.groupHomeDescription,
+    },
+    'a-propos': {
+      title: t.admin.settings.groupAboutTitle,
+      description: t.admin.settings.groupAboutDescription,
+    },
+    site: {
+      title: t.admin.settings.groupSiteTitle,
+      description: t.admin.settings.groupSiteDescription,
+    },
+  };
+
+  return { tabs, groups };
+}
 
 interface DraftStatus {
   hasUnpublishedChanges: boolean;
@@ -62,6 +75,8 @@ interface DraftStatus {
 }
 
 export const SettingsAdmin = () => {
+  const t = useT();
+  const { tabs: tabLabels, groups } = useSettingsLabels();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // The sidebar links straight to a section, e.g. /admin/parametres?section=organization.
@@ -69,7 +84,7 @@ export const SettingsAdmin = () => {
   const tab: TabKey = TABS.some((item) => item.key === requested) ? requested! : 'branding';
 
   const group = TABS.find((item) => item.key === tab)!.group;
-  const groupMeta = GROUPS[group];
+  const groupMeta = groups[group];
   const groupTabs = TABS.filter((item) => item.group === group);
 
   const setTab = (next: TabKey) => setSearchParams({ section: next }, { replace: true });
@@ -88,11 +103,11 @@ export const SettingsAdmin = () => {
 
   const publishAll = useAdminMutation<void>({
     mutationFn: async () => (await api.post('/settings/publish')).data,
-    successMessage: 'Toutes les modifications sont maintenant en ligne.',
+    successMessage: t.admin.settings.publishedAll,
     invalidate: [['admin', 'settings']],
   });
 
-  if (settingsQuery.isLoading) return <LoadingState label="Chargement des paramètres…" />;
+  if (settingsQuery.isLoading) return <LoadingState label={t.admin.settings.loading} />;
   if (settingsQuery.isError || !settingsQuery.data) {
     return <ErrorState onRetry={() => void settingsQuery.refetch()} />;
   }
@@ -105,10 +120,10 @@ export const SettingsAdmin = () => {
     <div>
       <PageHeader
         title={groupMeta.title}
-        description={`${groupMeta.description} Vos modifications sont enregistrées en brouillon et n'apparaissent sur le site qu'une fois publiées.`}
+        description={`${groupMeta.description} ${t.admin.settings.draftNotice}`}
         actions={
           <Button variant="outline" onClick={() => openPreview(current.preview)}>
-            <Eye className="h-4 w-4" /> Prévisualiser
+            <Eye className="h-4 w-4" /> {t.admin.common.preview}
           </Button>
         }
       />
@@ -117,9 +132,9 @@ export const SettingsAdmin = () => {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-orange/30 bg-orange/5 px-4 py-3">
           <p className="text-sm text-navy/80">
             <span className="font-semibold text-navy">
-              {status.keys.length} section{status.keys.length > 1 ? 's' : ''} en attente
+              {t.admin.settings.pendingSections(status.keys.length)}
             </span>{' '}
-            — ces modifications ne sont pas encore visibles par les visiteurs.
+            {t.admin.settings.pendingNotice}
           </p>
           <Button
             variant="secondary"
@@ -127,7 +142,7 @@ export const SettingsAdmin = () => {
             isLoading={publishAll.isPending}
             onClick={() => publishAll.mutate()}
           >
-            <CloudUpload className="h-4 w-4" /> Tout publier
+            <CloudUpload className="h-4 w-4" /> {t.admin.settings.publishAll}
           </Button>
         </div>
       )}
@@ -147,9 +162,12 @@ export const SettingsAdmin = () => {
                 : 'border-transparent text-navy/50 hover:text-navy',
             )}
           >
-            {item.label}
+            {tabLabels[item.key]}
             {status?.sections?.[item.key]?.hasDraft && (
-              <span className="h-1.5 w-1.5 rounded-full bg-orange" aria-label="modifications non publiées" />
+              <span
+                className="h-1.5 w-1.5 rounded-full bg-orange"
+                aria-label={t.admin.settings.unpublishedDot}
+              />
             )}
           </button>
         ))}
@@ -185,6 +203,7 @@ const SettingsCard = ({
   isSaving: boolean;
   children: React.ReactNode;
 }) => {
+  const t = useT();
   const [isDiscarding, setIsDiscarding] = useState(false);
   const tab = TABS.find((item) => item.key === settingKey)!;
 
@@ -197,13 +216,13 @@ const SettingsCard = ({
 
   const publish = useAdminMutation<void>({
     mutationFn: async () => (await api.post(`/settings/${settingKey}/publish`)).data,
-    successMessage: 'Section publiée. Elle est maintenant visible sur le site.',
+    successMessage: t.admin.settings.sectionPublished,
     invalidate: [['admin', 'settings']],
   });
 
   const discard = useAdminMutation<void>({
     mutationFn: async () => (await api.delete(`/settings/${settingKey}/draft`)).data,
-    successMessage: 'Modifications annulées. La version en ligne est restaurée.',
+    successMessage: t.admin.settings.discarded,
     invalidate: [['admin', 'settings']],
     onSuccess: () => setIsDiscarding(false),
   });
@@ -219,7 +238,7 @@ const SettingsCard = ({
           {description && <p className="mt-1 text-sm text-navy/60">{description}</p>}
         </div>
         <Badge tone={hasDraft ? 'orange' : 'green'}>
-          {hasDraft ? 'Brouillon non publié' : 'En ligne'}
+          {hasDraft ? t.admin.settings.badgeDraft : t.admin.settings.badgeLive}
         </Badge>
       </div>
 
@@ -235,17 +254,17 @@ const SettingsCard = ({
               className="text-red-600 hover:bg-red-50"
               onClick={() => setIsDiscarding(true)}
             >
-              <RotateCcw className="h-3.5 w-3.5" /> Annuler les modifications
+              <RotateCcw className="h-3.5 w-3.5" /> {t.admin.settings.discard}
             </Button>
           )}
         </div>
 
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="ghost" onClick={() => openPreview(tab.preview)}>
-            <Eye className="h-4 w-4" /> Prévisualiser
+            <Eye className="h-4 w-4" /> {t.admin.common.preview}
           </Button>
           <Button type="submit" variant="outline" isLoading={isSaving}>
-            <Save className="h-4 w-4" /> Enregistrer le brouillon
+            <Save className="h-4 w-4" /> {t.admin.settings.saveDraft}
           </Button>
           <Button
             type="button"
@@ -253,18 +272,18 @@ const SettingsCard = ({
             disabled={!hasDraft}
             isLoading={publish.isPending}
             onClick={() => publish.mutate()}
-            title={hasDraft ? undefined : 'Aucune modification à publier'}
+            title={hasDraft ? undefined : t.admin.settings.nothingToPublish}
           >
-            <CloudUpload className="h-4 w-4" /> Publier
+            <CloudUpload className="h-4 w-4" /> {t.admin.settings.publish}
           </Button>
         </div>
       </div>
 
       <ConfirmDialog
         isOpen={isDiscarding}
-        title="Annuler les modifications ?"
-        message="Le brouillon sera supprimé et la version actuellement en ligne restaurée. Cette action est irréversible."
-        confirmLabel="Annuler les modifications"
+        title={t.admin.settings.discardTitle}
+        message={t.admin.settings.discardMessage}
+        confirmLabel={t.admin.settings.discard}
         isLoading={discard.isPending}
         onCancel={() => setIsDiscarding(false)}
         onConfirm={() => discard.mutate()}
@@ -275,13 +294,16 @@ const SettingsCard = ({
 
 /** Saving writes a draft; the section reaches the site through Publish. */
 function useSettingsMutation(key: TabKey) {
+  const t = useT();
+
   return useAdminMutation<Record<string, unknown>>({
     mutationFn: async (value) => (await api.patch(`/settings/${key}`, { value })).data,
-    successMessage: 'Brouillon enregistré. Prévisualisez, puis publiez pour mettre en ligne.',
+    successMessage: t.admin.settings.draftSaved,
     invalidate: [['admin', 'settings']],
   });
 }
 const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
+  const t = useT();
   const mutation = useSettingsMutation('branding');
   const { register, handleSubmit } = useForm({ defaultValues: settings.branding });
 
@@ -307,8 +329,8 @@ const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
   return (
     <SettingsCard
       settingKey="branding"
-      title="Identité visuelle"
-      description="Le logo et l'icône du site. Sans logo téléversé, le nom court ci-dessous est affiché à la place."
+      title={t.admin.settings.brandingTitle}
+      description={t.admin.settings.brandingDescription}
       isSaving={mutation.isPending}
       onSubmit={handleSubmit(async (values) => {
         // Files picked in this form reach MinIO here, not when they were chosen.
@@ -336,32 +358,27 @@ const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
           <MediaPicker
             value={logo}
             onChange={setLogo}
-            label="Logo principal"
+            label={t.admin.settings.logoMain}
             slot="siteLogo"
           />
-          <p className="mt-1 text-xs text-navy/50">
-            Affiché sur fond clair : en-tête du site et page de connexion.
-          </p>
+          <p className="mt-1 text-xs text-navy/50">{t.admin.settings.logoMainNote}</p>
         </div>
 
         <div>
           <MediaPicker
             value={logoDark}
             onChange={setLogoDark}
-            label="Logo sur fond sombre"
+            label={t.admin.settings.logoDark}
             slot="siteLogo"
           />
-          <p className="mt-1 text-xs text-navy/50">
-            Facultatif. Utilisé dans le pied de page et l'administration, où le fond est
-            bleu nuit. Sans lui, le logo principal est repris.
-          </p>
+          <p className="mt-1 text-xs text-navy/50">{t.admin.settings.logoDarkNote}</p>
         </div>
       </div>
 
       <Field
-        label="Hauteur d'affichage du logo"
+        label={t.admin.settings.logoHeight}
         htmlFor="branding-height"
-        hint="En pixels. 40 convient à la plupart des logos ; augmentez pour un logo très large."
+        hint={t.admin.settings.logoHeightHint}
       >
         <Input
           id="branding-height"
@@ -376,26 +393,25 @@ const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
         <MediaPicker
           value={favicon}
           onChange={setFavicon}
-          label="Icône du site (favicon)"
+          label={t.admin.settings.favicon}
           slot="favicon"
         />
         <p className="mt-1 text-xs text-navy/50">
-          Icône de l'onglet du navigateur. Elle doit être <strong>carrée</strong> : utilisez le
-          pictogramme seul, sans le texte du logo — un logo horizontal devient une bandelette
-          illisible à 16 px. PNG ou WebP de 512×512, ou un .ico multi-tailles. Un PNG carré sert
-          aussi d'icône lors de l'ajout à l'écran d'accueil sur iPhone.
+          {t.admin.settings.faviconNoteStart}
+          <strong>{t.admin.settings.faviconNoteEmphasis}</strong>
+          {t.admin.settings.faviconNoteEnd}
         </p>
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field
-          label="Nom court"
+          label={t.admin.settings.wordmark}
           htmlFor="branding-wordmark"
-          hint="Affiché si aucun logo n'est téléversé."
+          hint={t.admin.settings.wordmarkHint}
         >
           <Input id="branding-wordmark" placeholder="LDS" {...register('wordmark')} />
         </Field>
-        <Field label="Complément en couleur" htmlFor="branding-accent">
+        <Field label={t.admin.settings.wordmarkAccent} htmlFor="branding-accent">
           <Input id="branding-accent" placeholder="Louga" {...register('wordmarkAccent')} />
         </Field>
       </div>
@@ -404,6 +420,7 @@ const BrandingForm = ({ settings }: { settings: SiteSettings }) => {
 };
 
 const OrganizationForm = ({ settings }: { settings: SiteSettings }) => {
+  const t = useT();
   const mutation = useSettingsMutation('organization');
   const {
     register,
@@ -414,37 +431,49 @@ const OrganizationForm = ({ settings }: { settings: SiteSettings }) => {
   return (
     <SettingsCard
       settingKey="organization"
-      title="L'association"
-      description="Ces textes alimentent la page « À propos » et la section de présentation de l'accueil."
+      title={t.admin.settings.organizationTitle}
+      description={t.admin.settings.organizationDescription}
       isSaving={mutation.isPending}
       onSubmit={handleSubmit((values) => mutation.mutate(values))}
     >
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Nom complet" htmlFor="org-name" required error={errors.name?.message}>
-          <Input id="org-name" {...register('name', { required: 'Le nom est obligatoire' })} />
+        <Field
+          label={t.admin.settings.fullName}
+          htmlFor="org-name"
+          required
+          error={errors.name?.message}
+        >
+          <Input
+            id="org-name"
+            {...register('name', { required: t.admin.settings.nameRequired })}
+          />
         </Field>
-        <Field label="Sigle" htmlFor="org-short">
+        <Field label={t.admin.settings.acronym} htmlFor="org-short">
           <Input id="org-short" placeholder="LDS" {...register('shortName')} />
         </Field>
       </div>
 
-      <Field label="Accroche" htmlFor="org-tagline" hint="Une phrase courte qui résume votre engagement.">
+      <Field
+        label={t.admin.settings.tagline}
+        htmlFor="org-tagline"
+        hint={t.admin.settings.taglineHint}
+      >
         <Input id="org-tagline" {...register('tagline')} />
       </Field>
 
-      <Field label="Présentation" htmlFor="org-about" hint="Affichée sur la page « À propos ».">
+      <Field label={t.admin.settings.about} htmlFor="org-about" hint={t.admin.settings.aboutHint}>
         <Textarea id="org-about" rows={5} {...register('about')} />
       </Field>
 
-      <Field label="Notre mission" htmlFor="org-mission">
+      <Field label={t.admin.settings.mission} htmlFor="org-mission">
         <Textarea id="org-mission" rows={4} {...register('mission')} />
       </Field>
 
-      <Field label="Citation" htmlFor="org-quote" hint="Mise en avant en italique sur le site.">
+      <Field label={t.admin.settings.quote} htmlFor="org-quote" hint={t.admin.settings.quoteHint}>
         <Textarea id="org-quote" rows={2} {...register('quote')} />
       </Field>
 
-      <Field label="Année de création" htmlFor="org-year">
+      <Field label={t.admin.settings.foundedYear} htmlFor="org-year">
         <Input id="org-year" placeholder="2019" {...register('foundedYear')} />
       </Field>
     </SettingsCard>
@@ -452,6 +481,7 @@ const OrganizationForm = ({ settings }: { settings: SiteSettings }) => {
 };
 
 const ContactForm = ({ settings }: { settings: SiteSettings }) => {
+  const t = useT();
   const mutation = useSettingsMutation('global_contact');
   const {
     register,
@@ -462,37 +492,47 @@ const ContactForm = ({ settings }: { settings: SiteSettings }) => {
   return (
     <SettingsCard
       settingKey="global_contact"
-      title="Coordonnées"
-      description="Affichées dans la barre supérieure, le pied de page et la page Contact."
+      title={t.admin.settings.contactTitle}
+      description={t.admin.settings.contactDescription}
       isSaving={mutation.isPending}
       onSubmit={handleSubmit((values) => mutation.mutate(values))}
     >
-      <Field label="Adresse email" htmlFor="contact-email" required error={errors.email?.message}>
+      <Field
+        label={t.admin.common.emailLabel}
+        htmlFor="contact-email"
+        required
+        error={errors.email?.message}
+      >
         <Input
           id="contact-email"
           type="email"
           aria-invalid={Boolean(errors.email)}
           {...register('email', {
-            required: "L'adresse email est obligatoire",
-            pattern: { value: /^\S+@\S+\.\S+$/, message: 'Adresse email invalide' },
+            required: t.admin.common.emailRequired,
+            pattern: { value: /^\S+@\S+\.\S+$/, message: t.admin.common.emailInvalid },
           })}
         />
       </Field>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Téléphone principal" htmlFor="contact-phone" required error={errors.phone?.message}>
+        <Field
+          label={t.admin.settings.phone}
+          htmlFor="contact-phone"
+          required
+          error={errors.phone?.message}
+        >
           <Input
             id="contact-phone"
             aria-invalid={Boolean(errors.phone)}
-            {...register('phone', { required: 'Le téléphone est obligatoire' })}
+            {...register('phone', { required: t.admin.settings.phoneRequired })}
           />
         </Field>
-        <Field label="Téléphone secondaire" htmlFor="contact-phone2">
+        <Field label={t.admin.settings.phoneSecondary} htmlFor="contact-phone2">
           <Input id="contact-phone2" {...register('phoneSecondary')} />
         </Field>
       </div>
 
-      <Field label="Adresse postale" htmlFor="contact-address">
+      <Field label={t.admin.settings.address} htmlFor="contact-address">
         <Textarea id="contact-address" rows={2} {...register('address')} />
       </Field>
     </SettingsCard>
@@ -500,6 +540,7 @@ const ContactForm = ({ settings }: { settings: SiteSettings }) => {
 };
 
 const SocialForm = ({ settings }: { settings: SiteSettings }) => {
+  const t = useT();
   const mutation = useSettingsMutation('global_social');
   const {
     register,
@@ -508,14 +549,14 @@ const SocialForm = ({ settings }: { settings: SiteSettings }) => {
   } = useForm({ defaultValues: settings.global_social });
 
   const urlRule = {
-    pattern: { value: /^(https?:\/\/\S+)?$/, message: 'Doit commencer par https:// ou rester vide' },
+    pattern: { value: /^(https?:\/\/\S+)?$/, message: t.admin.settings.socialUrlPattern },
   };
 
   return (
     <SettingsCard
       settingKey="global_social"
-      title="Réseaux sociaux"
-      description="Laissez un champ vide pour masquer l'icône correspondante sur le site."
+      title={t.admin.settings.socialTitle}
+      description={t.admin.settings.socialDescription}
       isSaving={mutation.isPending}
       onSubmit={handleSubmit((values) => mutation.mutate(values))}
     >
@@ -565,6 +606,7 @@ function useMediaById(ids: Array<string | null>) {
 }
 
 const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
+  const t = useT();
   const mutation = useSettingsMutation('homepage');
   const { register, handleSubmit } = useForm({ defaultValues: settings.homepage });
 
@@ -592,8 +634,8 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
   return (
     <SettingsCard
       settingKey="homepage"
-      title="Page d'accueil"
-      description="Le bandeau principal, l'illustration de présentation et l'appel à l'action."
+      title={t.admin.settings.homepageTitle}
+      description={t.admin.settings.homepageDescription}
       isSaving={mutation.isPending}
       onSubmit={handleSubmit(async (values) => {
         const [storedHero, storedAbout, storedCta] = await Promise.all([
@@ -614,19 +656,23 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
         });
       })}
     >
-      <Field label="Titre du bandeau" htmlFor="home-hero-title">
+      <Field label={t.admin.settings.heroTitle} htmlFor="home-hero-title">
         <Textarea id="home-hero-title" rows={2} {...register('heroTitle')} />
       </Field>
 
-      <Field label="Sous-titre du bandeau" htmlFor="home-hero-sub">
+      <Field label={t.admin.settings.heroSubtitle} htmlFor="home-hero-sub">
         <Textarea id="home-hero-sub" rows={3} {...register('heroSubtitle')} />
       </Field>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Étiquette (titre)" htmlFor="home-badge-title" hint="Petit encart sur la photo du bandeau.">
+        <Field
+          label={t.admin.settings.badgeTitle}
+          htmlFor="home-badge-title"
+          hint={t.admin.settings.badgeTitleHint}
+        >
           <Input id="home-badge-title" {...register('heroBadgeTitle')} />
         </Field>
-        <Field label="Étiquette (sous-titre)" htmlFor="home-badge-sub">
+        <Field label={t.admin.settings.badgeSubtitle} htmlFor="home-badge-sub">
           <Input id="home-badge-sub" {...register('heroBadgeSubtitle')} />
         </Field>
       </div>
@@ -635,25 +681,25 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
         <MediaPicker
           value={heroImage}
           onChange={setHeroImage}
-          label="Photo du bandeau"
+          label={t.admin.settings.heroPhoto}
             slot="heroPortrait"
         />
         <MediaPicker
           value={aboutImage}
           onChange={setAboutImage}
-          label="Photo de présentation"
+          label={t.admin.settings.aboutPhoto}
             slot="aboutPhoto"
         />
       </div>
 
-      <Field label="Citation de l'appel à l'action" htmlFor="home-cta-quote">
+      <Field label={t.admin.settings.ctaQuote} htmlFor="home-cta-quote">
         <Textarea id="home-cta-quote" rows={2} {...register('ctaQuote')} />
       </Field>
 
       <MediaPicker
         value={ctaImage}
         onChange={setCtaImage}
-        label="Image de fond de l'appel à l'action"
+        label={t.admin.settings.ctaImage}
             slot="ctaBanner"
       />
     </SettingsCard>
@@ -661,6 +707,7 @@ const HomepageForm = ({ settings }: { settings: SiteSettings }) => {
 };
 
 const SeoForm = ({ settings }: { settings: SiteSettings }) => {
+  const t = useT();
   const mutation = useSettingsMutation('seo');
   const { register, handleSubmit, watch } = useForm({ defaultValues: settings.seo });
 
@@ -679,8 +726,8 @@ const SeoForm = ({ settings }: { settings: SiteSettings }) => {
   return (
     <SettingsCard
       settingKey="seo"
-      title="Référencement"
-      description="Le titre et la description utilisés par Google et lors des partages sur les réseaux sociaux."
+      title={t.admin.settings.seoTitle}
+      description={t.admin.settings.seoDescription}
       isSaving={mutation.isPending}
       onSubmit={handleSubmit(async (values) => {
         const stored = await commitImage(ogImage, 'seo');
@@ -688,26 +735,34 @@ const SeoForm = ({ settings }: { settings: SiteSettings }) => {
         mutation.mutate({ ...values, ogImageId: stored?.id ?? null });
       })}
     >
-      <Field label="Titre du site" htmlFor="seo-title" hint="Environ 60 caractères pour un affichage complet.">
+      <Field
+        label={t.admin.settings.siteTitle}
+        htmlFor="seo-title"
+        hint={t.admin.settings.siteTitleHint}
+      >
         <Input id="seo-title" {...register('title')} />
       </Field>
 
       <Field
-        label="Description"
+        label={t.admin.settings.seoDescriptionLabel}
         htmlFor="seo-description"
-        hint={`${description.length} caractères — visez 150 à 160 pour un affichage optimal.`}
+        hint={t.admin.settings.seoDescriptionHint(description.length)}
       >
         <Textarea id="seo-description" rows={3} {...register('description')} />
       </Field>
 
-      <Field label="Mots-clés" htmlFor="seo-keywords" hint="Séparés par des virgules.">
+      <Field
+        label={t.admin.settings.keywords}
+        htmlFor="seo-keywords"
+        hint={t.admin.settings.keywordsHint}
+      >
         <Input id="seo-keywords" {...register('keywords')} />
       </Field>
 
       <MediaPicker
         value={ogImage}
         onChange={setOgImage}
-        label="Image de partage"
+        label={t.admin.settings.shareImage}
             slot="ogImage"
       />
     </SettingsCard>

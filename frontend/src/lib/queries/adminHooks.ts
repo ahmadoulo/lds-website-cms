@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
-import api, { apiErrorMessage } from '../api/axios';
+import api from '../api/axios';
+import { apiErrorMessage } from '../apiErrorMessage';
+import { useLocale } from '../../context/LocaleContext';
+import { ADMIN_SCREENS } from '../i18n/dictionaries/adminScreens';
+import { DEFAULT_LOCALE, type Locale } from '../i18n/locale';
 import { useToast } from '../../components/ui/Toast';
 import type { Media, Paginated } from '../types';
 
@@ -29,6 +33,9 @@ export function useAdminMutation<TVariables, TData = unknown>(options: {
 }) {
   const toast = useToast();
   const invalidate = useInvalidate();
+  // The error toast has to speak the language the screen is in, and
+  // `apiErrorMessage` is not a hook - so the locale is read here and passed down.
+  const { locale } = useLocale();
 
   return useMutation({
     mutationFn: options.mutationFn,
@@ -38,7 +45,7 @@ export function useAdminMutation<TVariables, TData = unknown>(options: {
       options.onSuccess?.(data);
     },
     onError: (error) => {
-      toast.error(apiErrorMessage(error));
+      toast.error(apiErrorMessage(error, undefined, locale));
     },
   });
 }
@@ -100,7 +107,12 @@ export const acceptAttribute = (allowIcon: boolean) =>
  * Mirrors the server-side rules so the user gets feedback before uploading.
  * The server re-checks the magic number; this only avoids a pointless round trip.
  */
-export function validateImageFile(file: File, allowIcon = false): string | null {
+export function validateImageFile(
+  file: File,
+  allowIcon = false,
+  locale: Locale = DEFAULT_LOCALE,
+): string | null {
+  const strings = ADMIN_SCREENS[locale].upload;
   const accepted = allowIcon ? ACCEPTED_ICON_TYPES : ACCEPTED_IMAGE_TYPES;
 
   // Browsers report .ico as image/x-icon, image/vnd.microsoft.icon or nothing at
@@ -108,21 +120,20 @@ export function validateImageFile(file: File, allowIcon = false): string | null 
   const looksLikeIcon = allowIcon && /\.ico$/i.test(file.name);
 
   if (!looksLikeIcon && file.type && !accepted.includes(file.type)) {
-    return allowIcon
-      ? 'Format non supporté. Utilisez ICO, PNG, WebP ou JPG.'
-      : 'Format non supporté. Utilisez JPG, PNG, WebP, GIF ou AVIF.';
+    return allowIcon ? strings.unsupportedIcon : strings.unsupportedImage;
   }
 
   if (file.size > MAX_UPLOAD_BYTES) {
-    return `Fichier trop volumineux (${formatBytes(file.size)}). Maximum : 5 Mo.`;
+    return strings.tooLarge(formatBytes(file.size, locale));
   }
 
   return null;
 }
 
-export function formatBytes(bytes: number): string {
-  if (!bytes) return '0 o';
-  const units = ['o', 'Ko', 'Mo', 'Go'];
+export function formatBytes(bytes: number, locale: Locale = DEFAULT_LOCALE): string {
+  const strings = ADMIN_SCREENS[locale].upload;
+  const units = [strings.byte, strings.kilobyte, strings.megabyte, strings.gigabyte];
+  if (!bytes) return `0 ${units[0]}`;
   const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   const value = bytes / 1024 ** exponent;
   return `${value.toFixed(exponent === 0 ? 0 : 1)} ${units[exponent]}`;

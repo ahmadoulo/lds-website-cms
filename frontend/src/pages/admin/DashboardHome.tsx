@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
+  ArrowUpLeft,
   ArrowUpRight,
   BarChart3,
   Building2,
@@ -14,11 +15,13 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api/axios';
 import { useAuth } from '../../context/AuthContext';
+import { useLocale } from '../../context/LocaleContext';
+import { useT } from '../../lib/i18n/useT';
+import { localizedOrSource } from '../../lib/i18n/resolve';
 import { formatBytes } from '../../lib/queries/adminHooks';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
 import { EmptyState, ErrorState, Skeleton } from '../../components/ui/States';
 import { Badge } from '../../components/ui/Badge';
-import { t } from '../../lib/types';
 
 interface Stats {
   missions: { total: number; published: number };
@@ -30,30 +33,9 @@ interface Stats {
   messages: { total: number; unread: number };
 }
 
-const ACTION_LABELS: Record<string, string> = {
-  CREATE: 'a créé',
-  UPDATE: 'a modifié',
-  DELETE: 'a supprimé',
-  LOGIN: "s'est connecté",
-  LOGOUT: "s'est déconnecté",
-  LOGIN_FAILED: 'a échoué à se connecter',
-  PASSWORD_CHANGED: 'a changé son mot de passe',
-};
-
-const RESOURCE_LABELS: Record<string, string> = {
-  News: 'une actualité',
-  Mission: "un domaine d'action",
-  Partner: 'un partenaire',
-  ImpactStatistic: 'un chiffre clé',
-  GalleryAlbum: 'un album',
-  Media: 'un média',
-  Donation: 'un moyen de soutien',
-  NavigationItem: 'un lien de navigation',
-  ContactMessage: 'un message',
-  User: 'un compte',
-};
-
 export const DashboardHome = () => {
+  const t = useT();
+  const { locale, isRtl } = useLocale();
   const { user, can } = useAuth();
 
   const statsQuery = useQuery<Stats>({
@@ -75,42 +57,52 @@ export const DashboardHome = () => {
 
   const stats = statsQuery.data;
 
+  // The activity feed can carry an action or a resource this build does not know
+  // about yet, so an unknown key falls back to the raw value from the API.
+  const actionLabel = (key: string) =>
+    (t.admin.dashboard.actions as Record<string, string>)[key] ?? key;
+  const resourceLabel = (key: string) =>
+    (t.admin.dashboard.resources as Record<string, string>)[key] ?? key;
+
+  /* An outbound arrow points the way the page is read, so it turns around in Arabic. */
+  const OutboundArrow = isRtl ? ArrowUpLeft : ArrowUpRight;
+
   const cards = [
     {
-      label: 'Actualités',
+      label: t.admin.dashboard.cardNews,
       value: stats?.news.total,
-      detail: stats ? `${stats.news.published} publiée(s)` : undefined,
+      detail: stats ? t.admin.dashboard.publishedFeminine(stats.news.published) : undefined,
       icon: FileText,
       href: '/admin/actualites',
       tone: 'bg-blue/10 text-blue',
     },
     {
-      label: "Domaines d'action",
+      label: t.admin.dashboard.cardMissions,
       value: stats?.missions.total,
-      detail: stats ? `${stats.missions.published} publié(s)` : undefined,
+      detail: stats ? t.admin.dashboard.publishedMasculine(stats.missions.published) : undefined,
       icon: Target,
       href: '/admin/missions',
       tone: 'bg-green/15 text-[#4d7c0f]',
     },
     {
-      label: 'Photos en galerie',
+      label: t.admin.dashboard.cardGallery,
       value: stats?.gallery.images,
-      detail: stats ? `${stats.gallery.albums} album(s)` : undefined,
+      detail: stats ? t.admin.dashboard.albumCount(stats.gallery.albums) : undefined,
       icon: Images,
       href: '/admin/galerie',
       tone: 'bg-orange/10 text-orange',
     },
     {
-      label: 'Partenaires',
+      label: t.admin.dashboard.cardPartners,
       value: stats?.partners.total,
-      detail: stats ? `${stats.partners.published} publié(s)` : undefined,
+      detail: stats ? t.admin.dashboard.publishedMasculine(stats.partners.published) : undefined,
       icon: Building2,
       href: '/admin/partenaires',
       tone: 'bg-navy/10 text-navy',
       minRole: 'ADMIN' as const,
     },
     {
-      label: 'Chiffres clés',
+      label: t.admin.dashboard.cardImpact,
       value: stats?.impact.total,
       icon: BarChart3,
       href: '/admin/impact',
@@ -118,9 +110,9 @@ export const DashboardHome = () => {
       minRole: 'ADMIN' as const,
     },
     {
-      label: 'Messages non lus',
+      label: t.admin.dashboard.cardMessages,
       value: stats?.messages.unread,
-      detail: stats ? `${stats.messages.total} au total` : undefined,
+      detail: stats ? t.admin.dashboard.messagesTotal(stats.messages.total) : undefined,
       icon: Mail,
       href: '/admin/messages',
       tone: 'bg-orange/10 text-orange',
@@ -131,8 +123,8 @@ export const DashboardHome = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Bonjour ${user?.firstName ?? ''}`.trim()}
-        description="Voici l'état actuel du contenu publié sur le site."
+        title={t.admin.dashboard.greeting(user?.firstName ?? '')}
+        description={t.admin.dashboard.description}
       />
 
       {statsQuery.isError ? (
@@ -160,7 +152,7 @@ export const DashboardHome = () => {
                 <span className={`rounded-xl p-2.5 ${card.tone}`}>
                   <card.icon className="h-5 w-5" />
                 </span>
-                <ArrowUpRight className="h-4 w-4 text-navy/25 transition-colors group-hover:text-blue" />
+                <OutboundArrow className="h-4 w-4 text-navy/25 transition-colors group-hover:text-blue" />
               </div>
             </Link>
           ))}
@@ -173,10 +165,10 @@ export const DashboardHome = () => {
           <section className="rounded-xl border border-navy/8 bg-white p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-sm font-bold uppercase tracking-wide text-navy/55">
-                Dernières actualités
+                {t.admin.dashboard.latestNews}
               </h2>
               <Link to="/admin/actualites" className="text-xs font-semibold text-blue hover:underline">
-                Tout voir
+                {t.admin.dashboard.seeAll}
               </Link>
             </div>
 
@@ -188,8 +180,8 @@ export const DashboardHome = () => {
               </div>
             ) : !overviewQuery.data?.recentNews?.length ? (
               <EmptyState
-                title="Aucune actualité"
-                description="Publiez votre première actualité pour la voir apparaître ici."
+                title={t.admin.dashboard.emptyNewsTitle}
+                description={t.admin.dashboard.emptyNewsDescription}
                 icon={FileText}
                 className="border-0 py-8"
               />
@@ -201,10 +193,10 @@ export const DashboardHome = () => {
                       to={`/admin/actualites?edit=${item.id}`}
                       className="min-w-0 flex-1 truncate text-sm font-medium text-navy hover:text-blue"
                     >
-                      {t(item.title, 'Sans titre')}
+                      {localizedOrSource(item.title, locale).text || t.admin.dashboard.untitled}
                     </Link>
                     <Badge tone={item.isPublished ? 'green' : 'neutral'}>
-                      {item.isPublished ? 'Publié' : 'Brouillon'}
+                      {item.isPublished ? t.admin.common.published : t.admin.common.draft}
                     </Badge>
                   </li>
                 ))}
@@ -216,10 +208,10 @@ export const DashboardHome = () => {
           <section className="rounded-xl border border-navy/8 bg-white p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-sm font-bold uppercase tracking-wide text-navy/55">
-                Messages non lus
+                {t.admin.dashboard.unreadMessages}
               </h2>
               <Link to="/admin/messages" className="text-xs font-semibold text-blue hover:underline">
-                Tout voir
+                {t.admin.dashboard.seeAll}
               </Link>
             </div>
 
@@ -231,8 +223,8 @@ export const DashboardHome = () => {
               </div>
             ) : !overviewQuery.data?.recentMessages?.length ? (
               <EmptyState
-                title="Aucun message en attente"
-                description="Les messages envoyés depuis le formulaire de contact apparaissent ici."
+                title={t.admin.dashboard.emptyMessagesTitle}
+                description={t.admin.dashboard.emptyMessagesDescription}
                 icon={Mail}
                 className="border-0 py-8"
               />
@@ -261,11 +253,13 @@ export const DashboardHome = () => {
               <HardDrive className="h-5 w-5" />
             </span>
             <div>
-              <p className="text-sm font-medium text-navy/55">Stockage utilisé</p>
+              <p className="text-sm font-medium text-navy/55">{t.admin.dashboard.storageUsed}</p>
               <p className="text-lg font-bold text-navy">
-                {formatBytes(stats?.media.totalSize ?? 0)}
+                {formatBytes(stats?.media.totalSize ?? 0, locale)}
               </p>
-              <p className="text-xs text-navy/45">{stats?.media.total ?? 0} fichier(s)</p>
+              <p className="text-xs text-navy/45">
+                {t.admin.dashboard.fileCount(stats?.media.total ?? 0)}
+              </p>
             </div>
           </div>
 
@@ -274,9 +268,11 @@ export const DashboardHome = () => {
               <Database className="h-5 w-5" />
             </span>
             <div>
-              <p className="text-sm font-medium text-navy/55">Base de données</p>
+              <p className="text-sm font-medium text-navy/55">{t.admin.dashboard.database}</p>
               <Badge tone={healthQuery.data?.database ? 'green' : 'red'}>
-                {healthQuery.data?.database ? 'Connectée' : 'Indisponible'}
+                {healthQuery.data?.database
+                  ? t.admin.dashboard.databaseConnected
+                  : t.admin.dashboard.databaseUnavailable}
               </Badge>
             </div>
           </div>
@@ -286,9 +282,11 @@ export const DashboardHome = () => {
               <Images className="h-5 w-5" />
             </span>
             <div>
-              <p className="text-sm font-medium text-navy/55">Stockage des images</p>
+              <p className="text-sm font-medium text-navy/55">{t.admin.dashboard.imageStorage}</p>
               <Badge tone={healthQuery.data?.storage ? 'green' : 'red'}>
-                {healthQuery.data?.storage ? 'Connecté' : 'Indisponible'}
+                {healthQuery.data?.storage
+                  ? t.admin.dashboard.storageConnected
+                  : t.admin.dashboard.storageUnavailable}
               </Badge>
             </div>
           </div>
@@ -299,10 +297,10 @@ export const DashboardHome = () => {
         <section className="rounded-xl border border-navy/8 bg-white p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-wide text-navy/55">
-              Activité récente
+              {t.admin.dashboard.recentActivity}
             </h2>
             <Link to="/admin/journal" className="text-xs font-semibold text-blue hover:underline">
-              Journal complet
+              {t.admin.dashboard.fullLog}
             </Link>
           </div>
           <ul className="divide-y divide-navy/6">
@@ -312,17 +310,12 @@ export const DashboardHome = () => {
                   {entry.user
                     ? [entry.user.firstName, entry.user.lastName].filter(Boolean).join(' ') ||
                       entry.user.email
-                    : 'Système'}
+                    : t.admin.dashboard.system}
                 </span>
-                <span className="text-navy/60">{ACTION_LABELS[entry.action] ?? entry.action}</span>
-                <span className="text-navy/60">
-                  {RESOURCE_LABELS[entry.resource] ?? entry.resource}
-                </span>
-                <span className="ml-auto text-xs text-navy/40">
-                  {new Date(entry.createdAt).toLocaleString('fr-FR', {
-                    dateStyle: 'short',
-                    timeStyle: 'short',
-                  })}
+                <span className="text-navy/60">{actionLabel(entry.action)}</span>
+                <span className="text-navy/60">{resourceLabel(entry.resource)}</span>
+                <span className="ms-auto text-xs text-navy/40">
+                  {t.admin.common.formatDateTime(entry.createdAt)}
                 </span>
               </li>
             ))}

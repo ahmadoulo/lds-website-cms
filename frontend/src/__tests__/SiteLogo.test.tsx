@@ -1,6 +1,8 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { LocaleProvider } from '../context/LocaleContext';
 
 const mockSettings = vi.fn();
 
@@ -53,7 +55,13 @@ const withBranding = (
 describe('SiteLogo', () => {
   it("falls back to the association's own mark and name", () => {
     withBranding({}, { name: 'Louga Développement Solidaire' });
-    render(<SiteLogo />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+        <SiteLogo />
+      </LocaleProvider>
+      </MemoryRouter>,
+    );
 
     // The supplied logo stacks its wordmark on three lines, which cannot be
     // read in a 40px bar: the mark is shown and the name is set as live text.
@@ -68,7 +76,13 @@ describe('SiteLogo', () => {
 
   it('still names the association when no settings have arrived', () => {
     withBranding({});
-    render(<SiteLogo />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+        <SiteLogo />
+      </LocaleProvider>
+      </MemoryRouter>,
+    );
 
     expect(screen.getByText('Louga')).toBeInTheDocument();
     expect(screen.getByText('Développement Solidaire')).toBeInTheDocument();
@@ -76,7 +90,13 @@ describe('SiteLogo', () => {
 
   it('renders the uploaded logo, served through the API', () => {
     withBranding({ logo: media('logo-1') });
-    render(<SiteLogo />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+        <SiteLogo />
+      </LocaleProvider>
+      </MemoryRouter>,
+    );
 
     const image = screen.getByRole('img');
     expect(image).toHaveAttribute('src', 'http://api.test/api/v1/media/logo-1/file');
@@ -87,7 +107,13 @@ describe('SiteLogo', () => {
 
   it('names the logo after the association, not after the wordmark', () => {
     withBranding({ logo: media('logo-1') }, { name: 'Louga Développement Solidaire' });
-    render(<SiteLogo />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+        <SiteLogo />
+      </LocaleProvider>
+      </MemoryRouter>,
+    );
 
     // A screen reader should hear the association's real name.
     expect(screen.getByRole('img')).toHaveAttribute('alt', 'Louga Développement Solidaire');
@@ -95,7 +121,13 @@ describe('SiteLogo', () => {
 
   it('reserves the logo box so the sticky header does not jump', () => {
     withBranding({ logo: media('logo-1') });
-    render(<SiteLogo />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+        <SiteLogo />
+      </LocaleProvider>
+      </MemoryRouter>,
+    );
 
     const image = screen.getByRole('img');
     expect(image).toHaveAttribute('width');
@@ -107,18 +139,36 @@ describe('SiteLogo', () => {
     // desktop. It must not reach the text lockup, which sizes itself and would
     // simply be cut off.
     withBranding({ logo: media('logo-1') });
-    const uploaded = render(<SiteLogo />);
+    const uploaded = render(
+      <MemoryRouter>
+        <LocaleProvider>
+        <SiteLogo />
+      </LocaleProvider>
+      </MemoryRouter>,
+    );
     expect(screen.getByRole('img').className).toContain('max-h-10');
     uploaded.unmount();
 
     withBranding({});
-    render(<SiteLogo />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+        <SiteLogo />
+      </LocaleProvider>
+      </MemoryRouter>,
+    );
     expect(document.querySelector('img')!.className).not.toContain('max-h-10');
   });
 
   it('uses the dark variant on dark backgrounds', () => {
     withBranding({ logo: media('logo-1'), logoDark: media('logo-dark') });
-    render(<SiteLogo variant="dark" />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+        <SiteLogo variant="dark" />
+      </LocaleProvider>
+      </MemoryRouter>,
+    );
 
     expect(screen.getByRole('img')).toHaveAttribute(
       'src',
@@ -128,7 +178,13 @@ describe('SiteLogo', () => {
 
   it('reuses the main logo when no dark variant exists', () => {
     withBranding({ logo: media('logo-1') });
-    render(<SiteLogo variant="dark" />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+        <SiteLogo variant="dark" />
+      </LocaleProvider>
+      </MemoryRouter>,
+    );
 
     expect(screen.getByRole('img')).toHaveAttribute(
       'src',
@@ -138,14 +194,26 @@ describe('SiteLogo', () => {
 
   it('applies the configured height', () => {
     withBranding({ logo: media('logo-1'), logoHeight: 64 });
-    render(<SiteLogo />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+        <SiteLogo />
+      </LocaleProvider>
+      </MemoryRouter>,
+    );
 
     expect(screen.getByRole('img')).toHaveStyle({ height: '64px' });
   });
 
   it('survives settings that have not loaded yet', () => {
     mockSettings.mockReturnValue({ settings: undefined, isLoading: true, error: null });
-    render(<SiteLogo />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+        <SiteLogo />
+      </LocaleProvider>
+      </MemoryRouter>,
+    );
 
     // The mark and the default name keep the header from collapsing mid-fetch.
     expect(screen.getByText('Louga')).toBeInTheDocument();

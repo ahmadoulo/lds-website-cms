@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { AlertCircle, KeyRound, ShieldAlert } from 'lucide-react';
-import api, { apiErrorMessage } from '../../lib/api/axios';
+import api from '../../lib/api/axios';
+import { apiErrorMessage } from '../../lib/apiErrorMessage';
 import { useAuth } from '../../context/AuthContext';
+import { useLocale } from '../../context/LocaleContext';
+import { useT } from '../../lib/i18n/useT';
 import { useToast } from '../../components/ui/Toast';
 import { Button } from '../../components/ui/Button';
 import { Field, Input } from '../../components/ui/Field';
@@ -15,6 +18,8 @@ interface FormValues {
 }
 
 export const ChangePasswordAdmin = () => {
+  const t = useT();
+  const { locale } = useLocale();
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
@@ -42,10 +47,10 @@ export const ChangePasswordAdmin = () => {
         newPassword: values.newPassword,
       });
       await refreshUser();
-      toast.success('Mot de passe mis à jour.');
+      toast.success(t.admin.password.success);
       navigate('/admin', { replace: true });
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible de modifier le mot de passe.'));
+      setError(apiErrorMessage(err, t.admin.password.failed, locale));
     }
   };
 
@@ -56,11 +61,9 @@ export const ChangePasswordAdmin = () => {
           <span className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-navy text-green">
             <KeyRound className="h-7 w-7" />
           </span>
-          <h1 className="text-2xl font-extrabold text-navy">Changer votre mot de passe</h1>
+          <h1 className="text-2xl font-extrabold text-navy">{t.admin.password.title}</h1>
           <p className="mt-2 text-sm text-navy/60">
-            {isForced
-              ? 'Pour sécuriser votre compte, choisissez un nouveau mot de passe avant de continuer.'
-              : 'Choisissez un nouveau mot de passe pour votre compte.'}
+            {isForced ? t.admin.password.forcedIntro : t.admin.password.intro}
           </p>
         </div>
 
@@ -68,9 +71,7 @@ export const ChangePasswordAdmin = () => {
           {isForced && (
             <div className="mb-6 flex items-start gap-3 rounded-lg border border-orange/25 bg-orange/5 px-4 py-3">
               <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-orange" />
-              <p className="text-sm text-navy/75">
-                Cette étape est obligatoire lors de la première connexion.
-              </p>
+              <p className="text-sm text-navy/75">{t.admin.password.forcedNotice}</p>
             </div>
           )}
 
@@ -87,7 +88,7 @@ export const ChangePasswordAdmin = () => {
 
             {!isForced && (
               <Field
-                label="Mot de passe actuel"
+                label={t.admin.password.currentLabel}
                 htmlFor="current-password"
                 required
                 error={errors.currentPassword?.message}
@@ -98,17 +99,17 @@ export const ChangePasswordAdmin = () => {
                   autoComplete="current-password"
                   aria-invalid={Boolean(errors.currentPassword)}
                   {...register('currentPassword', {
-                    required: 'Le mot de passe actuel est obligatoire',
+                    required: t.admin.password.currentRequired,
                   })}
                 />
               </Field>
             )}
 
             <Field
-              label="Nouveau mot de passe"
+              label={t.admin.password.newLabel}
               htmlFor="new-password"
               required
-              hint="8 caractères minimum, avec au moins une lettre et un chiffre."
+              hint={t.admin.password.newHint}
               error={errors.newPassword?.message}
             >
               <Input
@@ -117,11 +118,11 @@ export const ChangePasswordAdmin = () => {
                 autoComplete="new-password"
                 aria-invalid={Boolean(errors.newPassword)}
                 {...register('newPassword', {
-                  required: 'Le nouveau mot de passe est obligatoire',
-                  minLength: { value: 8, message: '8 caractères minimum' },
+                  required: t.admin.password.newRequired,
+                  minLength: { value: 8, message: t.admin.password.minLength },
                   validate: (value) => {
-                    if (!/[A-Za-z]/.test(value)) return 'Au moins une lettre est requise';
-                    if (!/[0-9]/.test(value)) return 'Au moins un chiffre est requis';
+                    if (!/[A-Za-z]/.test(value)) return t.admin.password.needsLetter;
+                    if (!/[0-9]/.test(value)) return t.admin.password.needsDigit;
                     return true;
                   },
                 })}
@@ -129,7 +130,7 @@ export const ChangePasswordAdmin = () => {
             </Field>
 
             <Field
-              label="Confirmer le mot de passe"
+              label={t.admin.password.confirmLabel}
               htmlFor="confirm-password"
               required
               error={errors.confirmPassword?.message}
@@ -140,15 +141,14 @@ export const ChangePasswordAdmin = () => {
                 autoComplete="new-password"
                 aria-invalid={Boolean(errors.confirmPassword)}
                 {...register('confirmPassword', {
-                  required: 'Veuillez confirmer le mot de passe',
-                  validate: (value) =>
-                    value === newPassword || 'Les deux mots de passe ne correspondent pas',
+                  required: t.admin.password.confirmRequired,
+                  validate: (value) => value === newPassword || t.admin.password.mismatch,
                 })}
               />
             </Field>
 
             <Button type="submit" variant="secondary" fullWidth size="lg" isLoading={isSubmitting}>
-              Enregistrer le nouveau mot de passe
+              {t.admin.password.submit}
             </Button>
           </form>
         </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { useGalleryImages, useImpactStats, useMissions } from '../../lib/queries/publicHooks';
 import { Seo } from '../../components/seo/Seo';
@@ -8,7 +8,9 @@ import { SectionHeading } from '../../components/public/SectionHeading';
 import { resolveIcon } from '../../lib/icons';
 import { BRAND } from '../../lib/brand';
 import { EmptyState, ErrorState, Skeleton } from '../../components/ui/States';
-import { t } from '../../lib/types';
+import { useLocale } from '../../context/LocaleContext';
+import { hasTranslation, localized } from '../../lib/i18n/resolve';
+import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 
 /**
  * Four numbers and a button did not justify a page of its own.
@@ -22,15 +24,30 @@ export const ImpactPage = () => {
   const { data: stats, isLoading, isError, refetch } = useImpactStats();
   const { data: missions } = useMissions();
   const { data: gallery } = useGalleryImages();
+  const { locale } = useLocale();
+  const p = usePagesT();
 
+  /*
+    A figure is only an argument if its label can be read: 620 with a French
+    label in an Arabic column says nothing, so an untranslated indicator is left
+    out. Same for the domains below. Neither filter removes anything at `fr`.
+  */
+  const visibleStats = useMemo(
+    () => (stats ?? []).filter((stat) => hasTranslation(stat.label, locale)),
+    [stats, locale],
+  );
+
+  const visibleMissions = useMemo(
+    () => (missions ?? []).filter((mission) => hasTranslation(mission.title, locale)),
+    [missions, locale],
+  );
+
+  // Photographs need no translation, so the proof strip is never filtered.
   const evidence = (gallery ?? []).slice(0, 6);
 
   return (
     <>
-      <Seo
-        title="Notre impact"
-        description="Les résultats concrets de Louga Développement Solidaire sur le terrain : chiffres, domaines d'action et photographies."
-      />
+      <Seo title={p.impact.seoTitle} description={p.impact.seoDescription} />
 
       {/* ------------------------------------------------------------ Figures */}
       <section className="relative overflow-hidden bg-navy section-y">
@@ -41,12 +58,9 @@ export const ImpactPage = () => {
 
         <div className="relative z-10 container-page">
           <div className="mb-10 text-center sm:mb-16">
-            <p className="mb-3.5 text-eyebrow uppercase text-green">Notre impact</p>
-            <h1 className="mb-4 text-h1 text-white">Notre impact en chiffres</h1>
-            <p className="mx-auto max-w-2xl text-body-lg text-white/70">
-              Grâce au soutien de nos membres et partenaires, voici ce que nous avons accompli sur le
-              terrain.
-            </p>
+            <p className="mb-3.5 text-eyebrow uppercase text-green">{p.shared.impactEyebrow}</p>
+            <h1 className="mb-4 text-h1 text-white">{p.shared.impactFiguresTitle}</h1>
+            <p className="mx-auto max-w-2xl text-body-lg text-white/70">{p.impact.lead}</p>
           </div>
 
           {isLoading ? (
@@ -60,11 +74,17 @@ export const ImpactPage = () => {
           ) : !stats?.length ? (
             <EmptyState
               icon={BarChart3}
-              title="Aucun chiffre publié"
-              description="Nos indicateurs d'impact seront publiés prochainement."
+              title={p.impact.emptyTitle}
+              description={p.impact.emptyDescription}
+            />
+          ) : !visibleStats.length ? (
+            <EmptyState
+              icon={BarChart3}
+              title={p.shared.untranslatedTitle}
+              description={p.shared.untranslatedDescription}
             />
           ) : (
-            <ImpactFigures stats={stats} size="lg" />
+            <ImpactFigures stats={visibleStats} size="lg" />
           )}
         </div>
       </section>
@@ -74,39 +94,48 @@ export const ImpactPage = () => {
         <section className="bg-warm section-y">
           <div className="container-page">
             <SectionHeading
-              eyebrow="D'où viennent ces chiffres"
-              title="Les actions qui les produisent"
-              description="Chaque indicateur est le résultat d'un travail mené toute l'année sur le terrain."
+              eyebrow={p.impact.sourceEyebrow}
+              title={p.impact.sourceTitle}
+              description={p.impact.sourceDescription}
               accent="blue"
             />
 
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {missions!.map((mission, index) => {
-                const Icon = resolveIcon(mission.icon);
-                const accent = [BRAND.green, BRAND.blue, BRAND.orange][index % 3];
+            {visibleMissions.length === 0 ? (
+              <EmptyState
+                title={p.shared.untranslatedTitle}
+                description={p.shared.untranslatedDescription}
+              />
+            ) : (
+              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {visibleMissions.map((mission, index) => {
+                  const Icon = resolveIcon(mission.icon);
+                  const accent = [BRAND.green, BRAND.blue, BRAND.orange][index % 3];
 
-                return (
-                  <li
-                    key={mission.id}
-                    className="flex gap-4 rounded-card bg-white p-5 shadow-e1 ring-1 ring-navy/5"
-                  >
-                    <span
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white"
-                      style={{ backgroundColor: accent }}
-                      aria-hidden
+                  return (
+                    <li
+                      key={mission.id}
+                      className="flex gap-4 rounded-card bg-white p-5 shadow-e1 ring-1 ring-navy/5"
                     >
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-h3 text-navy">{t(mission.title)}</span>
-                      <span className="mt-1 block text-caption text-navy/65">
-                        {t(mission.description)}
+                      <span
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white"
+                        style={{ backgroundColor: accent }}
+                        aria-hidden
+                      >
+                        <Icon className="h-5 w-5" />
                       </span>
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
+                      <span className="min-w-0">
+                        <span className="block text-h3 text-navy">
+                          {localized(mission.title, locale)}
+                        </span>
+                        <span className="mt-1 block text-caption text-navy/65">
+                          {localized(mission.description, locale)}
+                        </span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         </section>
       )}
@@ -116,8 +145,8 @@ export const ImpactPage = () => {
         <section className="bg-warm-muted section-y">
           <div className="container-page">
             <SectionHeading
-              eyebrow="Sur le terrain"
-              title="Ces chiffres en images"
+              eyebrow={p.impact.fieldEyebrow}
+              title={p.impact.fieldTitle}
               accent="green"
             />
 
@@ -127,8 +156,9 @@ export const ImpactPage = () => {
                   <img
                     src={image.media.url}
                     alt={
-                      image.media.altText?.fr ||
-                      t(image.caption, "Action de Louga Développement Solidaire sur le terrain")
+                      localized(image.media.altText, locale) ||
+                      localized(image.caption, locale) ||
+                      p.alt.organizationFieldAction
                     }
                     loading="lazy"
                     decoding="async"
@@ -146,12 +176,12 @@ export const ImpactPage = () => {
       {/* ------------------------------------------------------------ Take part */}
       <section className="bg-warm section-y-sm">
         <div className="container-page text-center">
-          <h2 className="mb-4 text-h2-sm text-navy">Ces résultats dépendent de vous</h2>
+          <h2 className="mb-4 text-h2-sm text-navy">{p.impact.takePartTitle}</h2>
           <p className="mx-auto mb-8 max-w-xl text-body text-navy/70">
-            Chaque contribution finance directement une action sur le terrain à Louga.
+            {p.impact.takePartDescription}
           </p>
           <CtaLink to="/nous-soutenir" size="lg">
-            Contribuer à cet impact
+            {p.cta.contributeImpact}
           </CtaLink>
         </div>
       </section>

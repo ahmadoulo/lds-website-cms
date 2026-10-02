@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Eye, X } from 'lucide-react';
 import { usePreview } from '../../context/PreviewContext';
 import { useAuth } from '../../context/AuthContext';
+import { useLayoutT } from '../../lib/i18n/dictionaries/layout';
 
 /**
  * Makes it impossible to mistake a preview for the live site, which is what
@@ -11,6 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 export const PreviewBanner = () => {
   const { isPreview } = usePreview();
   const { isAuthenticated } = useAuth();
+  const layout = useLayoutT();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -29,17 +31,16 @@ export const PreviewBanner = () => {
       className="sticky top-0 z-[60] flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-orange px-4 py-2 text-center text-caption font-semibold text-white"
     >
       <span className="flex items-center gap-2">
+        {/* An eye is not a direction: it reads the same way round in Arabic. */}
         <Eye className="h-4 w-4" aria-hidden />
-        {isAuthenticated
-          ? 'Mode prévisualisation — vous voyez les modifications non publiées.'
-          : 'Prévisualisation indisponible : connectez-vous à l’administration pour voir les brouillons.'}
+        {isAuthenticated ? layout.preview.editor : layout.preview.visitor}
       </span>
       <button
         type="button"
         onClick={exit}
         className="inline-flex min-h-11 items-center gap-1 rounded-full bg-white/20 px-3.5 text-xs transition-colors hover:bg-white/30 sm:min-h-0 sm:px-2.5 sm:py-0.5"
       >
-        <X className="h-3 w-3" aria-hidden /> Quitter
+        <X className="h-3 w-3" aria-hidden /> {layout.preview.exit}
       </button>
     </div>
   );

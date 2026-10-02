@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { useShellT } from '../../lib/i18n/useT';
 
 type ToastVariant = 'success' | 'error' | 'info';
 
@@ -19,9 +20,9 @@ interface ToastContextType {
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 const VARIANT_STYLES: Record<ToastVariant, string> = {
-  success: 'bg-white border-l-4 border-green text-navy',
-  error: 'bg-white border-l-4 border-red-500 text-navy',
-  info: 'bg-white border-l-4 border-blue text-navy',
+  success: 'bg-white border-s-4 border-green text-navy',
+  error: 'bg-white border-s-4 border-red-500 text-navy',
+  info: 'bg-white border-s-4 border-blue text-navy',
 };
 
 const VARIANT_ICONS: Record<ToastVariant, typeof Info> = {
@@ -34,6 +35,7 @@ let nextId = 1;
 
 export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const t = useShellT();
 
   const dismiss = useCallback((id: number) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
@@ -62,9 +64,9 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
     <ToastContext.Provider value={value}>
       {children}
       <div
-        className="fixed bottom-4 right-4 z-[100] flex flex-col gap-3 w-[calc(100vw-2rem)] max-w-sm"
+        className="fixed bottom-4 end-4 z-[100] flex flex-col gap-3 w-[calc(100vw-2rem)] max-w-sm"
         role="region"
-        aria-label="Notifications"
+        aria-label={t.common.notifications}
       >
         {toasts.map((toast) => {
           const Icon = VARIANT_ICONS[toast.variant];
@@ -91,7 +93,7 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
                 type="button"
                 onClick={() => dismiss(toast.id)}
                 className="text-navy/40 transition-colors hover:text-navy"
-                aria-label="Fermer la notification"
+                aria-label={t.common.closeNotification}
               >
                 <X className="h-4 w-4" />
               </button>

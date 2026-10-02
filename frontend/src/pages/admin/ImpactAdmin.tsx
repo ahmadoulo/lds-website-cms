@@ -3,6 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { BarChart3, Edit2, Eye, EyeOff, Plus, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
+import { useLocale } from '../../context/LocaleContext';
+import { useT } from '../../lib/i18n/useT';
+import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { IMPACT_ICON_OPTIONS, resolveIcon } from '../../lib/icons';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
@@ -14,7 +17,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Badge } from '../../components/ui/Badge';
 import { Checkbox, Field, Input, Select } from '../../components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
-import { t, type ImpactStat } from '../../lib/types';
+import type { ImpactStat } from '../../lib/types';
 
 interface FormValues {
   label: string;
@@ -24,22 +27,20 @@ interface FormValues {
   isPublished: boolean;
 }
 
-const BRAND_COLORS = [
-  { value: '#87CE18', label: 'Vert' },
-  { value: '#00A4DE', label: 'Bleu' },
-  { value: '#EE7900', label: 'Orange' },
-  { value: '#172642', label: 'Bleu nuit' },
-];
+/** The charte's four colours. Their names come from the dictionary. */
+const BRAND_COLORS = ['#87CE18', '#00A4DE', '#EE7900', '#172642'] as const;
 
 const EMPTY_FORM: FormValues = {
   label: '',
   value: 0,
-  color: BRAND_COLORS[0].value,
+  color: BRAND_COLORS[0],
   icon: '',
   isPublished: true,
 };
 
 export const ImpactAdmin = () => {
+  const t = useT();
+  const { locale } = useLocale();
   const [editing, setEditing] = useState<ImpactStat | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<ImpactStat | null>(null);
@@ -59,6 +60,16 @@ export const ImpactAdmin = () => {
 
   const selectedColor = watch('color');
 
+  const text = (value: Parameters<typeof localizedOrSource>[0]) =>
+    localizedOrSource(value, locale).text;
+
+  const COLOR_LABELS: Record<(typeof BRAND_COLORS)[number], string> = {
+    '#87CE18': t.admin.impact.colorGreen,
+    '#00A4DE': t.admin.impact.colorBlue,
+    '#EE7900': t.admin.impact.colorOrange,
+    '#172642': t.admin.impact.colorNavy,
+  };
+
   const openCreate = () => {
     setEditing(null);
     reset(EMPTY_FORM);
@@ -68,7 +79,8 @@ export const ImpactAdmin = () => {
   const openEdit = (stat: ImpactStat) => {
     setEditing(stat);
     reset({
-      label: t(stat.label),
+      // The form writes the French source, whatever language the screen is in.
+      label: localized(stat.label, 'fr'),
       value: stat.value,
       color: stat.color,
       icon: stat.icon ?? '',
@@ -98,7 +110,7 @@ export const ImpactAdmin = () => {
         ? (await api.patch(`/impact/${editing.id}`, payload)).data
         : (await api.post('/impact', payload)).data;
     },
-    successMessage: editing ? 'Chiffre clé mis à jour.' : 'Chiffre clé ajouté.',
+    successMessage: editing ? t.admin.impact.updated : t.admin.impact.created,
     invalidate: [['admin', 'impact']],
     onSuccess: closeForm,
   });
@@ -106,13 +118,13 @@ export const ImpactAdmin = () => {
   const togglePublish = useAdminMutation<ImpactStat>({
     mutationFn: async (stat) =>
       (await api.patch(`/impact/${stat.id}`, { isPublished: !stat.isPublished })).data,
-    successMessage: 'Statut mis à jour.',
+    successMessage: t.admin.common.statusUpdated,
     invalidate: [['admin', 'impact']],
   });
 
   const deleteMutation = useAdminMutation<string>({
     mutationFn: async (id) => (await api.delete(`/impact/${id}`)).data,
-    successMessage: 'Chiffre clé supprimé.',
+    successMessage: t.admin.impact.deleted,
     invalidate: [['admin', 'impact']],
     onSuccess: () => setPendingDelete(null),
   });
@@ -120,16 +132,16 @@ export const ImpactAdmin = () => {
   const columns: Array<Column<ImpactStat>> = [
     {
       key: 'value',
-      header: 'Valeur',
+      header: t.admin.impact.columnValue,
       render: (stat) => (
         <span className="text-xl font-extrabold tabular-nums" style={{ color: stat.color }}>
-          {stat.value.toLocaleString('fr-FR')}
+          {t.admin.common.formatNumber(stat.value)}
         </span>
       ),
     },
     {
       key: 'label',
-      header: 'Intitulé',
+      header: t.admin.impact.columnLabel,
       render: (stat) => {
         const Icon = stat.icon ? resolveIcon(stat.icon) : null;
         return (
@@ -143,14 +155,14 @@ export const ImpactAdmin = () => {
                 <Icon className="h-4 w-4" />
               </span>
             )}
-            {t(stat.label)}
+            {text(stat.label)}
           </span>
         );
       },
     },
     {
       key: 'color',
-      header: 'Couleur',
+      header: t.admin.impact.columnColor,
       render: (stat) => (
         <span className="inline-flex items-center gap-2">
           <span
@@ -164,10 +176,10 @@ export const ImpactAdmin = () => {
     },
     {
       key: 'status',
-      header: 'Statut',
+      header: t.admin.common.status,
       render: (stat) => (
         <Badge tone={stat.isPublished ? 'green' : 'neutral'}>
-          {stat.isPublished ? 'Affiché' : 'Masqué'}
+          {stat.isPublished ? t.admin.common.visible : t.admin.common.hidden}
         </Badge>
       ),
     },
@@ -176,13 +188,13 @@ export const ImpactAdmin = () => {
   return (
     <div>
       <PageHeader
-        title="Chiffres clés"
-        description="Les indicateurs d'impact affichés sur la page d'accueil et la page « Impact »."
+        title={t.admin.impact.title}
+        description={t.admin.impact.description}
         actions={
           <>
-            <PreviewButton path="/impact" />
+            <PreviewButton path="/impact" label={t.admin.common.preview} />
             <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" /> Ajouter un chiffre
+            <Plus className="h-4 w-4" /> {t.admin.impact.addButton}
             </Button>
           </>
         }
@@ -195,11 +207,11 @@ export const ImpactAdmin = () => {
       ) : !listQuery.data?.length ? (
         <EmptyState
           icon={BarChart3}
-          title="Aucun chiffre clé"
-          description="Ajoutez des indicateurs mesurables pour illustrer l'impact de votre association."
+          title={t.admin.impact.emptyTitle}
+          description={t.admin.impact.emptyDescription}
           action={
             <Button onClick={openCreate}>
-              <Plus className="h-4 w-4" /> Ajouter un chiffre clé
+              <Plus className="h-4 w-4" /> {t.admin.impact.emptyAction}
             </Button>
           }
         />
@@ -208,18 +220,18 @@ export const ImpactAdmin = () => {
           columns={columns}
           rows={listQuery.data}
           rowKey={(stat) => stat.id}
-          mobileTitle={(stat) => t(stat.label)}
+          mobileTitle={(stat) => text(stat.label)}
           actions={(stat) => (
             <>
               <IconButton
-                label={stat.isPublished ? 'Masquer' : 'Afficher'}
+                label={stat.isPublished ? t.admin.common.hide : t.admin.common.show}
                 icon={stat.isPublished ? EyeOff : Eye}
                 onClick={() => togglePublish.mutate(stat)}
                 disabled={togglePublish.isPending}
               />
-              <IconButton label="Modifier" icon={Edit2} onClick={() => openEdit(stat)} />
+              <IconButton label={t.common.edit} icon={Edit2} onClick={() => openEdit(stat)} />
               <IconButton
-                label="Supprimer"
+                label={t.common.delete}
                 icon={Trash2}
                 tone="danger"
                 onClick={() => setPendingDelete(stat)}
@@ -232,14 +244,14 @@ export const ImpactAdmin = () => {
       <Modal
         isOpen={isFormOpen}
         onClose={closeForm}
-        title={editing ? 'Modifier le chiffre clé' : 'Nouveau chiffre clé'}
+        title={editing ? t.admin.impact.editTitle : t.admin.impact.createTitle}
         footer={
           <>
             <Button variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>
-              Annuler
+              {t.common.cancel}
             </Button>
             <Button form="impact-form" type="submit" isLoading={saveMutation.isPending}>
-              {editing ? 'Enregistrer' : 'Ajouter'}
+              {editing ? t.common.save : t.admin.common.add}
             </Button>
           </>
         }
@@ -249,19 +261,29 @@ export const ImpactAdmin = () => {
           onSubmit={handleSubmit((values) => saveMutation.mutate(values))}
           className="space-y-5"
         >
-          <Field label="Intitulé" htmlFor="impact-label" required error={errors.label?.message}>
+          <Field
+            label={t.admin.impact.labelLabel}
+            htmlFor="impact-label"
+            required
+            error={errors.label?.message}
+          >
             <Input
               id="impact-label"
-              placeholder="Kits scolaires distribués"
+              placeholder={t.admin.impact.labelPlaceholder}
               aria-invalid={Boolean(errors.label)}
               {...register('label', {
-                required: "L'intitulé est obligatoire",
-                minLength: { value: 2, message: "L'intitulé est trop court" },
+                required: t.admin.impact.labelRequired,
+                minLength: { value: 2, message: t.admin.impact.labelTooShort },
               })}
             />
           </Field>
 
-          <Field label="Valeur" htmlFor="impact-value" required error={errors.value?.message}>
+          <Field
+            label={t.admin.impact.valueLabel}
+            htmlFor="impact-value"
+            required
+            error={errors.value?.message}
+          >
             <Input
               id="impact-value"
               type="number"
@@ -269,20 +291,20 @@ export const ImpactAdmin = () => {
               step={1}
               aria-invalid={Boolean(errors.value)}
               {...register('value', {
-                required: 'La valeur est obligatoire',
+                required: t.admin.impact.valueRequired,
                 valueAsNumber: true,
-                min: { value: 0, message: 'La valeur doit être positive' },
+                min: { value: 0, message: t.admin.impact.valuePositive },
               })}
             />
           </Field>
 
           <Field
-            label="Pictogramme"
+            label={t.admin.impact.iconLabel}
             htmlFor="impact-icon"
-            hint="Affiché au-dessus du chiffre sur le site. Laissez vide pour n'afficher que le nombre."
+            hint={t.admin.impact.iconHint}
           >
             <Select id="impact-icon" {...register('icon')}>
-              <option value="">Aucun pictogramme</option>
+              <option value="">{t.admin.impact.iconNone}</option>
               {IMPACT_ICON_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -291,29 +313,33 @@ export const ImpactAdmin = () => {
             </Select>
           </Field>
 
-          <Field label="Couleur" htmlFor="impact-color" hint="Utilisez une couleur de la charte.">
+          <Field
+            label={t.admin.impact.colorLabel}
+            htmlFor="impact-color"
+            hint={t.admin.impact.colorHint}
+          >
             <div className="flex flex-wrap gap-2">
               {BRAND_COLORS.map((color) => (
                 <label
-                  key={color.value}
+                  key={color}
                   className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
-                    selectedColor === color.value
+                    selectedColor === color
                       ? 'border-blue bg-blue/5 font-semibold text-navy'
                       : 'border-navy/15 text-navy/70 hover:border-navy/35'
                   }`}
                 >
                   <input
                     type="radio"
-                    value={color.value}
+                    value={color}
                     className="sr-only"
                     {...register('color', { required: true })}
                   />
                   <span
                     className="h-4 w-4 rounded-full ring-1 ring-navy/10"
-                    style={{ backgroundColor: color.value }}
+                    style={{ backgroundColor: color }}
                     aria-hidden
                   />
-                  {color.label}
+                  {COLOR_LABELS[color]}
                 </label>
               ))}
             </div>
@@ -321,7 +347,7 @@ export const ImpactAdmin = () => {
 
           <Checkbox
             id="impact-published"
-            label="Afficher sur le site public"
+            label={t.admin.common.showOnSite}
             {...register('isPublished')}
           />
         </form>
@@ -329,8 +355,8 @@ export const ImpactAdmin = () => {
 
       <ConfirmDialog
         isOpen={Boolean(pendingDelete)}
-        title="Supprimer ce chiffre clé ?"
-        message={`« ${t(pendingDelete?.label, '')} » ne sera plus affiché sur le site.`}
+        title={t.admin.impact.deleteTitle}
+        message={t.admin.impact.deleteMessage(text(pendingDelete?.label))}
         isLoading={deleteMutation.isPending}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}

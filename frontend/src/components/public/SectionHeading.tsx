@@ -31,7 +31,9 @@ export const SectionHeading = ({
   <div
     className={cn(
       'mb-8 max-w-[640px] sm:mb-12',
-      align === 'center' ? 'mx-auto text-center' : 'text-left',
+      // `text-start`, not `text-left`: a heading aligned to the reading edge is
+      // on the left in French and on the right in Arabic.
+      align === 'center' ? 'mx-auto text-center' : 'text-start',
       className,
     )}
   >

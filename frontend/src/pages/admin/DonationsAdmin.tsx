@@ -3,6 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Edit2, Eye, EyeOff, HeartHandshake, Plus, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
+import { useLocale } from '../../context/LocaleContext';
+import { useT } from '../../lib/i18n/useT';
+import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
 import { PreviewButton } from '../../components/admin/ui/PreviewButton';
@@ -13,7 +16,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Badge } from '../../components/ui/Badge';
 import { Checkbox, Field, Input, Select, Textarea } from '../../components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
-import { t, type DonationMethod } from '../../lib/types';
+import type { DonationMethod } from '../../lib/types';
 
 interface FormValues {
   title: string;
@@ -28,28 +31,21 @@ interface FormValues {
   paymentLink: string;
 }
 
+/**
+ * The example value stays next to the action type it illustrates - a phone
+ * number and a path are not translated. The labels come from the dictionary.
+ */
 const ACTION_TYPES = [
-  { value: 'phone', label: 'Numéro à copier (Orange Money, Wave…)', hint: '+221 77 000 00 00' },
-  { value: 'link', label: 'Lien interne du site', hint: '/contact' },
-  { value: 'email', label: 'Adresse email', hint: 'contact@exemple.org' },
-  { value: 'contact', label: 'Renvoi vers le formulaire de contact', hint: '/contact' },
+  { value: 'phone', hint: '+221 77 000 00 00' },
+  { value: 'link', hint: '/contact' },
+  { value: 'email', hint: 'contact@exemple.org' },
+  { value: 'contact', hint: '/contact' },
 ] as const;
 
-const COLORS = [
-  { value: 'orange', label: 'Orange' },
-  { value: 'blue', label: 'Bleu' },
-  { value: 'green', label: 'Vert' },
-  { value: 'navy', label: 'Bleu nuit' },
-] as const;
+const COLORS = ['orange', 'blue', 'green', 'navy'] as const;
 
-const PROVIDERS = [
-  { value: '', label: 'Aucun (moyen générique)' },
-  { value: 'wave', label: 'Wave' },
-  { value: 'orange_money', label: 'Orange Money' },
-  { value: 'bank', label: 'Virement bancaire' },
-  { value: 'cash', label: 'Espèces' },
-  { value: 'other', label: 'Autre' },
-] as const;
+/** Wave and Orange Money are proper nouns and read the same in both languages. */
+const PROVIDERS = ['', 'wave', 'orange_money', 'bank', 'cash', 'other'] as const;
 
 const EMPTY_FORM: FormValues = {
   title: '',
@@ -65,6 +61,8 @@ const EMPTY_FORM: FormValues = {
 };
 
 export const DonationsAdmin = () => {
+  const t = useT();
+  const { locale } = useLocale();
   const [editing, setEditing] = useState<DonationMethod | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<DonationMethod | null>(null);
@@ -87,6 +85,33 @@ export const DonationsAdmin = () => {
   const isPaymentProvider = provider === 'wave' || provider === 'orange_money' || provider === 'bank';
   const actionHint = ACTION_TYPES.find((type) => type.value === actionType)?.hint;
 
+  /** What a row shows: the language on screen, falling back to the French source. */
+  const text = (value: Parameters<typeof localizedOrSource>[0]) =>
+    localizedOrSource(value, locale).text;
+
+  const ACTION_TYPE_LABELS: Record<(typeof ACTION_TYPES)[number]['value'], string> = {
+    phone: t.admin.donations.typePhone,
+    link: t.admin.donations.typeLink,
+    email: t.admin.donations.typeEmail,
+    contact: t.admin.donations.typeContact,
+  };
+
+  const COLOR_LABELS: Record<(typeof COLORS)[number], string> = {
+    orange: t.admin.donations.colorOrange,
+    blue: t.admin.donations.colorBlue,
+    green: t.admin.donations.colorGreen,
+    navy: t.admin.donations.colorNavy,
+  };
+
+  const PROVIDER_LABELS: Record<(typeof PROVIDERS)[number], string> = {
+    '': t.admin.donations.providerNone,
+    wave: 'Wave',
+    orange_money: 'Orange Money',
+    bank: t.admin.donations.providerBank,
+    cash: t.admin.donations.providerCash,
+    other: t.admin.donations.providerOther,
+  };
+
   const openCreate = () => {
     setEditing(null);
     reset(EMPTY_FORM);
@@ -96,11 +121,13 @@ export const DonationsAdmin = () => {
   const openEdit = (method: DonationMethod) => {
     setEditing(method);
     reset({
-      title: t(method.title),
-      description: t(method.description),
+      // The form writes the French source; the language of the interface has no
+      // say over which version of the text is being edited.
+      title: localized(method.title, 'fr'),
+      description: localized(method.description, 'fr'),
       actionType: method.actionType,
       actionData: method.actionData,
-      actionLabel: t(method.actionLabel),
+      actionLabel: localized(method.actionLabel, 'fr'),
       iconColor: method.iconColor,
       isPublished: method.isPublished,
       provider: method.provider ?? '',
@@ -136,7 +163,7 @@ export const DonationsAdmin = () => {
         ? (await api.patch(`/donations/${editing.id}`, payload)).data
         : (await api.post('/donations', payload)).data;
     },
-    successMessage: editing ? 'Moyen de soutien mis à jour.' : 'Moyen de soutien ajouté.',
+    successMessage: editing ? t.admin.donations.updated : t.admin.donations.created,
     invalidate: [['admin', 'donations']],
     onSuccess: closeForm,
   });
@@ -144,13 +171,13 @@ export const DonationsAdmin = () => {
   const togglePublish = useAdminMutation<DonationMethod>({
     mutationFn: async (method) =>
       (await api.patch(`/donations/${method.id}`, { isPublished: !method.isPublished })).data,
-    successMessage: 'Statut mis à jour.',
+    successMessage: t.admin.common.statusUpdated,
     invalidate: [['admin', 'donations']],
   });
 
   const deleteMutation = useAdminMutation<string>({
     mutationFn: async (id) => (await api.delete(`/donations/${id}`)).data,
-    successMessage: 'Moyen de soutien supprimé.',
+    successMessage: t.admin.donations.deleted,
     invalidate: [['admin', 'donations']],
     onSuccess: () => setPendingDelete(null),
   });
@@ -158,20 +185,20 @@ export const DonationsAdmin = () => {
   const columns: Array<Column<DonationMethod>> = [
     {
       key: 'title',
-      header: 'Intitulé',
+      header: t.admin.donations.columnTitle,
       render: (method) => (
         <div className="min-w-0">
-          <p className="truncate font-semibold text-navy">{t(method.title)}</p>
-          <p className="line-clamp-1 text-xs text-navy/50">{t(method.description)}</p>
+          <p className="truncate font-semibold text-navy">{text(method.title)}</p>
+          <p className="line-clamp-1 text-xs text-navy/50">{text(method.description)}</p>
         </div>
       ),
     },
     {
       key: 'action',
-      header: 'Action',
+      header: t.admin.donations.columnAction,
       render: (method) => (
         <span className="text-navy/70">
-          {ACTION_TYPES.find((type) => type.value === method.actionType)?.value ?? method.actionType}
+          {ACTION_TYPE_LABELS[method.actionType] ?? method.actionType}
           {' · '}
           <span className="text-navy/50">{method.actionData}</span>
         </span>
@@ -179,10 +206,10 @@ export const DonationsAdmin = () => {
     },
     {
       key: 'status',
-      header: 'Statut',
+      header: t.admin.common.status,
       render: (method) => (
         <Badge tone={method.isPublished ? 'green' : 'neutral'}>
-          {method.isPublished ? 'Affiché' : 'Masqué'}
+          {method.isPublished ? t.admin.common.visible : t.admin.common.hidden}
         </Badge>
       ),
     },
@@ -191,13 +218,13 @@ export const DonationsAdmin = () => {
   return (
     <div>
       <PageHeader
-        title="Nous soutenir"
-        description="Les différentes façons pour un visiteur de soutenir l'association."
+        title={t.admin.donations.title}
+        description={t.admin.donations.description}
         actions={
           <>
-            <PreviewButton path="/nous-soutenir" />
+            <PreviewButton path="/nous-soutenir" label={t.admin.common.preview} />
             <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" /> Ajouter un moyen
+            <Plus className="h-4 w-4" /> {t.admin.donations.addButton}
             </Button>
           </>
         }
@@ -210,11 +237,11 @@ export const DonationsAdmin = () => {
       ) : !listQuery.data?.length ? (
         <EmptyState
           icon={HeartHandshake}
-          title="Aucun moyen de soutien"
-          description="Expliquez comment les visiteurs peuvent aider : don, bénévolat, matériel…"
+          title={t.admin.donations.emptyTitle}
+          description={t.admin.donations.emptyDescription}
           action={
             <Button onClick={openCreate}>
-              <Plus className="h-4 w-4" /> Ajouter un moyen de soutien
+              <Plus className="h-4 w-4" /> {t.admin.donations.emptyAction}
             </Button>
           }
         />
@@ -223,18 +250,18 @@ export const DonationsAdmin = () => {
           columns={columns}
           rows={listQuery.data}
           rowKey={(method) => method.id}
-          mobileTitle={(method) => t(method.title)}
+          mobileTitle={(method) => text(method.title)}
           actions={(method) => (
             <>
               <IconButton
-                label={method.isPublished ? 'Masquer' : 'Afficher'}
+                label={method.isPublished ? t.admin.common.hide : t.admin.common.show}
                 icon={method.isPublished ? EyeOff : Eye}
                 onClick={() => togglePublish.mutate(method)}
                 disabled={togglePublish.isPending}
               />
-              <IconButton label="Modifier" icon={Edit2} onClick={() => openEdit(method)} />
+              <IconButton label={t.common.edit} icon={Edit2} onClick={() => openEdit(method)} />
               <IconButton
-                label="Supprimer"
+                label={t.common.delete}
                 icon={Trash2}
                 tone="danger"
                 onClick={() => setPendingDelete(method)}
@@ -247,14 +274,14 @@ export const DonationsAdmin = () => {
       <Modal
         isOpen={isFormOpen}
         onClose={closeForm}
-        title={editing ? 'Modifier le moyen de soutien' : 'Nouveau moyen de soutien'}
+        title={editing ? t.admin.donations.editTitle : t.admin.donations.createTitle}
         footer={
           <>
             <Button variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>
-              Annuler
+              {t.common.cancel}
             </Button>
             <Button form="donation-form" type="submit" isLoading={saveMutation.isPending}>
-              {editing ? 'Enregistrer' : 'Ajouter'}
+              {editing ? t.common.save : t.admin.common.add}
             </Button>
           </>
         }
@@ -264,17 +291,22 @@ export const DonationsAdmin = () => {
           onSubmit={handleSubmit((values) => saveMutation.mutate(values))}
           className="space-y-5"
         >
-          <Field label="Intitulé" htmlFor="donation-title" required error={errors.title?.message}>
+          <Field
+            label={t.admin.donations.titleLabel}
+            htmlFor="donation-title"
+            required
+            error={errors.title?.message}
+          >
             <Input
               id="donation-title"
-              placeholder="Faire un don financier"
+              placeholder={t.admin.donations.titlePlaceholder}
               aria-invalid={Boolean(errors.title)}
-              {...register('title', { required: "L'intitulé est obligatoire" })}
+              {...register('title', { required: t.admin.donations.titleRequired })}
             />
           </Field>
 
           <Field
-            label="Description"
+            label={t.admin.donations.descriptionLabel}
             htmlFor="donation-description"
             required
             error={errors.description?.message}
@@ -283,57 +315,57 @@ export const DonationsAdmin = () => {
               id="donation-description"
               rows={3}
               aria-invalid={Boolean(errors.description)}
-              {...register('description', { required: 'La description est obligatoire' })}
+              {...register('description', { required: t.admin.donations.descriptionRequired })}
             />
           </Field>
 
-          <Field label="Type d'action" htmlFor="donation-type">
+          <Field label={t.admin.donations.typeLabel} htmlFor="donation-type">
             <Select id="donation-type" {...register('actionType')}>
               {ACTION_TYPES.map((type) => (
                 <option key={type.value} value={type.value}>
-                  {type.label}
+                  {ACTION_TYPE_LABELS[type.value]}
                 </option>
               ))}
             </Select>
           </Field>
 
           <Field
-            label="Valeur de l'action"
+            label={t.admin.donations.dataLabel}
             htmlFor="donation-data"
             required
-            hint={actionHint ? `Exemple : ${actionHint}` : undefined}
+            hint={actionHint ? t.admin.donations.dataExample(actionHint) : undefined}
             error={errors.actionData?.message}
           >
             <Input
               id="donation-data"
               aria-invalid={Boolean(errors.actionData)}
-              {...register('actionData', { required: 'Cette valeur est obligatoire' })}
+              {...register('actionData', { required: t.admin.donations.dataRequired })}
             />
           </Field>
 
           <Field
-            label="Libellé du bouton"
+            label={t.admin.donations.buttonLabel}
             htmlFor="donation-label"
             required
             error={errors.actionLabel?.message}
           >
             <Input
               id="donation-label"
-              placeholder="Copier le numéro"
+              placeholder={t.admin.donations.buttonLabelPlaceholder}
               aria-invalid={Boolean(errors.actionLabel)}
-              {...register('actionLabel', { required: 'Le libellé est obligatoire' })}
+              {...register('actionLabel', { required: t.admin.donations.buttonLabelRequired })}
             />
           </Field>
 
           <Field
-            label="Moyen de paiement"
+            label={t.admin.donations.providerLabel}
             htmlFor="donation-provider"
-            hint="Wave et Orange Money affichent une carte dédiée avec le numéro, la copie et l'appel."
+            hint={t.admin.donations.providerHint}
           >
             <Select id="donation-provider" {...register('provider')}>
-              {PROVIDERS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
+              {PROVIDERS.map((value) => (
+                <option key={value} value={value}>
+                  {PROVIDER_LABELS[value]}
                 </option>
               ))}
             </Select>
@@ -342,21 +374,21 @@ export const DonationsAdmin = () => {
           {isPaymentProvider && (
             <>
               <Field
-                label="Nom du bénéficiaire"
+                label={t.admin.donations.beneficiaryLabel}
                 htmlFor="donation-beneficiary"
-                hint="Affiché au donateur pour qu'il vérifie avant d'envoyer."
+                hint={t.admin.donations.beneficiaryHint}
               >
                 <Input
                   id="donation-beneficiary"
-                  placeholder="Louga Développement Solidaire"
+                  placeholder={t.common.organizationName}
                   {...register('beneficiary')}
                 />
               </Field>
 
               <Field
-                label="Lien de paiement officiel"
+                label={t.admin.donations.paymentLinkLabel}
                 htmlFor="donation-link"
-                hint="Facultatif. Uniquement un lien fourni par l'opérateur (ex. lien Wave Business). Sans lien, le site affiche le numéro à copier ou composer — aucun lien n'est inventé."
+                hint={t.admin.donations.paymentLinkHint}
                 error={errors.paymentLink?.message}
               >
                 <Input
@@ -367,7 +399,7 @@ export const DonationsAdmin = () => {
                   {...register('paymentLink', {
                     pattern: {
                       value: /^(https?:\/\/\S+)?$/,
-                      message: 'Doit commencer par https:// ou rester vide',
+                      message: t.admin.donations.paymentLinkPattern,
                     },
                   })}
                 />
@@ -375,11 +407,11 @@ export const DonationsAdmin = () => {
             </>
           )}
 
-          <Field label="Couleur" htmlFor="donation-color">
+          <Field label={t.admin.donations.colorLabel} htmlFor="donation-color">
             <Select id="donation-color" {...register('iconColor')}>
               {COLORS.map((color) => (
-                <option key={color.value} value={color.value}>
-                  {color.label}
+                <option key={color} value={color}>
+                  {COLOR_LABELS[color]}
                 </option>
               ))}
             </Select>
@@ -387,7 +419,7 @@ export const DonationsAdmin = () => {
 
           <Checkbox
             id="donation-published"
-            label="Afficher sur le site public"
+            label={t.admin.common.showOnSite}
             {...register('isPublished')}
           />
         </form>
@@ -395,8 +427,8 @@ export const DonationsAdmin = () => {
 
       <ConfirmDialog
         isOpen={Boolean(pendingDelete)}
-        title="Supprimer ce moyen de soutien ?"
-        message={`« ${t(pendingDelete?.title, '')} » ne sera plus proposé aux visiteurs.`}
+        title={t.admin.donations.deleteTitle}
+        message={t.admin.donations.deleteMessage(text(pendingDelete?.title))}
         isLoading={deleteMutation.isPending}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}

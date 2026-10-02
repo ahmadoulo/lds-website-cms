@@ -13,6 +13,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import api from '../../lib/api/axios';
+import { useT } from '../../lib/i18n/useT';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PARTNER_ICON_OPTIONS, resolveIcon } from '../../lib/icons';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
@@ -43,6 +44,7 @@ const EMPTY_FORM: FormValues = {
 };
 
 export const PartnersAdmin = () => {
+  const t = useT();
   const [editing, setEditing] = useState<Partner | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Partner | null>(null);
@@ -105,7 +107,7 @@ export const PartnersAdmin = () => {
         ? (await api.patch(`/partners/${editing.id}`, payload)).data
         : (await api.post('/partners', payload)).data;
     },
-    successMessage: editing ? 'Partenaire mis à jour.' : 'Partenaire ajouté.',
+    successMessage: editing ? t.admin.partners.updated : t.admin.partners.created,
     invalidate: [['admin', 'partners']],
     onSuccess: closeForm,
   });
@@ -113,14 +115,14 @@ export const PartnersAdmin = () => {
   const togglePublish = useAdminMutation<Partner>({
     mutationFn: async (partner) =>
       (await api.patch(`/partners/${partner.id}`, { isPublished: !partner.isPublished })).data,
-    successMessage: 'Statut mis à jour.',
+    successMessage: t.admin.common.statusUpdated,
     invalidate: [['admin', 'partners']],
   });
 
   // PATCH /partners/reorder existed already; only the buttons were missing.
   const reorderMutation = useAdminMutation<string[]>({
     mutationFn: async (ids) => (await api.patch('/partners/reorder', { ids })).data,
-    successMessage: 'Ordre des partenaires mis à jour.',
+    successMessage: t.admin.partners.reordered,
     invalidate: [['admin', 'partners']],
   });
 
@@ -139,7 +141,7 @@ export const PartnersAdmin = () => {
 
   const deleteMutation = useAdminMutation<string>({
     mutationFn: async (id) => (await api.delete(`/partners/${id}`)).data,
-    successMessage: 'Partenaire supprimé.',
+    successMessage: t.admin.partners.deleted,
     invalidate: [['admin', 'partners']],
     onSuccess: () => setPendingDelete(null),
   });
@@ -147,7 +149,7 @@ export const PartnersAdmin = () => {
   const columns: Array<Column<Partner>> = [
     {
       key: 'logo',
-      header: 'Logo',
+      header: t.admin.partners.columnLogo,
       hideOnMobile: true,
       render: (partner) => {
         if (partner.logo) {
@@ -170,12 +172,12 @@ export const PartnersAdmin = () => {
     },
     {
       key: 'name',
-      header: 'Nom',
+      header: t.admin.partners.columnName,
       render: (partner) => <span className="font-semibold text-navy">{partner.name}</span>,
     },
     {
       key: 'url',
-      header: 'Site web',
+      header: t.admin.partners.columnWebsite,
       render: (partner) =>
         partner.url ? (
           <a
@@ -184,7 +186,7 @@ export const PartnersAdmin = () => {
             rel="noreferrer noopener"
             className="inline-flex items-center gap-1 text-blue hover:underline"
           >
-            Visiter <ExternalLink className="h-3 w-3" />
+            {t.admin.partners.visit} <ExternalLink className="h-3 w-3" />
           </a>
         ) : (
           <span className="text-navy/40">—</span>
@@ -192,10 +194,10 @@ export const PartnersAdmin = () => {
     },
     {
       key: 'status',
-      header: 'Statut',
+      header: t.admin.common.status,
       render: (partner) => (
         <Badge tone={partner.isPublished ? 'green' : 'neutral'}>
-          {partner.isPublished ? 'Affiché' : 'Masqué'}
+          {partner.isPublished ? t.admin.common.visible : t.admin.common.hidden}
         </Badge>
       ),
     },
@@ -204,13 +206,13 @@ export const PartnersAdmin = () => {
   return (
     <div>
       <PageHeader
-        title="Partenaires"
-        description="Les organisations qui soutiennent et accompagnent l'association."
+        title={t.admin.partners.title}
+        description={t.admin.partners.description}
         actions={
           <>
-            <PreviewButton path="/partenaires" />
+            <PreviewButton path="/partenaires" label={t.admin.common.preview} />
             <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" /> Ajouter un partenaire
+            <Plus className="h-4 w-4" /> {t.admin.partners.addButton}
             </Button>
           </>
         }
@@ -223,11 +225,11 @@ export const PartnersAdmin = () => {
       ) : !listQuery.data?.length ? (
         <EmptyState
           icon={Building2}
-          title="Aucun partenaire"
-          description="Ajoutez les organisations qui vous accompagnent pour renforcer la confiance des visiteurs."
+          title={t.admin.partners.emptyTitle}
+          description={t.admin.partners.emptyDescription}
           action={
             <Button onClick={openCreate}>
-              <Plus className="h-4 w-4" /> Ajouter un partenaire
+              <Plus className="h-4 w-4" /> {t.admin.partners.addButton}
             </Button>
           }
         />
@@ -240,7 +242,7 @@ export const PartnersAdmin = () => {
           actions={(partner) => (
             <>
               <IconButton
-                label="Monter"
+                label={t.admin.common.moveUp}
                 icon={ArrowUp}
                 disabled={
                   listQuery.data.indexOf(partner) === 0 || reorderMutation.isPending
@@ -248,7 +250,7 @@ export const PartnersAdmin = () => {
                 onClick={() => move(listQuery.data!.indexOf(partner), -1)}
               />
               <IconButton
-                label="Descendre"
+                label={t.admin.common.moveDown}
                 icon={ArrowDown}
                 disabled={
                   listQuery.data.indexOf(partner) === listQuery.data.length - 1 ||
@@ -257,14 +259,14 @@ export const PartnersAdmin = () => {
                 onClick={() => move(listQuery.data!.indexOf(partner), 1)}
               />
               <IconButton
-                label={partner.isPublished ? 'Masquer' : 'Afficher'}
+                label={partner.isPublished ? t.admin.common.hide : t.admin.common.show}
                 icon={partner.isPublished ? EyeOff : Eye}
                 onClick={() => togglePublish.mutate(partner)}
                 disabled={togglePublish.isPending}
               />
-              <IconButton label="Modifier" icon={Edit2} onClick={() => openEdit(partner)} />
+              <IconButton label={t.common.edit} icon={Edit2} onClick={() => openEdit(partner)} />
               <IconButton
-                label="Supprimer"
+                label={t.common.delete}
                 icon={Trash2}
                 tone="danger"
                 onClick={() => setPendingDelete(partner)}
@@ -277,14 +279,14 @@ export const PartnersAdmin = () => {
       <Modal
         isOpen={isFormOpen}
         onClose={closeForm}
-        title={editing ? 'Modifier le partenaire' : 'Nouveau partenaire'}
+        title={editing ? t.admin.partners.editTitle : t.admin.partners.createTitle}
         footer={
           <>
             <Button variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>
-              Annuler
+              {t.common.cancel}
             </Button>
             <Button form="partner-form" type="submit" isLoading={saveMutation.isPending}>
-              {editing ? 'Enregistrer' : 'Ajouter'}
+              {editing ? t.common.save : t.admin.common.add}
             </Button>
           </>
         }
@@ -294,21 +296,26 @@ export const PartnersAdmin = () => {
           onSubmit={handleSubmit((values) => saveMutation.mutate(values))}
           className="space-y-5"
         >
-          <Field label="Nom" htmlFor="partner-name" required error={errors.name?.message}>
+          <Field
+            label={t.admin.partners.nameLabel}
+            htmlFor="partner-name"
+            required
+            error={errors.name?.message}
+          >
             <Input
               id="partner-name"
               aria-invalid={Boolean(errors.name)}
               {...register('name', {
-                required: 'Le nom est obligatoire',
-                minLength: { value: 2, message: 'Le nom est trop court' },
+                required: t.admin.partners.nameRequired,
+                minLength: { value: 2, message: t.admin.partners.nameTooShort },
               })}
             />
           </Field>
 
           <Field
-            label="Site web"
+            label={t.admin.partners.urlLabel}
             htmlFor="partner-url"
-            hint="Facultatif. Doit commencer par https://"
+            hint={t.admin.partners.urlHint}
             error={errors.url?.message}
           >
             <Input
@@ -319,16 +326,16 @@ export const PartnersAdmin = () => {
               {...register('url', {
                 pattern: {
                   value: /^https?:\/\/\S+$/,
-                  message: 'Le lien doit commencer par http:// ou https://',
+                  message: t.admin.partners.urlPattern,
                 },
               })}
             />
           </Field>
 
           <Field
-            label="Icône de repli"
+            label={t.admin.partners.iconLabel}
             htmlFor="partner-icon"
-            hint="Utilisée lorsque aucun logo n'est téléversé."
+            hint={t.admin.partners.iconHint}
           >
             <Select id="partner-icon" {...register('icon')}>
               {PARTNER_ICON_OPTIONS.map((option) => (
@@ -343,12 +350,12 @@ export const PartnersAdmin = () => {
             value={logo}
             onChange={setLogo}
             slot="partnerLogo"
-            label="Logo"
+            label={t.admin.partners.logoLabel}
           />
 
           <Checkbox
             id="partner-published"
-            label="Afficher sur le site public"
+            label={t.admin.common.showOnSite}
             {...register('isPublished')}
           />
         </form>
@@ -356,8 +363,8 @@ export const PartnersAdmin = () => {
 
       <ConfirmDialog
         isOpen={Boolean(pendingDelete)}
-        title="Supprimer ce partenaire ?"
-        message={`« ${pendingDelete?.name ?? ''} » sera retiré du site. Cette action est irréversible.`}
+        title={t.admin.partners.deleteTitle}
+        message={t.admin.partners.deleteMessage(pendingDelete?.name ?? '')}
         isLoading={deleteMutation.isPending}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}

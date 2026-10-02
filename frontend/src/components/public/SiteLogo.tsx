@@ -1,5 +1,7 @@
 import React from 'react';
 import { useSettings } from '../../context/SettingsContext';
+import { useLocale } from '../../context/LocaleContext';
+import { useT } from '../../lib/i18n/useT';
 import { cn } from '../../lib/cn';
 
 /** The association's mark, extracted from the logo it supplied. */
@@ -27,13 +29,21 @@ interface SiteLogoProps {
  */
 export const SiteLogo = ({ variant = 'light', className }: SiteLogoProps) => {
   const { settings } = useSettings();
+  const { locale } = useLocale();
+  const t = useT();
   const branding = settings?.branding;
   const organization = settings?.organization;
 
   // The dark variant is optional: when it is missing the main logo is reused.
   const media = variant === 'dark' ? (branding?.logoDark ?? branding?.logo) : branding?.logo;
 
-  const name = organization?.name || 'Louga Développement Solidaire';
+  /*
+    The settings carry a single name, written in French - it is the association
+    naming itself, not a translatable label. French reads it; Arabic reads the
+    name the glossary fixes, so an Arabic page never carries a French wordmark,
+    and so the alt text below is announced in the language of the page.
+  */
+  const name = (locale === 'fr' && organization?.name) || t.common.organizationName;
   const height = branding?.logoHeight || 40;
 
   if (media) {
@@ -57,9 +67,16 @@ export const SiteLogo = ({ variant = 'light', className }: SiteLogoProps) => {
     );
   }
 
-  // The name is split the way the association splits it in its own logo.
-  const [first, ...rest] = name.split(' ');
-  const tail = rest.join(' ');
+  /*
+    The name is split the way the association splits it in its own logo: the
+    city on the first line, what it does on the second. That split is a French
+    typographic choice made on a French name - the Arabic name is one phrase,
+    and cutting it at its first space would strand a word. So Arabic prints the
+    whole name on the single line, and the second line simply does not exist.
+  */
+  const [firstWord, ...rest] = name.split(' ');
+  const lead = locale === 'fr' ? firstWord : name;
+  const tail = locale === 'fr' ? rest.join(' ') : '';
 
   return (
     <span className={cn('flex items-center gap-2.5', className)}>
@@ -78,7 +95,7 @@ export const SiteLogo = ({ variant = 'light', className }: SiteLogoProps) => {
         )}
       >
         <span className="whitespace-nowrap text-body-lg font-extrabold tracking-tight">
-          {first}
+          {lead}
         </span>
         {tail && (
           /*

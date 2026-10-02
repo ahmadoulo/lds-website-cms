@@ -28,7 +28,7 @@ export const Field = ({ label, htmlFor, error, hint, required, className, childr
   <div className={cn('space-y-1.5', className)}>
     <label htmlFor={htmlFor} className="block text-sm font-semibold text-navy">
       {label}
-      {required && <span className="ml-1 text-orange" aria-hidden>*</span>}
+      {required && <span className="ms-1 text-orange" aria-hidden>*</span>}
     </label>
     {children}
     {hint && !error && <p className="text-xs text-navy/50">{hint}</p>}
@@ -59,7 +59,7 @@ export const Select = React.forwardRef<
   HTMLSelectElement,
   React.SelectHTMLAttributes<HTMLSelectElement>
 >(({ className, children, ...props }, ref) => (
-  <select ref={ref} className={cn(CONTROL_CLASSES, 'pr-8', className)} {...props}>
+  <select ref={ref} className={cn(CONTROL_CLASSES, 'pe-8', className)} {...props}>
     {children}
   </select>
 ));

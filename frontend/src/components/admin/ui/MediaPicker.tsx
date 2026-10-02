@@ -20,6 +20,9 @@ import { EmptyState, LoadingState } from '../../ui/States';
 import { ImageReportPanel } from './ImageReportPanel';
 import type { Media, Paginated } from '../../../lib/types';
 import { cn } from '../../../lib/cn';
+import { useShellLocale } from '../../../lib/i18n/dictionaries/adminShell';
+import { useShellT } from '../../../lib/i18n/useT';
+import { localizedOrSource } from '../../../lib/i18n/resolve';
 
 interface MediaPickerProps {
   /** Either a stored media, a not-yet-uploaded selection, or nothing. */
@@ -38,8 +41,10 @@ interface MediaPickerProps {
  * orphan behind. The preview uses the ratio the public site crops to, so a
  * mismatch is visible before publishing rather than after.
  */
-export const MediaPicker = ({ value, onChange, slot, label = 'Image' }: MediaPickerProps) => {
+export const MediaPicker = ({ value, onChange, slot, label }: MediaPickerProps) => {
   const toast = useToast();
+  const t = useShellT();
+  const { locale } = useShellLocale();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [showWholeImage, setShowWholeImage] = useState(false);
@@ -59,7 +64,9 @@ export const MediaPicker = ({ value, onChange, slot, label = 'Image' }: MediaPic
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
 
-    const validationError = validateImageFile(file, spec.allowIcon);
+    // The refusal is read by the person who just dropped the file, so it has to
+    // arrive in the language they are working in.
+    const validationError = validateImageFile(file, spec.allowIcon, locale);
     if (validationError) {
       toast.error(validationError);
       return;
@@ -72,7 +79,9 @@ export const MediaPicker = ({ value, onChange, slot, label = 'Image' }: MediaPic
   return (
     <div className="space-y-2">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-sm font-semibold text-navy">{label}</span>
+        <span className="text-sm font-semibold text-navy">
+          {label ?? t.adminShell.media.defaultLabel}
+        </span>
         <span className="text-xs text-navy/45">
           {spec.width}×{spec.height} · {spec.ratioLabel}
         </span>
@@ -109,9 +118,9 @@ export const MediaPicker = ({ value, onChange, slot, label = 'Image' }: MediaPic
           >
             <ImageIcon className="h-7 w-7 text-navy/30" />
             <span className="text-xs font-medium text-navy/60">
-              Glissez une image ici ou cliquez pour parcourir
+              {t.adminShell.media.dropHint}
             </span>
-            <span className="text-xs text-navy/40">JPG, PNG, WebP · 5 Mo maximum</span>
+            <span className="text-xs text-navy/40">{t.adminShell.media.formatsHint}</span>
           </button>
         )}
 
@@ -119,15 +128,16 @@ export const MediaPicker = ({ value, onChange, slot, label = 'Image' }: MediaPic
           <button
             type="button"
             onClick={() => setShowWholeImage((shown) => !shown)}
-            className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-lg bg-white/90 px-2 py-1 text-xs font-semibold text-navy shadow transition-colors hover:bg-white"
+            className="absolute bottom-2 end-2 flex items-center gap-1.5 rounded-lg bg-white/90 px-2 py-1 text-xs font-semibold text-navy shadow transition-colors hover:bg-white"
           >
             {showWholeImage ? (
               <>
-                <Crop className="h-3 w-3" /> Voir le cadrage du site
+                <Crop className="h-3 w-3" /> {t.adminShell.media.showCrop}
               </>
             ) : (
               <>
-                <Maximize2 className="h-3 w-3" /> Voir l'image entière
+                {/* A symmetrical pair of arrows: mirroring it changes nothing. */}
+                <Maximize2 className="h-3 w-3" /> {t.adminShell.media.showWhole}
               </>
             )}
           </button>
@@ -143,9 +153,7 @@ export const MediaPicker = ({ value, onChange, slot, label = 'Image' }: MediaPic
       </div>
 
       {previewUrl && showWholeImage && spec.fit === 'cover' && (
-        <p className="text-xs font-medium text-blue">
-          Image entière. Seule la zone visible dans le cadrage sera affichée sur le site.
-        </p>
+        <p className="text-xs font-medium text-blue">{t.adminShell.media.wholeImageNotice}</p>
       )}
 
       <div className="flex flex-wrap gap-2">
@@ -155,7 +163,8 @@ export const MediaPicker = ({ value, onChange, slot, label = 'Image' }: MediaPic
           size="sm"
           onClick={() => inputRef.current?.click()}
         >
-          <Upload className="h-3.5 w-3.5" /> {previewUrl ? 'Remplacer' : 'Choisir une image'}
+          <Upload className="h-3.5 w-3.5" />{' '}
+          {previewUrl ? t.adminShell.media.replace : t.adminShell.media.choose}
         </Button>
         <Button
           type="button"
@@ -163,7 +172,7 @@ export const MediaPicker = ({ value, onChange, slot, label = 'Image' }: MediaPic
           size="sm"
           onClick={() => setIsLibraryOpen(true)}
         >
-          <ImageIcon className="h-3.5 w-3.5" /> Bibliothèque
+          <ImageIcon className="h-3.5 w-3.5" /> {t.adminShell.media.library}
         </Button>
         {previewUrl && (
           <Button
@@ -173,16 +182,16 @@ export const MediaPicker = ({ value, onChange, slot, label = 'Image' }: MediaPic
             className="text-red-600 hover:bg-red-50"
             onClick={() => replace(null)}
           >
-            <Trash2 className="h-3.5 w-3.5" /> Retirer
+            <Trash2 className="h-3.5 w-3.5" /> {t.adminShell.media.remove}
           </Button>
         )}
       </div>
 
       {pending && (
         <p className="flex items-start gap-1.5 rounded-lg border border-blue/25 bg-blue/5 px-2.5 py-1.5 text-xs text-navy/75">
+          {/* A clock face: not directional. */}
           <Clock className="mt-px h-3.5 w-3.5 shrink-0 text-blue" />
-          Image sélectionnée mais pas encore envoyée. Elle sera stockée lors de
-          l'enregistrement du formulaire.
+          {t.adminShell.media.pendingUpload}
         </p>
       )}
 
@@ -209,6 +218,8 @@ interface MediaLibraryModalProps {
 /** Browse-and-reuse dialog over the MinIO-backed media library. */
 export const MediaLibraryModal = ({ isOpen, onClose, onSelect }: MediaLibraryModalProps) => {
   const [search, setSearch] = useState('');
+  const t = useShellT();
+  const { locale } = useShellLocale();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['admin', 'media', 'picker', search],
@@ -222,25 +233,25 @@ export const MediaLibraryModal = ({ isOpen, onClose, onSelect }: MediaLibraryMod
   });
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Bibliothèque de médias" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={t.adminShell.media.libraryTitle} size="lg">
       <div className="relative mb-5">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy/35" />
+        <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy/35" />
         <Input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Rechercher une image…"
-          className="pl-9"
+          placeholder={t.adminShell.media.searchPlaceholder}
+          className="ps-9"
         />
       </div>
 
       {isLoading ? (
         <LoadingState />
       ) : isError ? (
-        <EmptyState title="Impossible de charger la bibliothèque" />
+        <EmptyState title={t.adminShell.media.libraryFailed} />
       ) : !data?.data.length ? (
         <EmptyState
-          title="Aucune image"
-          description="Téléversez votre première image depuis un formulaire ou la page Médias."
+          title={t.adminShell.media.emptyTitle}
+          description={t.adminShell.media.emptyDescription}
           icon={ImageIcon}
         />
       ) : (
@@ -250,18 +261,23 @@ export const MediaLibraryModal = ({ isOpen, onClose, onSelect }: MediaLibraryMod
               key={media.id}
               type="button"
               onClick={() => onSelect(media)}
-              className="group overflow-hidden rounded-xl border border-navy/10 bg-white text-left transition-all hover:border-blue hover:shadow-md"
+              className="group overflow-hidden rounded-xl border border-navy/10 bg-white text-start transition-all hover:border-blue hover:shadow-md"
             >
               <img
                 src={media.url}
-                alt={media.altText?.fr || media.originalName}
+                /*
+                  The description is stored per language. Here, a French one on
+                  an Arabic screen still tells the administrator which file this
+                  is, which is better than an empty alt on a grid of thumbnails.
+                */
+                alt={localizedOrSource(media.altText, locale).text || media.originalName}
                 loading="lazy"
                 className="aspect-square w-full object-cover"
               />
               <div className="px-2 py-1.5">
                 <p className="truncate text-xs font-medium text-navy">{media.originalName}</p>
                 <p className="text-xs text-navy/45">
-                  {media.width}×{media.height} · {formatBytes(media.size)}
+                  {media.width}×{media.height} · {formatBytes(media.size, locale)}
                 </p>
               </div>
             </button>

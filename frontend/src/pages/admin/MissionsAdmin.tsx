@@ -3,6 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Edit2, Eye, EyeOff, ImageIcon, Plus, Target, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
+import { useLocale } from '../../context/LocaleContext';
+import { useT } from '../../lib/i18n/useT';
+import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { MISSION_ICON_OPTIONS, resolveIcon } from '../../lib/icons';
 import { commitImage, type ImageSelection } from '../../lib/pendingImage';
@@ -16,7 +19,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Badge } from '../../components/ui/Badge';
 import { Checkbox, Field, Input, Select, Textarea } from '../../components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
-import { t, type Mission } from '../../lib/types';
+import type { Mission } from '../../lib/types';
 
 interface FormValues {
   title: string;
@@ -35,6 +38,8 @@ const EMPTY_FORM: FormValues = {
 };
 
 export const MissionsAdmin = () => {
+  const t = useT();
+  const { locale } = useLocale();
   const [editing, setEditing] = useState<Mission | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Mission | null>(null);
@@ -52,6 +57,9 @@ export const MissionsAdmin = () => {
     formState: { errors },
   } = useForm<FormValues>({ defaultValues: EMPTY_FORM });
 
+  const text = (value: Parameters<typeof localizedOrSource>[0]) =>
+    localizedOrSource(value, locale).text;
+
   const openCreate = () => {
     setEditing(null);
     setCover(null);
@@ -63,9 +71,10 @@ export const MissionsAdmin = () => {
     setEditing(mission);
     setCover(mission.image);
     reset({
-      title: t(mission.title),
-      description: t(mission.description),
-      content: mission.content ? t(mission.content) : '',
+      // The form writes the French source, whatever language the screen is in.
+      title: localized(mission.title, 'fr'),
+      description: localized(mission.description, 'fr'),
+      content: localized(mission.content, 'fr'),
       icon: mission.icon ?? MISSION_ICON_OPTIONS[0].value,
       isPublished: mission.isPublished,
     });
@@ -99,7 +108,7 @@ export const MissionsAdmin = () => {
         ? (await api.patch(`/missions/${editing.id}`, payload)).data
         : (await api.post('/missions', payload)).data;
     },
-    successMessage: editing ? "Domaine d'action mis à jour." : "Domaine d'action créé.",
+    successMessage: editing ? t.admin.missions.updated : t.admin.missions.created,
     invalidate: [['admin', 'missions']],
     onSuccess: closeForm,
   });
@@ -107,13 +116,13 @@ export const MissionsAdmin = () => {
   const togglePublish = useAdminMutation<Mission>({
     mutationFn: async (mission) =>
       (await api.patch(`/missions/${mission.id}`, { isPublished: !mission.isPublished })).data,
-    successMessage: 'Statut de publication mis à jour.',
+    successMessage: t.admin.missions.statusUpdated,
     invalidate: [['admin', 'missions']],
   });
 
   const deleteMutation = useAdminMutation<string>({
     mutationFn: async (id) => (await api.delete(`/missions/${id}`)).data,
-    successMessage: "Domaine d'action supprimé.",
+    successMessage: t.admin.missions.deleted,
     invalidate: [['admin', 'missions']],
     onSuccess: () => setPendingDelete(null),
   });
@@ -121,7 +130,7 @@ export const MissionsAdmin = () => {
   const columns: Array<Column<Mission>> = [
     {
       key: 'image',
-      header: 'Visuel',
+      header: t.admin.common.visual,
       hideOnMobile: true,
       render: (mission) =>
         mission.image ? (
@@ -134,17 +143,19 @@ export const MissionsAdmin = () => {
     },
     {
       key: 'title',
-      header: 'Domaine',
+      header: t.admin.missions.columnDomain,
       render: (mission) => (
         <div className="min-w-0">
-          <p className="truncate font-semibold text-navy">{t(mission.title, 'Sans titre')}</p>
-          <p className="line-clamp-1 text-xs text-navy/50">{t(mission.description)}</p>
+          <p className="truncate font-semibold text-navy">
+            {text(mission.title) || t.admin.dashboard.untitled}
+          </p>
+          <p className="line-clamp-1 text-xs text-navy/50">{text(mission.description)}</p>
         </div>
       ),
     },
     {
       key: 'icon',
-      header: 'Icône',
+      header: t.admin.missions.columnIcon,
       render: (mission) => {
         const Icon = resolveIcon(mission.icon);
         return (
@@ -157,10 +168,10 @@ export const MissionsAdmin = () => {
     },
     {
       key: 'status',
-      header: 'Statut',
+      header: t.admin.common.status,
       render: (mission) => (
         <Badge tone={mission.isPublished ? 'green' : 'neutral'}>
-          {mission.isPublished ? 'Publié' : 'Brouillon'}
+          {mission.isPublished ? t.admin.common.published : t.admin.common.draft}
         </Badge>
       ),
     },
@@ -169,13 +180,13 @@ export const MissionsAdmin = () => {
   return (
     <div>
       <PageHeader
-        title="Domaines d'action"
-        description="Les piliers d'intervention présentés sur la page d'accueil et la page « Nos actions »."
+        title={t.admin.missions.title}
+        description={t.admin.missions.description}
         actions={
           <>
-            <PreviewButton path="/nos-actions" />
+            <PreviewButton path="/nos-actions" label={t.admin.common.preview} />
             <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" /> Ajouter un domaine
+            <Plus className="h-4 w-4" /> {t.admin.missions.addButton}
             </Button>
           </>
         }
@@ -188,11 +199,11 @@ export const MissionsAdmin = () => {
       ) : !listQuery.data?.length ? (
         <EmptyState
           icon={Target}
-          title="Vous n'avez encore aucun domaine d'action"
-          description="Décrivez les grands axes de votre association pour les présenter aux visiteurs."
+          title={t.admin.missions.emptyTitle}
+          description={t.admin.missions.emptyDescription}
           action={
             <Button onClick={openCreate}>
-              <Plus className="h-4 w-4" /> Créer un domaine d'action
+              <Plus className="h-4 w-4" /> {t.admin.missions.emptyAction}
             </Button>
           }
         />
@@ -201,18 +212,18 @@ export const MissionsAdmin = () => {
           columns={columns}
           rows={listQuery.data}
           rowKey={(mission) => mission.id}
-          mobileTitle={(mission) => t(mission.title, 'Sans titre')}
+          mobileTitle={(mission) => text(mission.title) || t.admin.dashboard.untitled}
           actions={(mission) => (
             <>
               <IconButton
-                label={mission.isPublished ? 'Dépublier' : 'Publier'}
+                label={mission.isPublished ? t.admin.common.unpublish : t.admin.common.publish}
                 icon={mission.isPublished ? EyeOff : Eye}
                 onClick={() => togglePublish.mutate(mission)}
                 disabled={togglePublish.isPending}
               />
-              <IconButton label="Modifier" icon={Edit2} onClick={() => openEdit(mission)} />
+              <IconButton label={t.common.edit} icon={Edit2} onClick={() => openEdit(mission)} />
               <IconButton
-                label="Supprimer"
+                label={t.common.delete}
                 icon={Trash2}
                 tone="danger"
                 onClick={() => setPendingDelete(mission)}
@@ -225,15 +236,15 @@ export const MissionsAdmin = () => {
       <Modal
         isOpen={isFormOpen}
         onClose={closeForm}
-        title={editing ? "Modifier le domaine d'action" : "Nouveau domaine d'action"}
+        title={editing ? t.admin.missions.editTitle : t.admin.missions.createTitle}
         size="lg"
         footer={
           <>
             <Button variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>
-              Annuler
+              {t.common.cancel}
             </Button>
             <Button form="mission-form" type="submit" isLoading={saveMutation.isPending}>
-              {editing ? 'Enregistrer' : 'Créer'}
+              {editing ? t.common.save : t.admin.common.create}
             </Button>
           </>
         }
@@ -245,19 +256,24 @@ export const MissionsAdmin = () => {
         >
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-5">
-              <Field label="Intitulé" htmlFor="mission-title" required error={errors.title?.message}>
+              <Field
+                label={t.admin.missions.labelLabel}
+                htmlFor="mission-title"
+                required
+                error={errors.title?.message}
+              >
                 <Input
                   id="mission-title"
-                  placeholder="Éducation"
+                  placeholder={t.admin.missions.labelPlaceholder}
                   aria-invalid={Boolean(errors.title)}
                   {...register('title', {
-                    required: "L'intitulé est obligatoire",
-                    minLength: { value: 2, message: "L'intitulé est trop court" },
+                    required: t.admin.missions.labelRequired,
+                    minLength: { value: 2, message: t.admin.missions.labelTooShort },
                   })}
                 />
               </Field>
 
-              <Field label="Icône" htmlFor="mission-icon">
+              <Field label={t.admin.missions.iconLabel} htmlFor="mission-icon">
                 <Select id="mission-icon" {...register('icon')}>
                   {MISSION_ICON_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -272,15 +288,15 @@ export const MissionsAdmin = () => {
               value={cover}
               onChange={setCover}
               slot="missionCover"
-              label="Illustration"
+              label={t.admin.missions.illustration}
             />
           </div>
 
           <Field
-            label="Description"
+            label={t.admin.missions.descriptionLabel}
             htmlFor="mission-description"
             required
-            hint="Deux à trois phrases décrivant concrètement les actions menées."
+            hint={t.admin.missions.descriptionHint}
             error={errors.description?.message}
           >
             <Textarea
@@ -288,16 +304,16 @@ export const MissionsAdmin = () => {
               rows={4}
               aria-invalid={Boolean(errors.description)}
               {...register('description', {
-                required: 'La description est obligatoire',
-                maxLength: { value: 1200, message: '1200 caractères maximum' },
+                required: t.admin.missions.descriptionRequired,
+                maxLength: { value: 1200, message: t.admin.missions.descriptionMax },
               })}
             />
           </Field>
 
           <Field
-            label="Contenu détaillé (facultatif)"
+            label={t.admin.missions.contentLabel}
             htmlFor="mission-content"
-            hint="Affiché quand le visiteur ouvre la fiche du domaine. Le HTML simple est accepté (paragraphes, gras, listes, liens, images). Laissez vide pour n'afficher que la description."
+            hint={t.admin.missions.contentHint}
             error={errors.content?.message}
           >
             <Textarea
@@ -305,14 +321,14 @@ export const MissionsAdmin = () => {
               rows={8}
               aria-invalid={Boolean(errors.content)}
               {...register('content', {
-                maxLength: { value: 20000, message: '20000 caractères maximum' },
+                maxLength: { value: 20000, message: t.admin.missions.contentMax },
               })}
             />
           </Field>
 
           <Checkbox
             id="mission-published"
-            label="Afficher sur le site public"
+            label={t.admin.common.showOnSite}
             {...register('isPublished')}
           />
         </form>
@@ -320,8 +336,8 @@ export const MissionsAdmin = () => {
 
       <ConfirmDialog
         isOpen={Boolean(pendingDelete)}
-        title="Supprimer ce domaine d'action ?"
-        message={`« ${t(pendingDelete?.title, '')} » disparaîtra du site public. Cette action est irréversible.`}
+        title={t.admin.missions.deleteTitle}
+        message={t.admin.missions.deleteMessage(text(pendingDelete?.title))}
         isLoading={deleteMutation.isPending}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}

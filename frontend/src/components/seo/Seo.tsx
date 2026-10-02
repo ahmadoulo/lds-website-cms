@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
 import { useSettings } from '../../context/SettingsContext';
+import { DEFAULT_LOCALE, LOCALES, LOCALE_PARAM, type Locale } from '../../lib/i18n/locale';
+import { useShellLocale } from '../../lib/i18n/dictionaries/adminShell';
+import { useShellT } from '../../lib/i18n/useT';
 
 interface SeoProps {
   title?: string;
@@ -10,6 +13,12 @@ interface SeoProps {
   noIndex?: boolean;
   type?: 'website' | 'article';
 }
+
+/** What Facebook and LinkedIn expect in og:locale, per published language. */
+const OG_LOCALES: Record<Locale, string> = {
+  fr: 'fr_FR',
+  ar: 'ar_AR',
+};
 
 function setMeta(selector: string, attribute: 'name' | 'property', key: string, content: string) {
   let element = document.head.querySelector<HTMLMetaElement>(selector);
@@ -32,19 +41,67 @@ function setCanonical(url: string) {
 }
 
 /**
+ * One `link rel="alternate"` per language, kept in place across navigations.
+ *
+ * Matched on `hreflang` rather than appended, because this is a single-page
+ * application: the tags outlive the route they were written for, and a second
+ * set would leave a crawler with two answers for the same language.
+ */
+function setAlternate(hreflang: string, url: string) {
+  let link = document.head.querySelector<HTMLLinkElement>(
+    `link[rel="alternate"][hreflang="${hreflang}"]`,
+  );
+  if (!link) {
+    link = document.createElement('link');
+    link.setAttribute('rel', 'alternate');
+    link.setAttribute('hreflang', hreflang);
+    document.head.appendChild(link);
+  }
+  link.setAttribute('href', url);
+}
+
+/**
+ * The address a page has in one language.
+ *
+ * French travels without a parameter, exactly as the language switch builds its
+ * links, so the URLs already in circulation stay the canonical French ones and
+ * Arabic gets a `?lang=ar` of its own. Everything else in the query string is
+ * dropped: a filter or a page number is not a different document.
+ */
+function addressFor(which: Locale, origin: string, path: string): string {
+  if (!origin) return '';
+  const base = `${origin}${path}`;
+  return which === DEFAULT_LOCALE ? base : `${base}?${LOCALE_PARAM}=${which}`;
+}
+
+/**
  * Sets the document title and the meta/Open Graph tags for the current page.
  * Values fall back to the site-wide SEO settings managed from the admin.
+ *
+ * Each language has an address of its own, so each page is published twice: the
+ * canonical URL carries the language being read, and the alternates tell a
+ * crawler where the other one is. `<html lang>` and `dir` are not touched here
+ * - the LocaleProvider owns them, and owning them in two places is how they end
+ * up disagreeing.
  */
 export const Seo = ({ title, description, image, noIndex, type = 'website' }: SeoProps) => {
   const { settings } = useSettings();
+  const { locale } = useShellLocale();
+  const t = useShellT();
 
-  const siteName = settings?.seo.title || 'Louga Développement Solidaire';
+  const siteName = settings?.seo.title || t.common.organizationName;
   const fullTitle = title ? `${title} — ${siteName}` : siteName;
   const metaDescription = description || settings?.seo.description || '';
-  const canonical = typeof window !== 'undefined' ? window.location.href.split('?')[0] : '';
   const shareImage = image ?? settings?.seo.ogImage?.url ?? null;
 
+  // Read during render so the effect re-runs on navigation, not only on a change
+  // of language.
+  const origin = typeof window === 'undefined' ? '' : window.location.origin;
+  const path = typeof window === 'undefined' ? '' : window.location.pathname;
+
   useEffect(() => {
+    const canonical = addressFor(locale, origin, path);
+
     document.title = fullTitle;
 
     setMeta('meta[name="description"]', 'name', 'description', metaDescription);
@@ -54,7 +111,20 @@ export const Seo = ({ title, description, image, noIndex, type = 'website' }: Se
     setMeta('meta[property="og:description"]', 'property', 'og:description', metaDescription);
     setMeta('meta[property="og:type"]', 'property', 'og:type', type);
     setMeta('meta[property="og:site_name"]', 'property', 'og:site_name', siteName);
-    setMeta('meta[property="og:locale"]', 'property', 'og:locale', 'fr_FR');
+    setMeta('meta[property="og:locale"]', 'property', 'og:locale', OG_LOCALES[locale]);
+
+    const other = LOCALES.filter((candidate) => candidate !== locale).map(
+      (candidate) => OG_LOCALES[candidate],
+    );
+    if (other.length) {
+      setMeta(
+        'meta[property="og:locale:alternate"]',
+        'property',
+        'og:locale:alternate',
+        other.join(','),
+      );
+    }
+
     if (canonical) setMeta('meta[property="og:url"]', 'property', 'og:url', canonical);
 
     setMeta(
@@ -72,7 +142,16 @@ export const Seo = ({ title, description, image, noIndex, type = 'website' }: Se
     }
 
     if (canonical) setCanonical(canonical);
-  }, [fullTitle, metaDescription, shareImage, noIndex, type, siteName, canonical]);
+
+    for (const candidate of LOCALES) {
+      const url = addressFor(candidate, origin, path);
+      if (url) setAlternate(candidate, url);
+    }
+    // What a crawler with no language preference is served: French, the
+    // language the association writes in.
+    const fallback = addressFor(DEFAULT_LOCALE, origin, path);
+    if (fallback) setAlternate('x-default', fallback);
+  }, [fullTitle, metaDescription, shareImage, noIndex, type, siteName, locale, origin, path]);
 
   return null;
 };

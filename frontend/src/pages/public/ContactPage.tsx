@@ -7,6 +7,9 @@ import { useSettings } from '../../context/SettingsContext';
 import { Seo } from '../../components/seo/Seo';
 import { Button } from '../../components/ui/Button';
 import { Field, Input, Textarea } from '../../components/ui/Field';
+import { useLocale } from '../../context/LocaleContext';
+import { cn } from '../../lib/cn';
+import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 
 interface FormValues {
   name: string;
@@ -21,6 +24,7 @@ export const ContactPage = () => {
   const { settings } = useSettings();
   const [error, setError] = useState<string | null>(null);
   const [isSent, setIsSent] = useState(false);
+  const p = usePagesT();
 
   const contact = settings?.global_contact;
 
@@ -39,26 +43,19 @@ export const ContactPage = () => {
       reset(EMPTY_FORM);
     },
     onError: (err) => {
-      setError(apiErrorMessage(err, "Votre message n'a pas pu être envoyé. Merci de réessayer."));
+      setError(apiErrorMessage(err, p.contact.sendFailed));
     },
   });
 
   return (
     <>
-      <Seo
-        title="Contact"
-        description="Contactez Louga Développement Solidaire : une question, une suggestion ou une envie de nous rejoindre."
-      />
+      <Seo title={p.contact.seoTitle} description={p.contact.seoDescription} />
 
       <div className="section-y-sm">
         <div className="mx-auto max-w-[1000px] gutter-x">
           <div className="mb-8 text-center sm:mb-12">
-            <h1 className="mb-4 text-h1 font-extrabold text-navy">
-              Contactez-nous
-            </h1>
-            <p className="text-lg text-navy/70">
-              Une question, une suggestion ou une envie de nous rejoindre ? Écrivez-nous.
-            </p>
+            <h1 className="mb-4 text-h1 font-extrabold text-navy">{p.contact.title}</h1>
+            <p className="text-lg text-navy/70">{p.contact.lead}</p>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[1fr_340px] lg:gap-8">
@@ -66,14 +63,13 @@ export const ContactPage = () => {
               {isSent ? (
                 <div className="rounded-3xl border border-green/20 bg-green/10 px-6 py-12 text-center sm:px-8 sm:py-16">
                   <span className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green text-white">
+                    {/* A tick is not directional: it reads the same in both scripts. */}
                     <CheckCircle className="h-10 w-10" aria-hidden />
                   </span>
-                  <h2 className="mb-3 text-2xl font-bold text-navy">Message envoyé !</h2>
-                  <p className="mb-8 text-lg text-navy/70">
-                    Merci pour votre message. Nous vous répondrons dans les plus brefs délais.
-                  </p>
+                  <h2 className="mb-3 text-2xl font-bold text-navy">{p.contact.sentTitle}</h2>
+                  <p className="mb-8 text-lg text-navy/70">{p.contact.sentMessage}</p>
                   <Button variant="outline" onClick={() => setIsSent(false)}>
-                    Envoyer un autre message
+                    {p.contact.sendAnother}
                   </Button>
                 </div>
               ) : (
@@ -91,24 +87,27 @@ export const ContactPage = () => {
               {contact?.address && (
                 <div className="rounded-2xl border border-navy/8 bg-white p-6">
                   <MapPin className="mb-3 h-5 w-5 text-green" aria-hidden />
-                  <h2 className="mb-1 text-sm font-bold text-navy">Adresse</h2>
+                  <h2 className="mb-1 text-sm font-bold text-navy">{p.contact.addressLabel}</h2>
                   <p className="text-sm leading-relaxed text-navy/65">{contact.address}</p>
                 </div>
               )}
               {contact?.phone && (
                 <div className="rounded-2xl border border-navy/8 bg-white p-6">
                   <Phone className="mb-3 h-5 w-5 text-blue" aria-hidden />
-                  <h2 className="mb-1 text-sm font-bold text-navy">Téléphone</h2>
+                  <h2 className="mb-1 text-sm font-bold text-navy">{p.contact.phoneLabel}</h2>
+                  {/* A phone number reads left to right in both languages. */}
                   <a
                     href={`tel:${contact.phone.replace(/\s+/g, '')}`}
-                    className="block text-sm text-navy/65 hover:text-blue"
+                    dir="ltr"
+                    className="block text-start text-sm text-navy/65 hover:text-blue"
                   >
                     {contact.phone}
                   </a>
                   {contact.phoneSecondary && (
                     <a
                       href={`tel:${contact.phoneSecondary.replace(/\s+/g, '')}`}
-                      className="block text-sm text-navy/65 hover:text-blue"
+                      dir="ltr"
+                      className="block text-start text-sm text-navy/65 hover:text-blue"
                     >
                       {contact.phoneSecondary}
                     </a>
@@ -118,10 +117,11 @@ export const ContactPage = () => {
               {contact?.email && (
                 <div className="rounded-2xl border border-navy/8 bg-white p-6">
                   <Mail className="mb-3 h-5 w-5 text-orange" aria-hidden />
-                  <h2 className="mb-1 text-sm font-bold text-navy">Email</h2>
+                  <h2 className="mb-1 text-sm font-bold text-navy">{p.contact.emailLabel}</h2>
                   <a
                     href={`mailto:${contact.email}`}
-                    className="break-all text-sm text-navy/65 hover:text-blue"
+                    dir="ltr"
+                    className="block break-all text-start text-sm text-navy/65 hover:text-blue"
                   >
                     {contact.email}
                   </a>
@@ -143,91 +143,112 @@ interface ContactFormProps {
   onSubmit: React.FormEventHandler;
 }
 
-const ContactForm = ({ error, errors, register, isPending, onSubmit }: ContactFormProps) => (
-  <form
-    onSubmit={onSubmit}
-    className="rounded-3xl bg-white p-6 shadow-e3 sm:p-10"
-    noValidate
-  >
-    {error && (
-      <div
-        role="alert"
-        className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3"
-      >
-        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
-        <p className="text-sm text-red-700">{error}</p>
+const ContactForm = ({ error, errors, register, isPending, onSubmit }: ContactFormProps) => {
+  /*
+    The validation messages are rendered by react-hook-form from the strings
+    handed to `register`, so they have to be in the displayed language at the
+    moment the rule is declared - which is why the dictionary is read here, in
+    the component that owns the form, rather than passed down as props.
+  */
+  const p = usePagesT();
+  const { isRtl } = useLocale();
+
+  return (
+    <form onSubmit={onSubmit} className="rounded-3xl bg-white p-6 shadow-e3 sm:p-10" noValidate>
+      {error && (
+        <div
+          role="alert"
+          className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+
+      <div className="mb-5 grid gap-5 sm:grid-cols-2">
+        <Field
+          label={p.contact.nameLabel}
+          htmlFor="contact-name"
+          required
+          error={errors.name?.message}
+        >
+          <Input
+            id="contact-name"
+            autoComplete="name"
+            placeholder={p.contact.namePlaceholder}
+            aria-invalid={Boolean(errors.name)}
+            {...register('name', {
+              required: p.contact.nameRequired,
+              minLength: { value: 2, message: p.contact.nameTooShort },
+            })}
+          />
+        </Field>
+
+        <Field
+          label={p.contact.emailLabel}
+          htmlFor="contact-email"
+          required
+          error={errors.email?.message}
+        >
+          <Input
+            id="contact-email"
+            type="email"
+            autoComplete="email"
+            /* The address itself is Latin script whatever the page language. */
+            dir="ltr"
+            placeholder={p.contact.emailPlaceholder}
+            aria-invalid={Boolean(errors.email)}
+            {...register('email', {
+              required: p.contact.emailRequired,
+              pattern: { value: /^\S+@\S+\.\S+$/, message: p.contact.emailInvalid },
+            })}
+          />
+        </Field>
       </div>
-    )}
 
-    <div className="mb-5 grid gap-5 sm:grid-cols-2">
-      <Field label="Prénom et nom" htmlFor="contact-name" required error={errors.name?.message}>
+      <Field
+        label={p.contact.subjectLabel}
+        htmlFor="contact-subject"
+        required
+        className="mb-5"
+        error={errors.subject?.message}
+      >
         <Input
-          id="contact-name"
-          autoComplete="name"
-          placeholder="Aïssatou Diop"
-          aria-invalid={Boolean(errors.name)}
-          {...register('name', {
-            required: "Merci d'indiquer votre nom",
-            minLength: { value: 2, message: 'Nom trop court' },
+          id="contact-subject"
+          placeholder={p.contact.subjectPlaceholder}
+          aria-invalid={Boolean(errors.subject)}
+          {...register('subject', {
+            required: p.contact.subjectRequired,
+            minLength: { value: 3, message: p.contact.subjectTooShort },
           })}
         />
       </Field>
 
-      <Field label="Email" htmlFor="contact-email" required error={errors.email?.message}>
-        <Input
-          id="contact-email"
-          type="email"
-          autoComplete="email"
-          placeholder="votre@email.com"
-          aria-invalid={Boolean(errors.email)}
-          {...register('email', {
-            required: "L'adresse email est obligatoire",
-            pattern: { value: /^\S+@\S+\.\S+$/, message: 'Adresse email invalide' },
+      <Field
+        label={p.contact.messageLabel}
+        htmlFor="contact-message"
+        required
+        className="mb-7"
+        error={errors.message?.message}
+      >
+        <Textarea
+          id="contact-message"
+          rows={6}
+          placeholder={p.contact.messagePlaceholder}
+          aria-invalid={Boolean(errors.message)}
+          {...register('message', {
+            required: p.contact.messageRequired,
+            minLength: { value: 10, message: p.contact.messageMin },
+            maxLength: { value: 5000, message: p.contact.messageMax },
           })}
         />
       </Field>
-    </div>
 
-    <Field
-      label="Sujet"
-      htmlFor="contact-subject"
-      required
-      className="mb-5"
-      error={errors.subject?.message}
-    >
-      <Input
-        id="contact-subject"
-        placeholder="De quoi souhaitez-vous parler ?"
-        aria-invalid={Boolean(errors.subject)}
-        {...register('subject', {
-          required: 'Merci de préciser un sujet',
-          minLength: { value: 3, message: 'Sujet trop court' },
-        })}
-      />
-    </Field>
-
-    <Field
-      label="Message"
-      htmlFor="contact-message"
-      required
-      className="mb-7"
-      error={errors.message?.message}
-    >
-      <Textarea
-        id="contact-message"
-        rows={6}
-        placeholder="Votre message…"
-        aria-invalid={Boolean(errors.message)}
-        {...register('message', {
-          required: 'Le message est obligatoire',
-          minLength: { value: 10, message: '10 caractères minimum' },
-          maxLength: { value: 5000, message: '5000 caractères maximum' },
-        })}
-      />
-    </Field>
-
-    <Button type="submit" variant="secondary" size="lg" fullWidth isLoading={isPending}>
-      <Send className="h-4 w-4" aria-hidden /> Envoyer le message
-    </Button>
-  </form>
-);
+      <Button type="submit" variant="secondary" size="lg" fullWidth isLoading={isPending}>
+        {/* A paper plane points the way a message travels: it follows the text. */}
+        <Send className={cn('h-4 w-4', isRtl && '-scale-x-100')} aria-hidden />{' '}
+        {p.contact.submit}
+      </Button>
+    </form>
+  );
+};

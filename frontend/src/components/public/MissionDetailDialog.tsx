@@ -3,7 +3,10 @@ import { ImageIcon } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { CtaLink } from './CtaLink';
 import { resolveIcon } from '../../lib/icons';
-import { t, type Mission } from '../../lib/types';
+import { useLocale } from '../../context/LocaleContext';
+import { useComponentsT } from '../../lib/i18n/dictionaries/components';
+import { localizedOrSource } from '../../lib/i18n/resolve';
+import type { Mission } from '../../lib/types';
 
 /**
  * The full record of one domain of intervention.
@@ -22,11 +25,23 @@ export const MissionDetailDialog = ({
   accent: string;
   onClose: () => void;
 }) => {
+  const t = useComponentsT();
+  const { locale } = useLocale();
   const Icon = resolveIcon(mission?.icon);
-  const longForm = mission?.content ? t(mission.content) : '';
+
+  /*
+    Three fields, three separate decisions, because a domain can be translated
+    in part: the title and the short description fall back to French and say so,
+    the way the card does, and the long form is shown in whichever language it
+    exists in rather than being dropped. Nothing is silently passed off as
+    Arabic - each piece carries `lang` when it is the French source.
+  */
+  const title = localizedOrSource(mission?.title, locale);
+  const description = localizedOrSource(mission?.description, locale);
+  const longForm = localizedOrSource(mission?.content, locale);
 
   return (
-    <Modal isOpen={Boolean(mission)} onClose={onClose} title={mission ? t(mission.title) : ''} size="lg">
+    <Modal isOpen={Boolean(mission)} onClose={onClose} title={title.text} size="lg">
       {mission && (
         <div className="space-y-5">
           <div className="relative overflow-hidden rounded-xl bg-warm-muted">
@@ -51,23 +66,36 @@ export const MissionDetailDialog = ({
             </div>
 
             <span
-              className={`absolute bottom-4 left-4 flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-e2 ring-4 ring-white ${accent}`}
+              /* The badge sits in the leading bottom corner of the photo, which
+                 is the right-hand one in Arabic. */
+              className={`absolute bottom-4 start-4 flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-e2 ring-4 ring-white ${accent}`}
               aria-hidden
             >
               <Icon className="h-5 w-5" />
             </span>
           </div>
 
-          <p className="text-body-lg leading-relaxed text-navy/80">{t(mission.description)}</p>
+          <p
+            className="text-body-lg leading-relaxed text-navy/80"
+            lang={description.untranslated ? 'fr' : undefined}
+            dir={description.untranslated ? 'ltr' : undefined}
+          >
+            {description.text}
+          </p>
 
-          {longForm && (
-            <div className="prose-lds" dangerouslySetInnerHTML={{ __html: longForm }} />
+          {longForm.text && (
+            <div
+              className="prose-lds"
+              lang={longForm.untranslated ? 'fr' : undefined}
+              dir={longForm.untranslated ? 'ltr' : undefined}
+              dangerouslySetInnerHTML={{ __html: longForm.text }}
+            />
           )}
 
           <div className="flex flex-col gap-3 border-t border-navy/10 pt-5 sm:flex-row">
-            <CtaLink to="/nous-soutenir">Nous soutenir</CtaLink>
+            <CtaLink to="/nous-soutenir">{t.mission.support}</CtaLink>
             <CtaLink to="/contact" variant="secondary">
-              Nous contacter
+              {t.mission.contact}
             </CtaLink>
           </div>
         </div>

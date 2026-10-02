@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useLocale } from '../../context/LocaleContext';
+import { useComponentsT } from '../../lib/i18n/dictionaries/components';
+import { useT } from '../../lib/i18n/useT';
 
 export interface LightboxSlide {
   src: string;
@@ -20,6 +23,9 @@ interface LightboxProps {
  * the keyboard behaviour matches the rest of the site.
  */
 export const Lightbox = ({ slides, index, onIndexChange, onClose }: LightboxProps) => {
+  const t = useComponentsT();
+  const common = useT().common;
+  const { isRtl } = useLocale();
   const slide = slides[index];
 
   const goTo = useCallback(
@@ -31,10 +37,15 @@ export const Lightbox = ({ slides, index, onIndexChange, onClose }: LightboxProp
   );
 
   useEffect(() => {
+    /*
+      The arrow keys are physical: the key that points at the next photo is the
+      left one when the gallery is read right to left, so the direction is what
+      decides which way the index moves, not the key's name.
+    */
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
-      if (event.key === 'ArrowRight') goTo(index + 1);
-      if (event.key === 'ArrowLeft') goTo(index - 1);
+      if (event.key === 'ArrowRight') goTo(index + (isRtl ? -1 : 1));
+      if (event.key === 'ArrowLeft') goTo(index + (isRtl ? 1 : -1));
     };
 
     document.addEventListener('keydown', onKeyDown);
@@ -45,15 +56,18 @@ export const Lightbox = ({ slides, index, onIndexChange, onClose }: LightboxProp
       document.removeEventListener('keydown', onKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [index, goTo, onClose]);
+  }, [index, goTo, onClose, isRtl]);
 
   if (!slide) return null;
+
+  const PreviousIcon = isRtl ? ChevronRight : ChevronLeft;
+  const NextIcon = isRtl ? ChevronLeft : ChevronRight;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Visionneuse d'images"
+      aria-label={t.lightbox.label}
       className="fixed inset-0 z-[60] flex items-center justify-center bg-navy/95 p-4"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
@@ -62,8 +76,10 @@ export const Lightbox = ({ slides, index, onIndexChange, onClose }: LightboxProp
       <button
         type="button"
         onClick={onClose}
-        aria-label="Fermer"
-        className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 sm:right-4 sm:top-4"
+        aria-label={common.close}
+        /* The close button stays in the trailing top corner, which is the
+           left-hand one in Arabic. */
+        className="absolute end-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 sm:end-4 sm:top-4"
       >
         <X className="h-5 w-5" />
       </button>
@@ -73,18 +89,21 @@ export const Lightbox = ({ slides, index, onIndexChange, onClose }: LightboxProp
           <button
             type="button"
             onClick={() => goTo(index - 1)}
-            aria-label="Image précédente"
-            className="absolute left-2 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 sm:left-6 sm:h-11 sm:w-11"
+            aria-label={t.lightbox.previous}
+            /* Going back is going towards the reading edge, so this button sits
+               at the start - the right in Arabic - and its chevron is chosen
+               rather than mirrored, because a chevron is a direction. */
+            className="absolute start-2 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 sm:start-6 sm:h-11 sm:w-11"
           >
-            <ChevronLeft className="h-6 w-6" />
+            <PreviousIcon className="h-6 w-6" />
           </button>
           <button
             type="button"
             onClick={() => goTo(index + 1)}
-            aria-label="Image suivante"
-            className="absolute right-2 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 sm:right-6 sm:h-11 sm:w-11"
+            aria-label={t.lightbox.next}
+            className="absolute end-2 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 sm:end-6 sm:h-11 sm:w-11"
           >
-            <ChevronRight className="h-6 w-6" />
+            <NextIcon className="h-6 w-6" />
           </button>
         </>
       )}
@@ -103,7 +122,9 @@ export const Lightbox = ({ slides, index, onIndexChange, onClose }: LightboxProp
         )}
         {slides.length > 1 && (
           <p className="text-xs text-white/45">
-            {index + 1} / {slides.length}
+            {/* Two numbers either side of a slash: isolated, or the
+                bidirectional algorithm prints 1 / 12 as 12 / 1. */}
+            <bdi>{t.lightbox.position(index + 1, slides.length)}</bdi>
           </p>
         )}
       </figure>

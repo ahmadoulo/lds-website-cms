@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { useShellT } from '../../lib/i18n/useT';
 
 interface ModalProps {
   isOpen: boolean;
@@ -74,6 +75,7 @@ export const Modal = ({
 }: ModalProps) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const t = useShellT();
 
   /*
     onClose lives in a ref because no caller passes a stable one: every admin
@@ -202,7 +204,7 @@ export const Modal = ({
             type="button"
             onClick={close}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-navy/40 transition-colors hover:bg-navy/5 hover:text-navy sm:h-8 sm:w-8"
-            aria-label="Fermer"
+            aria-label={t.common.close}
           >
             <X className="h-5 w-5" />
           </button>

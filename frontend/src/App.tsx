@@ -97,8 +97,8 @@ const RouteFallback = () => (
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <LocaleProvider>
       <BrowserRouter>
+        <LocaleProvider>
         <ToastProvider>
           <PreviewProvider>
             <SettingsProvider>
@@ -160,8 +160,8 @@ function App() {
             </SettingsProvider>
           </PreviewProvider>
         </ToastProvider>
+        </LocaleProvider>
       </BrowserRouter>
-      </LocaleProvider>
     </QueryClientProvider>
   );
 }

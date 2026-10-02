@@ -4,6 +4,7 @@ import { useAuth, type Role } from '../../context/AuthContext';
 import { LoadingState } from '../ui/States';
 import { EmptyState } from '../ui/States';
 import { ShieldAlert } from 'lucide-react';
+import { useShellT } from '../../lib/i18n/useT';
 
 interface ProtectedRouteProps {
   /** Minimum role required to view the nested routes. */
@@ -17,12 +18,13 @@ interface ProtectedRouteProps {
 export const ProtectedRoute = ({ minRole }: ProtectedRouteProps) => {
   const { isAuthenticated, isBootstrapping, user, can } = useAuth();
   const location = useLocation();
+  const t = useShellT();
 
   // The stored token is still being validated against /auth/me.
   if (isBootstrapping) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-warm">
-        <LoadingState label="Vérification de la session…" />
+        <LoadingState label={t.adminShell.access.checkingSession} />
       </div>
     );
   }
@@ -41,8 +43,8 @@ export const ProtectedRoute = ({ minRole }: ProtectedRouteProps) => {
       <div className="py-6">
         <EmptyState
           icon={ShieldAlert}
-          title="Accès non autorisé"
-          description="Votre rôle ne vous permet pas de consulter cette page. Contactez un administrateur si vous pensez qu'il s'agit d'une erreur."
+          title={t.adminShell.access.deniedTitle}
+          description={t.adminShell.access.deniedDescription}
         />
       </div>
     );

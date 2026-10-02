@@ -6,23 +6,27 @@ import { Seo } from '../../components/seo/Seo';
 import { SectionHeading } from '../../components/public/SectionHeading';
 import { PartnerCard } from '../../components/public/PartnerCard';
 import { EmptyState, ErrorState, Skeleton } from '../../components/ui/States';
+import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 
 export const PartnersPage = () => {
   const { data: partners, isLoading, isError, refetch } = usePartners();
+  const p = usePagesT();
+
+  /*
+    No language filter here, unlike the other listings: a partner is a `name`
+    and a logo, not a translatable text. GIZ is GIZ in both languages.
+  */
 
   return (
     <>
-      <Seo
-        title="Partenaires"
-        description="Les organisations qui accompagnent Louga Développement Solidaire."
-      />
+      <Seo title={p.partners.seoTitle} description={p.partners.seoDescription} />
 
       <div className="min-h-page bg-white section-y">
         <div className="container-page">
           <SectionHeading
-            eyebrow="Nos partenaires"
-            title="Ils nous font confiance"
-            description="Institutions, entreprises et associations qui rendent nos actions possibles."
+            eyebrow={p.partners.eyebrow}
+            title={p.partners.title}
+            description={p.partners.description}
             accent="blue"
             as="h1"
           />
@@ -38,8 +42,8 @@ export const PartnersPage = () => {
           ) : !partners?.length ? (
             <EmptyState
               icon={Building2}
-              title="Aucun partenaire publié"
-              description="Nos partenaires seront présentés ici prochainement."
+              title={p.partners.emptyTitle}
+              description={p.partners.emptyDescription}
             />
           ) : (
             <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
@@ -53,16 +57,14 @@ export const PartnersPage = () => {
 
           <div className="mt-10 rounded-2xl bg-warm-muted px-5 py-9 text-center sm:mt-16 sm:px-6 sm:py-12">
             <h2 className="mb-4 text-h2-sm font-extrabold text-navy">
-              Devenir partenaire de l'association
+              {p.partners.becomeTitle}
             </h2>
-            <p className="mx-auto mb-8 max-w-xl text-navy/70">
-              Vous représentez une organisation qui souhaite s'engager à Louga ? Écrivez-nous.
-            </p>
+            <p className="mx-auto mb-8 max-w-xl text-navy/70">{p.partners.becomeDescription}</p>
             <Link
               to="/contact"
               className="inline-block rounded-full bg-navy px-8 py-3.5 font-bold text-white transition-colors hover:bg-blue"
             >
-              Nous contacter
+              {p.cta.contact}
             </Link>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Eye } from 'lucide-react';
 import { Button } from '../../ui/Button';
+import { useShellT } from '../../../lib/i18n/useT';
 
 /**
  * Opens the public page in a preview tab. The API decides what the tab actually
@@ -23,11 +24,17 @@ interface PreviewButtonProps {
 
 export const PreviewButton = ({
   path,
-  label = 'Prévisualiser',
+  label,
   variant = 'outline',
   size = 'md',
-}: PreviewButtonProps) => (
-  <Button type="button" variant={variant} size={size} onClick={() => openPreview(path)}>
-    <Eye className={size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'} /> {label}
-  </Button>
-);
+}: PreviewButtonProps) => {
+  const t = useShellT();
+
+  return (
+    <Button type="button" variant={variant} size={size} onClick={() => openPreview(path)}>
+      {/* An eye looks at the reader, not forward: never mirrored. */}
+      <Eye className={size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'} />{' '}
+      {label ?? t.adminShell.preview.label}
+    </Button>
+  );
+};

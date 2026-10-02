@@ -3,6 +3,7 @@ import { render, type RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { ToastProvider } from '../components/ui/Toast';
+import { LocaleProvider } from '../context/LocaleContext';
 
 export function createTestQueryClient() {
   return new QueryClient({
@@ -25,8 +26,12 @@ export function renderWithProviders(
 ) {
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
+      {/* Inside the router, not around it: the provider keeps the language in
+          the address across navigations, which it reads from useLocation. */}
       <MemoryRouter initialEntries={[route]}>
-        <ToastProvider>{children}</ToastProvider>
+        <LocaleProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </LocaleProvider>
       </MemoryRouter>
     </QueryClientProvider>
   );

@@ -82,40 +82,12 @@ api.interceptors.response.use(
   },
 );
 
-/**
- * Turns a failure into something the user can act on.
- *
- * The status is inspected before the fallback: a 502 from the reverse proxy
- * carries an HTML body with no `message`, and blaming the caller's credentials
- * for what is actually a stopped server sends them hunting for the wrong
- * problem.
- */
-export function apiErrorMessage(error: unknown, fallback = 'Une erreur est survenue.'): string {
-  const axiosError = error as AxiosError<{ message?: string | string[] }>;
-  const status = axiosError?.response?.status;
-  const message = axiosError?.response?.data?.message;
-
-  // The API's own message is always the most precise, when there is one.
-  if (Array.isArray(message)) return message.join(' · ');
-  if (typeof message === 'string' && message.trim()) return message;
-
-  if (axiosError?.code === 'ERR_NETWORK' || axiosError?.code === 'ECONNABORTED') {
-    return 'Impossible de joindre le serveur. Vérifiez votre connexion.';
-  }
-
-  if (status === 429) {
-    return 'Trop de tentatives. Patientez une minute avant de réessayer.';
-  }
-
-  if (status === 502 || status === 503 || status === 504) {
-    return 'Le serveur est momentanément indisponible. Réessayez dans quelques instants.';
-  }
-
-  if (status && status >= 500) {
-    return 'Une erreur est survenue côté serveur. Réessayez dans quelques instants.';
-  }
-
-  return fallback;
-}
+/*
+  `apiErrorMessage` now lives in `../apiErrorMessage`, where it can read the
+  bilingual strings without this module having to know about dictionaries. It is
+  re-exported here so every existing `import { apiErrorMessage } from '.../api/axios'`
+  keeps working, and so there is still exactly one implementation.
+*/
+export { apiErrorMessage } from '../apiErrorMessage';
 
 export default api;

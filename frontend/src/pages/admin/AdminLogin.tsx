@@ -3,7 +3,9 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { apiErrorMessage } from '../../lib/api/axios';
+import { useLocale } from '../../context/LocaleContext';
+import { useT } from '../../lib/i18n/useT';
+import { apiErrorMessage } from '../../lib/apiErrorMessage';
 import { Button } from '../../components/ui/Button';
 import { Field, Input } from '../../components/ui/Field';
 import { LoadingState } from '../../components/ui/States';
@@ -15,6 +17,8 @@ interface FormValues {
 }
 
 export const AdminLogin = () => {
+  const t = useT();
+  const { locale } = useLocale();
   const { login, isAuthenticated, isBootstrapping } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,7 +33,7 @@ export const AdminLogin = () => {
   if (isBootstrapping) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-warm">
-        <LoadingState label="Vérification de la session…" />
+        <LoadingState label={t.admin.login.checkingSession} />
       </div>
     );
   }
@@ -45,7 +49,7 @@ export const AdminLogin = () => {
       const user = await login(values.email, values.password);
       navigate(user.mustChangePassword ? '/admin/mot-de-passe' : '/admin', { replace: true });
     } catch (err) {
-      setError(apiErrorMessage(err, 'Connexion impossible. Vérifiez vos identifiants.'));
+      setError(apiErrorMessage(err, t.admin.login.failed, locale));
     }
   };
 
@@ -56,10 +60,8 @@ export const AdminLogin = () => {
           <span className="mb-5 flex justify-center">
             <SiteLogo />
           </span>
-          <h1 className="text-xl font-bold text-navy">Administration</h1>
-          <p className="mt-2 text-sm text-navy/60">
-            Connectez-vous pour gérer le contenu du site.
-          </p>
+          <h1 className="text-xl font-bold text-navy">{t.admin.login.title}</h1>
+          <p className="mt-2 text-sm text-navy/60">{t.admin.login.subtitle}</p>
         </div>
 
         <div className="rounded-2xl border border-navy/8 bg-white p-6 shadow-sm sm:p-8">
@@ -74,7 +76,12 @@ export const AdminLogin = () => {
               </div>
             )}
 
-            <Field label="Adresse email" htmlFor="login-email" required error={errors.email?.message}>
+            <Field
+              label={t.admin.common.emailLabel}
+              htmlFor="login-email"
+              required
+              error={errors.email?.message}
+            >
               <Input
                 id="login-email"
                 type="email"
@@ -83,14 +90,14 @@ export const AdminLogin = () => {
                 placeholder="admin@lougasolidaire.org"
                 aria-invalid={Boolean(errors.email)}
                 {...register('email', {
-                  required: "L'adresse email est obligatoire",
-                  pattern: { value: /^\S+@\S+\.\S+$/, message: 'Adresse email invalide' },
+                  required: t.admin.common.emailRequired,
+                  pattern: { value: /^\S+@\S+\.\S+$/, message: t.admin.common.emailInvalid },
                 })}
               />
             </Field>
 
             <Field
-              label="Mot de passe"
+              label={t.admin.login.password}
               htmlFor="login-password"
               required
               error={errors.password?.message}
@@ -100,19 +107,19 @@ export const AdminLogin = () => {
                 type="password"
                 autoComplete="current-password"
                 aria-invalid={Boolean(errors.password)}
-                {...register('password', { required: 'Le mot de passe est obligatoire' })}
+                {...register('password', { required: t.admin.login.passwordRequired })}
               />
             </Field>
 
             <Button type="submit" variant="secondary" fullWidth size="lg" isLoading={isSubmitting}>
-              Se connecter
+              {t.admin.login.submit}
             </Button>
           </form>
         </div>
 
         <p className="mt-6 text-center text-xs text-navy/45">
           <a href="/" className="hover:text-navy hover:underline">
-            Retour au site public
+            {t.admin.login.backToSite}
           </a>
         </p>
       </div>

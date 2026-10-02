@@ -2,17 +2,27 @@ import React from 'react';
 import { AlertCircle, Inbox, Loader2, RefreshCw } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { Button } from './Button';
+import { useShellT } from '../../lib/i18n/useT';
 
 export const Spinner = ({ className }: { className?: string }) => (
   <Loader2 className={cn('h-5 w-5 animate-spin text-navy/40', className)} aria-hidden />
 );
 
-export const LoadingState = ({ label = 'Chargement…' }: { label?: string }) => (
-  <div className="flex flex-col items-center justify-center gap-3 py-16" role="status" aria-live="polite">
-    <Spinner className="h-7 w-7" />
-    <p className="text-sm font-medium text-navy/50">{label}</p>
-  </div>
-);
+/*
+  The default label is resolved in the body rather than in the signature: a
+  default parameter cannot read the current language, and these three states are
+  what the whole application shows while it waits or fails.
+*/
+export const LoadingState = ({ label }: { label?: string }) => {
+  const t = useShellT();
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 py-16" role="status" aria-live="polite">
+      <Spinner className="h-7 w-7" />
+      <p className="text-sm font-medium text-navy/50">{label ?? t.common.loading}</p>
+    </div>
+  );
+};
 
 /** Rectangular placeholder used while a list or card grid loads. */
 export const Skeleton = ({ className }: { className?: string }) => (
@@ -85,28 +95,30 @@ interface ErrorStateProps {
   className?: string;
 }
 
-export const ErrorState = ({
-  title = 'Impossible de charger ces données',
-  message = 'Une erreur est survenue. Vérifiez votre connexion puis réessayez.',
-  onRetry,
-  className,
-}: ErrorStateProps) => (
-  <div
-    role="alert"
-    className={cn(
-      'flex flex-col items-center justify-center rounded-panel border border-red-200 bg-red-50/60 px-6 py-14 text-center',
-      className,
-    )}
-  >
-    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
-      <AlertCircle className="h-6 w-6 text-red-600" />
+export const ErrorState = ({ title, message, onRetry, className }: ErrorStateProps) => {
+  const t = useShellT();
+
+  return (
+    <div
+      role="alert"
+      className={cn(
+        'flex flex-col items-center justify-center rounded-panel border border-red-200 bg-red-50/60 px-6 py-14 text-center',
+        className,
+      )}
+    >
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
+        {/* A warning sign reads the same in both directions: never mirrored. */}
+        <AlertCircle className="h-6 w-6 text-red-600" />
+      </div>
+      <h3 className="text-base font-bold text-navy">{title ?? t.common.loadFailed}</h3>
+      <p className="mt-2 max-w-md text-sm leading-relaxed text-navy/70">
+        {message ?? t.common.loadFailedHint}
+      </p>
+      {onRetry && (
+        <Button variant="outline" size="sm" className="mt-6" onClick={onRetry}>
+          <RefreshCw className="h-4 w-4" /> {t.common.retry}
+        </Button>
+      )}
     </div>
-    <h3 className="text-base font-bold text-navy">{title}</h3>
-    <p className="mt-2 max-w-md text-sm leading-relaxed text-navy/70">{message}</p>
-    {onRetry && (
-      <Button variant="outline" size="sm" className="mt-6" onClick={onRetry}>
-        <RefreshCw className="h-4 w-4" /> Réessayer
-      </Button>
-    )}
-  </div>
-);
+  );
+};

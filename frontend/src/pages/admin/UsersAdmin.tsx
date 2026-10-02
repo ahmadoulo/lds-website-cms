@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Edit2, Plus, ShieldOff, Users } from 'lucide-react';
 import api from '../../lib/api/axios';
+import { useT } from '../../lib/i18n/useT';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { useAuth } from '../../context/AuthContext';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
@@ -24,11 +25,8 @@ interface FormValues {
   isActive: boolean;
 }
 
-const ROLES = [
-  { value: 'EDITOR', label: 'Éditeur', hint: 'Gère les actualités, domaines d’action et la galerie.' },
-  { value: 'ADMIN', label: 'Administrateur', hint: 'Ajoute la configuration du site, les médias et les messages.' },
-  { value: 'SUPER_ADMIN', label: 'Super administrateur', hint: 'Accès complet, y compris les comptes.' },
-] as const;
+/** The order of the roles, least privileged first. Their words are translated. */
+const ROLES = ['EDITOR', 'ADMIN', 'SUPER_ADMIN'] as const;
 
 const ROLE_TONES: Record<AdminUser['role'], 'navy' | 'blue' | 'neutral'> = {
   SUPER_ADMIN: 'navy',
@@ -46,6 +44,7 @@ const EMPTY_FORM: FormValues = {
 };
 
 export const UsersAdmin = () => {
+  const t = useT();
   const { user: currentUser } = useAuth();
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -65,6 +64,18 @@ export const UsersAdmin = () => {
   } = useForm<FormValues>({ defaultValues: EMPTY_FORM });
 
   const selectedRole = watch('role');
+
+  const ROLE_LABELS: Record<AdminUser['role'], string> = {
+    EDITOR: t.admin.users.roleEditor,
+    ADMIN: t.admin.users.roleAdmin,
+    SUPER_ADMIN: t.admin.users.roleSuperAdmin,
+  };
+
+  const ROLE_HINTS: Record<AdminUser['role'], string> = {
+    EDITOR: t.admin.users.roleEditorHint,
+    ADMIN: t.admin.users.roleAdminHint,
+    SUPER_ADMIN: t.admin.users.roleSuperAdminHint,
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -117,14 +128,14 @@ export const UsersAdmin = () => {
         })
       ).data;
     },
-    successMessage: editing ? 'Compte mis à jour.' : 'Compte créé.',
+    successMessage: editing ? t.admin.users.updated : t.admin.users.created,
     invalidate: [['admin', 'users']],
     onSuccess: closeForm,
   });
 
   const deactivateMutation = useAdminMutation<string>({
     mutationFn: async (id) => (await api.delete(`/users/${id}`)).data,
-    successMessage: 'Compte désactivé.',
+    successMessage: t.admin.users.deactivated,
     invalidate: [['admin', 'users']],
     onSuccess: () => setPendingDeactivate(null),
   });
@@ -132,13 +143,13 @@ export const UsersAdmin = () => {
   const columns: Array<Column<AdminUser>> = [
     {
       key: 'name',
-      header: 'Utilisateur',
+      header: t.admin.users.columnUser,
       render: (user) => (
         <div className="min-w-0">
           <p className="truncate font-semibold text-navy">
             {[user.firstName, user.lastName].filter(Boolean).join(' ') || '—'}
             {user.id === currentUser?.id && (
-              <span className="ml-2 text-xs font-medium text-navy/45">(vous)</span>
+              <span className="ms-2 text-xs font-medium text-navy/45">{t.admin.users.you}</span>
             )}
           </p>
           <p className="truncate text-xs text-navy/50">{user.email}</p>
@@ -147,29 +158,29 @@ export const UsersAdmin = () => {
     },
     {
       key: 'role',
-      header: 'Rôle',
+      header: t.admin.users.columnRole,
       render: (user) => (
-        <Badge tone={ROLE_TONES[user.role]}>
-          {ROLES.find((role) => role.value === user.role)?.label ?? user.role}
-        </Badge>
+        <Badge tone={ROLE_TONES[user.role]}>{ROLE_LABELS[user.role] ?? user.role}</Badge>
       ),
     },
     {
       key: 'lastLogin',
-      header: 'Dernière connexion',
+      header: t.admin.users.columnLastLogin,
       render: (user) => (
         <span className="text-navy/60">
           {user.lastLoginAt
-            ? new Date(user.lastLoginAt).toLocaleDateString('fr-FR')
-            : 'Jamais connecté'}
+            ? t.admin.common.formatDate(user.lastLoginAt)
+            : t.admin.users.neverConnected}
         </span>
       ),
     },
     {
       key: 'status',
-      header: 'Statut',
+      header: t.admin.common.status,
       render: (user) => (
-        <Badge tone={user.isActive ? 'green' : 'red'}>{user.isActive ? 'Actif' : 'Désactivé'}</Badge>
+        <Badge tone={user.isActive ? 'green' : 'red'}>
+          {user.isActive ? t.admin.users.active : t.admin.users.inactive}
+        </Badge>
       ),
     },
   ];
@@ -177,11 +188,11 @@ export const UsersAdmin = () => {
   return (
     <div>
       <PageHeader
-        title="Utilisateurs"
-        description="Les comptes autorisés à administrer le site."
+        title={t.admin.users.title}
+        description={t.admin.users.description}
         actions={
           <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" /> Créer un compte
+            <Plus className="h-4 w-4" /> {t.admin.users.createButton}
           </Button>
         }
       />
@@ -191,7 +202,7 @@ export const UsersAdmin = () => {
       ) : listQuery.isError ? (
         <ErrorState onRetry={() => void listQuery.refetch()} />
       ) : !listQuery.data?.length ? (
-        <EmptyState icon={Users} title="Aucun compte" />
+        <EmptyState icon={Users} title={t.admin.users.emptyTitle} />
       ) : (
         <DataTable
           columns={columns}
@@ -202,9 +213,9 @@ export const UsersAdmin = () => {
           }
           actions={(user) => (
             <>
-              <IconButton label="Modifier" icon={Edit2} onClick={() => openEdit(user)} />
+              <IconButton label={t.common.edit} icon={Edit2} onClick={() => openEdit(user)} />
               <IconButton
-                label="Désactiver"
+                label={t.admin.users.deactivate}
                 icon={ShieldOff}
                 tone="danger"
                 disabled={!user.isActive || user.id === currentUser?.id}
@@ -218,14 +229,14 @@ export const UsersAdmin = () => {
       <Modal
         isOpen={isFormOpen}
         onClose={closeForm}
-        title={editing ? 'Modifier le compte' : 'Nouveau compte'}
+        title={editing ? t.admin.users.editTitle : t.admin.users.createTitle}
         footer={
           <>
             <Button variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>
-              Annuler
+              {t.common.cancel}
             </Button>
             <Button form="user-form" type="submit" isLoading={saveMutation.isPending}>
-              {editing ? 'Enregistrer' : 'Créer le compte'}
+              {editing ? t.common.save : t.admin.users.createSubmit}
             </Button>
           </>
         }
@@ -236,35 +247,38 @@ export const UsersAdmin = () => {
           className="space-y-5"
         >
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Prénom" htmlFor="user-first">
+            <Field label={t.admin.users.firstName} htmlFor="user-first">
               <Input id="user-first" {...register('firstName')} />
             </Field>
-            <Field label="Nom" htmlFor="user-last">
+            <Field label={t.admin.users.lastName} htmlFor="user-last">
               <Input id="user-last" {...register('lastName')} />
             </Field>
           </div>
 
-          <Field label="Adresse email" htmlFor="user-email" required error={errors.email?.message}>
+          <Field
+            label={t.admin.common.emailLabel}
+            htmlFor="user-email"
+            required
+            error={errors.email?.message}
+          >
             <Input
               id="user-email"
               type="email"
               autoComplete="off"
               aria-invalid={Boolean(errors.email)}
               {...register('email', {
-                required: "L'adresse email est obligatoire",
-                pattern: { value: /^\S+@\S+\.\S+$/, message: 'Adresse email invalide' },
+                required: t.admin.common.emailRequired,
+                pattern: { value: /^\S+@\S+\.\S+$/, message: t.admin.common.emailInvalid },
               })}
             />
           </Field>
 
           <Field
-            label={editing ? 'Nouveau mot de passe' : 'Mot de passe'}
+            label={editing ? t.admin.users.newPasswordLabel : t.admin.users.passwordLabel}
             htmlFor="user-password"
             required={!editing}
             hint={
-              editing
-                ? "Laissez vide pour ne pas changer. Un nouveau mot de passe oblige l'utilisateur à le modifier à sa prochaine connexion."
-                : "8 caractères minimum, avec au moins une lettre et un chiffre. L'utilisateur devra le changer à sa première connexion."
+              editing ? t.admin.users.passwordHintEdit : t.admin.users.passwordHintCreate
             }
             error={errors.password?.message}
           >
@@ -274,12 +288,12 @@ export const UsersAdmin = () => {
               autoComplete="new-password"
               aria-invalid={Boolean(errors.password)}
               {...register('password', {
-                required: editing ? false : 'Le mot de passe est obligatoire',
+                required: editing ? false : t.admin.users.passwordRequired,
                 validate: (value) => {
                   if (editing && !value) return true;
-                  if (value.length < 8) return '8 caractères minimum';
-                  if (!/[A-Za-z]/.test(value)) return 'Au moins une lettre est requise';
-                  if (!/[0-9]/.test(value)) return 'Au moins un chiffre est requis';
+                  if (value.length < 8) return t.admin.users.minLength;
+                  if (!/[A-Za-z]/.test(value)) return t.admin.users.needsLetter;
+                  if (!/[0-9]/.test(value)) return t.admin.users.needsDigit;
                   return true;
                 },
               })}
@@ -287,14 +301,14 @@ export const UsersAdmin = () => {
           </Field>
 
           <Field
-            label="Rôle"
+            label={t.admin.users.roleLabel}
             htmlFor="user-role"
-            hint={ROLES.find((role) => role.value === selectedRole)?.hint}
+            hint={ROLE_HINTS[selectedRole]}
           >
             <Select id="user-role" {...register('role')}>
               {ROLES.map((role) => (
-                <option key={role.value} value={role.value}>
-                  {role.label}
+                <option key={role} value={role}>
+                  {ROLE_LABELS[role]}
                 </option>
               ))}
             </Select>
@@ -302,8 +316,8 @@ export const UsersAdmin = () => {
 
           <Checkbox
             id="user-active"
-            label="Compte actif"
-            hint="Un compte inactif ne peut plus se connecter."
+            label={t.admin.users.activeCheckbox}
+            hint={t.admin.users.activeHint}
             disabled={editing?.id === currentUser?.id}
             {...register('isActive')}
           />
@@ -312,9 +326,9 @@ export const UsersAdmin = () => {
 
       <ConfirmDialog
         isOpen={Boolean(pendingDeactivate)}
-        title="Désactiver ce compte ?"
-        message={`${pendingDeactivate?.email ?? ''} ne pourra plus se connecter. Le compte est conservé pour préserver l'historique des actions.`}
-        confirmLabel="Désactiver"
+        title={t.admin.users.deactivateTitle}
+        message={t.admin.users.deactivateMessage(pendingDeactivate?.email ?? '')}
+        confirmLabel={t.admin.users.deactivate}
         isLoading={deactivateMutation.isPending}
         onCancel={() => setPendingDeactivate(null)}
         onConfirm={() => pendingDeactivate && deactivateMutation.mutate(pendingDeactivate.id)}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '../../lib/cn';
+import { useShellLocale } from '../../lib/i18n/dictionaries/adminShell';
 
 type Tone = 'green' | 'blue' | 'orange' | 'navy' | 'neutral' | 'red';
 
@@ -18,14 +19,25 @@ interface BadgeProps {
   children: React.ReactNode;
 }
 
-export const Badge = ({ tone = 'neutral', className, children }: BadgeProps) => (
-  <span
-    className={cn(
-      'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-eyebrow uppercase',
-      TONES[tone],
-      className,
-    )}
-  >
-    {children}
-  </span>
-);
+export const Badge = ({ tone = 'neutral', className, children }: BadgeProps) => {
+  const { isRtl } = useShellLocale();
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-eyebrow uppercase',
+        /*
+          `text-eyebrow` tracks its letters out by 0.08em, which is what gives a
+          small French label its poise. Arabic letters are joined to each other:
+          spacing them apart pulls the word into pieces, so the tracking is
+          dropped and only the size and the weight are kept.
+        */
+        isRtl && 'tracking-normal',
+        TONES[tone],
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
+};

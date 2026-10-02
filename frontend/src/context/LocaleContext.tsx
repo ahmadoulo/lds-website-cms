@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   DEFAULT_LOCALE,
   DIRECTION,
@@ -45,13 +46,13 @@ function write(key: string, value: string) {
  * URLs stay exactly as they are; Arabic adds `?lang=ar`, which is what gives it
  * an address of its own for hreflang and for sharing.
  */
-function urlFor(next: Locale, location: { pathname: string; search: string; hash: string }) {
+function urlFor(next: Locale, location: { pathname: string; search: string; hash?: string }) {
   const params = new URLSearchParams(location.search);
   if (next === DEFAULT_LOCALE) params.delete(LOCALE_PARAM);
   else params.set(LOCALE_PARAM, next);
 
   const query = params.toString();
-  return `${location.pathname}${query ? `?${query}` : ''}${location.hash}`;
+  return `${location.pathname}${query ? `?${query}` : ''}${location.hash ?? ''}`;
 }
 
 export const LocaleProvider = ({ children }: { children: React.ReactNode }) => {
@@ -64,21 +65,39 @@ export const LocaleProvider = ({ children }: { children: React.ReactNode }) => {
     });
   });
 
+  const location = useLocation();
+  const navigate = useNavigate();
+
   /*
     The address is the source of truth once the page is open: a link shared in
-    Arabic must open in Arabic, and the browser's back button must change the
-    language back with the page. Reading it on every navigation is what makes
-    that work without the router knowing about languages at all.
+    Arabic must open in Arabic, and the back button must change the language
+    back with the page.
+
+    This has to watch the router's location rather than `popstate`, because a
+    <Link> navigates with pushState, which fires no event. Watching popstate
+    alone meant the language survived a click - it is remembered - but the
+    parameter fell out of the address, so an Arabic page stopped being
+    shareable after the first navigation, and its canonical and hreflang went
+    back to pointing at the French one.
   */
   useEffect(() => {
-    const sync = () => {
-      const fromUrl = new URLSearchParams(window.location.search).get(LOCALE_PARAM);
-      setLocaleState(fromUrl === null ? (read(LOCALE_STORAGE_KEY) as Locale) ?? DEFAULT_LOCALE : normalizeLocale(fromUrl));
-    };
+    const fromUrl = new URLSearchParams(location.search).get(LOCALE_PARAM);
 
-    window.addEventListener('popstate', sync);
-    return () => window.removeEventListener('popstate', sync);
-  }, []);
+    if (fromUrl !== null) {
+      const requested = normalizeLocale(fromUrl);
+      if (requested !== locale) {
+        write(LOCALE_STORAGE_KEY, requested);
+        setLocaleState(requested);
+      }
+      return;
+    }
+
+    // No parameter in a language that needs one: put it back, in place, so the
+    // address always states what the visitor is reading.
+    if (locale !== DEFAULT_LOCALE) {
+      navigate(urlFor(locale, location), { replace: true });
+    }
+  }, [location, locale, navigate]);
 
   // The document itself has to say what it is: assistive technology, the
   // browser's own hyphenation and every logical CSS property read from here.
@@ -88,20 +107,20 @@ export const LocaleProvider = ({ children }: { children: React.ReactNode }) => {
     root.setAttribute('dir', DIRECTION[locale]);
   }, [locale]);
 
-  const setLocale = useCallback((next: Locale) => {
-    const safe = normalizeLocale(next);
-    write(LOCALE_STORAGE_KEY, safe);
-    setLocaleState(safe);
+  const setLocale = useCallback(
+    (next: Locale) => {
+      const safe = normalizeLocale(next);
+      write(LOCALE_STORAGE_KEY, safe);
+      setLocaleState(safe);
 
-    // Replace rather than push: switching language is not a step a visitor
-    // wants to walk back through with the back button.
-    window.history.replaceState(window.history.state, '', urlFor(safe, window.location));
-  }, []);
-
-  const hrefFor = useCallback(
-    (next: Locale) => (typeof window === 'undefined' ? '/' : urlFor(next, window.location)),
-    [],
+      // Replace rather than push: switching language is not a step a visitor
+      // wants to walk back through with the back button.
+      navigate(urlFor(safe, location), { replace: true });
+    },
+    [navigate, location],
   );
+
+  const hrefFor = useCallback((next: Locale) => urlFor(next, location), [location]);
 
   const value = useMemo<LocaleContextValue>(
     () => ({

@@ -4,6 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Edit2, Eye, EyeOff, FileText, ImageIcon, Plus, ScanEye, Tag, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
+import { useLocale } from '../../context/LocaleContext';
+import { useT } from '../../lib/i18n/useT';
+import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { commitImage, type ImageSelection } from '../../lib/pendingImage';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
@@ -18,7 +21,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Badge } from '../../components/ui/Badge';
 import { Checkbox, Field, Input, Select, Textarea } from '../../components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
-import { t, type NewsArticle, type NewsCategory, type Paginated } from '../../lib/types';
+import type { NewsArticle, NewsCategory, Paginated } from '../../lib/types';
 
 interface FormValues {
   title: string;
@@ -39,6 +42,8 @@ const EMPTY_FORM: FormValues = {
 };
 
 export const NewsAdmin = () => {
+  const t = useT();
+  const { locale } = useLocale();
   const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -70,6 +75,9 @@ export const NewsAdmin = () => {
     formState: { errors },
   } = useForm<FormValues>({ defaultValues: EMPTY_FORM });
 
+  const text = (value: Parameters<typeof localizedOrSource>[0]) =>
+    localizedOrSource(value, locale).text;
+
   const openCreate = () => {
     setEditing(null);
     setCover(null);
@@ -81,10 +89,11 @@ export const NewsAdmin = () => {
     setEditing(article);
     setCover(article.image);
     reset({
-      title: t(article.title),
+      // The form writes the French source, whatever language the screen is in.
+      title: localized(article.title, 'fr'),
       slug: article.slug,
-      excerpt: t(article.excerpt),
-      content: t(article.content),
+      excerpt: localized(article.excerpt, 'fr'),
+      content: localized(article.content, 'fr'),
       categoryId: article.categoryId ?? '',
       isPublished: article.isPublished,
     });
@@ -137,7 +146,7 @@ export const NewsAdmin = () => {
         ? (await api.patch(`/news/${editing.id}`, payload)).data
         : (await api.post('/news', payload)).data;
     },
-    successMessage: editing ? 'Actualité mise à jour.' : 'Actualité créée.',
+    successMessage: editing ? t.admin.news.updated : t.admin.news.created,
     invalidate: [['admin', 'news']],
     onSuccess: closeForm,
   });
@@ -145,13 +154,13 @@ export const NewsAdmin = () => {
   const togglePublish = useAdminMutation<NewsArticle>({
     mutationFn: async (article) =>
       (await api.patch(`/news/${article.id}`, { isPublished: !article.isPublished })).data,
-    successMessage: 'Statut de publication mis à jour.',
+    successMessage: t.admin.news.statusUpdated,
     invalidate: [['admin', 'news']],
   });
 
   const deleteMutation = useAdminMutation<string>({
     mutationFn: async (id) => (await api.delete(`/news/${id}`)).data,
-    successMessage: 'Actualité supprimée.',
+    successMessage: t.admin.news.deleted,
     invalidate: [['admin', 'news']],
     onSuccess: () => setPendingDelete(null),
   });
@@ -159,7 +168,7 @@ export const NewsAdmin = () => {
   const columns: Array<Column<NewsArticle>> = [
     {
       key: 'image',
-      header: 'Visuel',
+      header: t.admin.common.visual,
       hideOnMobile: true,
       render: (article) =>
         article.image ? (
@@ -177,36 +186,38 @@ export const NewsAdmin = () => {
     },
     {
       key: 'title',
-      header: 'Titre',
+      header: t.admin.news.columnTitle,
       render: (article) => (
         <div className="min-w-0">
-          <p className="truncate font-semibold text-navy">{t(article.title, 'Sans titre')}</p>
+          <p className="truncate font-semibold text-navy">
+            {text(article.title) || t.admin.dashboard.untitled}
+          </p>
           <p className="truncate text-xs text-navy/45">/{article.slug}</p>
         </div>
       ),
     },
     {
       key: 'category',
-      header: 'Catégorie',
+      header: t.admin.news.columnCategory,
       render: (article) => (
-        <span className="text-navy/70">{t(article.category?.name, '—')}</span>
+        <span className="text-navy/70">{text(article.category?.name) || '—'}</span>
       ),
     },
     {
       key: 'date',
-      header: 'Date',
+      header: t.admin.news.columnDate,
       render: (article) => (
         <span className="text-navy/60">
-          {new Date(article.publishedAt ?? article.createdAt).toLocaleDateString('fr-FR')}
+          {t.admin.common.formatDate(article.publishedAt ?? article.createdAt)}
         </span>
       ),
     },
     {
       key: 'status',
-      header: 'Statut',
+      header: t.admin.common.status,
       render: (article) => (
         <Badge tone={article.isPublished ? 'green' : 'neutral'}>
-          {article.isPublished ? 'Publié' : 'Brouillon'}
+          {article.isPublished ? t.admin.common.published : t.admin.common.draft}
         </Badge>
       ),
     },
@@ -215,16 +226,16 @@ export const NewsAdmin = () => {
   return (
     <div>
       <PageHeader
-        title="Actualités"
-        description="Articles, événements et bilans publiés sur le site."
+        title={t.admin.news.title}
+        description={t.admin.news.description}
         actions={
           <>
-            <PreviewButton path="/actualites" />
+            <PreviewButton path="/actualites" label={t.admin.common.preview} />
             <Button variant="outline" onClick={() => setIsCategoryOpen(true)}>
-              <Tag className="h-4 w-4" /> Catégories
+              <Tag className="h-4 w-4" /> {t.admin.news.categoriesButton}
             </Button>
             <Button onClick={openCreate}>
-              <Plus className="h-4 w-4" /> Nouvelle actualité
+              <Plus className="h-4 w-4" /> {t.admin.news.newArticle}
             </Button>
           </>
         }
@@ -237,7 +248,7 @@ export const NewsAdmin = () => {
             setSearch(value);
             setPage(1);
           }}
-          placeholder="Rechercher un article…"
+          placeholder={t.admin.news.searchPlaceholder}
         />
       </div>
 
@@ -248,16 +259,14 @@ export const NewsAdmin = () => {
       ) : !listQuery.data?.data.length ? (
         <EmptyState
           icon={FileText}
-          title={search ? 'Aucun résultat' : "Vous n'avez encore aucune actualité"}
+          title={search ? t.admin.common.noResults : t.admin.news.emptyTitle}
           description={
-            search
-              ? 'Aucun article ne correspond à votre recherche.'
-              : 'Publiez votre première actualité pour la faire apparaître sur le site.'
+            search ? t.admin.news.emptySearchDescription : t.admin.news.emptyDescription
           }
           action={
             !search && (
               <Button onClick={openCreate}>
-                <Plus className="h-4 w-4" /> Créer une actualité
+                <Plus className="h-4 w-4" /> {t.admin.news.emptyAction}
               </Button>
             )
           }
@@ -268,23 +277,23 @@ export const NewsAdmin = () => {
             columns={columns}
             rows={listQuery.data.data}
             rowKey={(article) => article.id}
-            mobileTitle={(article) => t(article.title, 'Sans titre')}
+            mobileTitle={(article) => text(article.title) || t.admin.dashboard.untitled}
             actions={(article) => (
               <>
                 <IconButton
-                  label="Prévisualiser cet article"
+                  label={t.admin.news.previewArticle}
                   icon={ScanEye}
                   onClick={() => openPreview(`/actualites/${article.slug}`)}
                 />
                 <IconButton
-                  label={article.isPublished ? 'Dépublier' : 'Publier'}
+                  label={article.isPublished ? t.admin.common.unpublish : t.admin.common.publish}
                   icon={article.isPublished ? EyeOff : Eye}
                   onClick={() => togglePublish.mutate(article)}
                   disabled={togglePublish.isPending}
                 />
-                <IconButton label="Modifier" icon={Edit2} onClick={() => openEdit(article)} />
+                <IconButton label={t.common.edit} icon={Edit2} onClick={() => openEdit(article)} />
                 <IconButton
-                  label="Supprimer"
+                  label={t.common.delete}
                   icon={Trash2}
                   tone="danger"
                   onClick={() => setPendingDelete(article)}
@@ -304,19 +313,19 @@ export const NewsAdmin = () => {
       <Modal
         isOpen={isFormOpen}
         onClose={closeForm}
-        title={editing ? "Modifier l'actualité" : 'Nouvelle actualité'}
+        title={editing ? t.admin.news.editTitle : t.admin.news.createTitle}
         size="lg"
         footer={
           <>
             <Button variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>
-              Annuler
+              {t.common.cancel}
             </Button>
             <Button
               form="news-form"
               type="submit"
               isLoading={saveMutation.isPending}
             >
-              {editing ? 'Enregistrer' : "Créer l'actualité"}
+              {editing ? t.common.save : t.admin.news.createSubmit}
             </Button>
           </>
         }
@@ -328,21 +337,26 @@ export const NewsAdmin = () => {
         >
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-5">
-              <Field label="Titre" htmlFor="news-title" required error={errors.title?.message}>
+              <Field
+                label={t.admin.news.titleLabel}
+                htmlFor="news-title"
+                required
+                error={errors.title?.message}
+              >
                 <Input
                   id="news-title"
                   aria-invalid={Boolean(errors.title)}
                   {...register('title', {
-                    required: 'Le titre est obligatoire',
-                    minLength: { value: 3, message: 'Le titre est trop court' },
+                    required: t.admin.news.titleRequired,
+                    minLength: { value: 3, message: t.admin.news.titleTooShort },
                   })}
                 />
               </Field>
 
               <Field
-                label="Slug (adresse de la page)"
+                label={t.admin.news.slugLabel}
                 htmlFor="news-slug"
-                hint="Laissez vide pour le générer automatiquement à partir du titre."
+                hint={t.admin.news.slugHint}
                 error={errors.slug?.message}
               >
                 <Input
@@ -352,18 +366,18 @@ export const NewsAdmin = () => {
                   {...register('slug', {
                     pattern: {
                       value: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-                      message: 'Minuscules, chiffres et tirets uniquement',
+                      message: t.admin.news.slugPattern,
                     },
                   })}
                 />
               </Field>
 
-              <Field label="Catégorie" htmlFor="news-category">
+              <Field label={t.admin.news.categoryLabel} htmlFor="news-category">
                 <Select id="news-category" {...register('categoryId')}>
-                  <option value="">Catégorie par défaut</option>
+                  <option value="">{t.admin.news.categoryDefault}</option>
                   {categoriesQuery.data?.map((category) => (
                     <option key={category.id} value={category.id}>
-                      {t(category.name)}
+                      {text(category.name)}
                     </option>
                   ))}
                 </Select>
@@ -374,15 +388,15 @@ export const NewsAdmin = () => {
               value={cover}
               onChange={setCover}
             slot="newsCover"
-              label="Image de couverture"
+              label={t.admin.news.coverLabel}
             />
           </div>
 
           <Field
-            label="Extrait"
+            label={t.admin.news.excerptLabel}
             htmlFor="news-excerpt"
             required
-            hint="Résumé affiché sur les cartes et dans les résultats de recherche."
+            hint={t.admin.news.excerptHint}
             error={errors.excerpt?.message}
           >
             <Textarea
@@ -390,31 +404,31 @@ export const NewsAdmin = () => {
               rows={2}
               aria-invalid={Boolean(errors.excerpt)}
               {...register('excerpt', {
-                required: "L'extrait est obligatoire",
-                maxLength: { value: 600, message: '600 caractères maximum' },
+                required: t.admin.news.excerptRequired,
+                maxLength: { value: 600, message: t.admin.news.excerptMax },
               })}
             />
           </Field>
 
           <Field
-            label="Contenu"
+            label={t.admin.news.contentLabel}
             htmlFor="news-content"
             required
-            hint="Le HTML simple est accepté (paragraphes, gras, listes, liens, images)."
+            hint={t.admin.news.contentHint}
             error={errors.content?.message}
           >
             <Textarea
               id="news-content"
               rows={10}
               aria-invalid={Boolean(errors.content)}
-              {...register('content', { required: 'Le contenu est obligatoire' })}
+              {...register('content', { required: t.admin.news.contentRequired })}
             />
           </Field>
 
           <Checkbox
             id="news-published"
-            label="Publier cette actualité"
-            hint="Une actualité non publiée reste visible uniquement dans l'administration."
+            label={t.admin.news.publishCheckbox}
+            hint={t.admin.news.publishHint}
             {...register('isPublished')}
           />
         </form>
@@ -424,8 +438,8 @@ export const NewsAdmin = () => {
 
       <ConfirmDialog
         isOpen={Boolean(pendingDelete)}
-        title="Supprimer cette actualité ?"
-        message={`« ${t(pendingDelete?.title, '')} » sera définitivement supprimée du site. Cette action est irréversible.`}
+        title={t.admin.news.deleteTitle}
+        message={t.admin.news.deleteMessage(text(pendingDelete?.title))}
         isLoading={deleteMutation.isPending}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
@@ -436,6 +450,8 @@ export const NewsAdmin = () => {
 
 /** Small inline manager for the article categories. */
 const CategoriesModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const t = useT();
+  const { locale } = useLocale();
   const [name, setName] = useState('');
   const [pendingDelete, setPendingDelete] = useState<NewsCategory | null>(null);
 
@@ -447,20 +463,20 @@ const CategoriesModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
   const createMutation = useAdminMutation<string>({
     mutationFn: async (value) => (await api.post('/news/categories', { name: { fr: value } })).data,
-    successMessage: 'Catégorie créée.',
+    successMessage: t.admin.news.categoryCreated,
     invalidate: [['admin', 'news']],
     onSuccess: () => setName(''),
   });
 
   const deleteMutation = useAdminMutation<string>({
     mutationFn: async (id) => (await api.delete(`/news/categories/${id}`)).data,
-    successMessage: 'Catégorie supprimée.',
+    successMessage: t.admin.news.categoryDeleted,
     invalidate: [['admin', 'news']],
     onSuccess: () => setPendingDelete(null),
   });
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Catégories d'actualités" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={t.admin.news.categoriesTitle} size="md">
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -471,30 +487,32 @@ const CategoriesModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
         <Input
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Nom de la catégorie"
-          aria-label="Nom de la nouvelle catégorie"
+          placeholder={t.admin.news.categoryPlaceholder}
+          aria-label={t.admin.news.categoryAriaLabel}
         />
         <Button type="submit" isLoading={createMutation.isPending} disabled={name.trim().length < 2}>
-          <Plus className="h-4 w-4" /> Ajouter
+          <Plus className="h-4 w-4" /> {t.admin.common.add}
         </Button>
       </form>
 
       {isLoading ? (
         <LoadingState />
       ) : !data?.length ? (
-        <EmptyState title="Aucune catégorie" icon={Tag} className="border-0 py-8" />
+        <EmptyState title={t.admin.news.categoriesEmpty} icon={Tag} className="border-0 py-8" />
       ) : (
         <ul className="divide-y divide-navy/8 rounded-xl border border-navy/8">
           {data.map((category) => (
             <li key={category.id} className="flex items-center justify-between gap-3 px-4 py-3">
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-navy">{t(category.name)}</p>
+                <p className="truncate text-sm font-semibold text-navy">
+                  {localizedOrSource(category.name, locale).text}
+                </p>
                 <p className="text-xs text-navy/45">
-                  /{category.slug} · {category._count?.news ?? 0} article(s)
+                  /{category.slug} · {t.admin.news.articleCount(category._count?.news ?? 0)}
                 </p>
               </div>
               <IconButton
-                label="Supprimer"
+                label={t.common.delete}
                 icon={Trash2}
                 tone="danger"
                 onClick={() => setPendingDelete(category)}
@@ -506,8 +524,8 @@ const CategoriesModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
       <ConfirmDialog
         isOpen={Boolean(pendingDelete)}
-        title="Supprimer cette catégorie ?"
-        message="Les articles rattachés à cette catégorie seront conservés mais n'auront plus de catégorie."
+        title={t.admin.news.deleteCategoryTitle}
+        message={t.admin.news.deleteCategoryMessage}
         isLoading={deleteMutation.isPending}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}

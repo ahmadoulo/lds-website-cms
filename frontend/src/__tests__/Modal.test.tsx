@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { LocaleProvider } from '../context/LocaleContext';
 import userEvent from '@testing-library/user-event';
 
 import { Modal } from '../components/ui/Modal';
@@ -27,9 +29,13 @@ const Nested = () => {
 describe('modal', () => {
   it('names itself after its own visible heading', () => {
     render(
-      <Modal isOpen onClose={() => {}} title="Modifier le domaine">
+      <MemoryRouter>
+        <LocaleProvider>
+<Modal isOpen onClose={() => {}} title="Modifier le domaine">
         <p>Corps</p>
-      </Modal>,
+      </Modal>
+        </LocaleProvider>
+      </MemoryRouter>,
     );
 
     const dialog = screen.getByRole('dialog', { name: 'Modifier le domaine' });
@@ -39,9 +45,13 @@ describe('modal', () => {
 
   it('lets the keyboard reach the scrollable body', () => {
     render(
-      <Modal isOpen onClose={() => {}} title="Texte long">
+      <MemoryRouter>
+        <LocaleProvider>
+<Modal isOpen onClose={() => {}} title="Texte long">
         <p>Un corps qui dépasse.</p>
-      </Modal>,
+      </Modal>
+        </LocaleProvider>
+      </MemoryRouter>,
     );
 
     // Without a tabindex the body can only be scrolled with a pointer.
@@ -52,9 +62,13 @@ describe('modal', () => {
   it('keeps Tab inside the dialog', async () => {
     const user = userEvent.setup();
     render(
-      <Modal isOpen onClose={() => {}} title="Piège" footer={<button type="button">Enregistrer</button>}>
+      <MemoryRouter>
+        <LocaleProvider>
+<Modal isOpen onClose={() => {}} title="Piège" footer={<button type="button">Enregistrer</button>}>
         <input aria-label="Champ" />
-      </Modal>,
+      </Modal>
+        </LocaleProvider>
+      </MemoryRouter>,
     );
 
     const save = screen.getByRole('button', { name: 'Enregistrer' });
@@ -68,7 +82,13 @@ describe('modal', () => {
 
   it('closes only the dialog on top when two are stacked', async () => {
     const user = userEvent.setup();
-    render(<Nested />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+<Nested />
+        </LocaleProvider>
+      </MemoryRouter>,
+    );
 
     await user.click(screen.getByRole('button', { name: 'Supprimer' }));
     expect(screen.getAllByRole('dialog')).toHaveLength(2);
@@ -83,7 +103,13 @@ describe('modal', () => {
 
   it('does not treat a nested dialog button as its own last tab stop', async () => {
     const user = userEvent.setup();
-    render(<Nested />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+<Nested />
+        </LocaleProvider>
+      </MemoryRouter>,
+    );
 
     await user.click(screen.getByRole('button', { name: 'Supprimer' }));
 
@@ -98,7 +124,13 @@ describe('modal', () => {
 
   it('keeps the page locked while a dialog is still open underneath', async () => {
     const user = userEvent.setup();
-    render(<Nested />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+<Nested />
+        </LocaleProvider>
+      </MemoryRouter>,
+    );
 
     await user.click(screen.getByRole('button', { name: 'Supprimer' }));
     await user.keyboard('{Escape}');
@@ -120,7 +152,13 @@ describe('modal', () => {
       );
     };
 
-    render(<Harness />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+<Harness />
+        </LocaleProvider>
+      </MemoryRouter>,
+    );
     expect(document.body.style.overflow).toBe('hidden');
 
     await user.keyboard('{Escape}');

@@ -14,11 +14,12 @@ const ACCENTS = ['bg-green', 'bg-blue', 'bg-orange'];
 
 /*
   From the first breakpoint the heading stops being a banner above the grid and
-  becomes a tile of it: left-aligned on the same line as the cards, centred on
+  becomes a tile of it: aligned to the reading edge on the same line as the
+  cards - the left in French, the right in Arabic - centred on
   its row's height, and without the bottom margin a banner needs. Below `sm`
   the section is a single column and the heading keeps its centred form.
 */
-const TILE = 'sm:mb-0 sm:mx-0 sm:max-w-none sm:self-center sm:text-left';
+const TILE = 'sm:mb-0 sm:mx-0 sm:max-w-none sm:self-center sm:text-start';
 
 const SM_SPAN: Record<number, string> = {
   1: 'sm:col-span-1',
@@ -29,7 +30,7 @@ const SM_SPAN: Record<number, string> = {
 
 const LG_SPAN: Record<number, string> = {
   1: 'lg:col-span-1',
-  2: 'lg:col-span-2 lg:mb-0 lg:mx-0 lg:self-center lg:text-left',
+  2: 'lg:col-span-2 lg:mb-0 lg:mx-0 lg:self-center lg:text-start',
   // A full-width banner is the composition the section already had.
   3: 'lg:col-span-3 lg:mb-8 lg:mx-auto lg:text-center',
 };

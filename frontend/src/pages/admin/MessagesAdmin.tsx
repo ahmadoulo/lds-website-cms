@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Mail, MailOpen, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
+import { useT } from '../../lib/i18n/useT';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
 import { SearchInput } from '../../components/admin/ui/SearchInput';
@@ -18,6 +19,7 @@ import type { ContactMessage, Paginated } from '../../lib/types';
 type Filter = 'all' | 'unread' | 'read';
 
 export const MessagesAdmin = () => {
+  const t = useT();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
@@ -41,13 +43,13 @@ export const MessagesAdmin = () => {
 
   const setRead = useAdminMutation<{ id: string; isRead: boolean }>({
     mutationFn: async ({ id, isRead }) => (await api.patch(`/contact/${id}`, { isRead })).data,
-    successMessage: 'Message mis à jour.',
+    successMessage: t.admin.messages.updated,
     invalidate: [['admin', 'contact'], ['admin', 'dashboard']],
   });
 
   const deleteMutation = useAdminMutation<string>({
     mutationFn: async (id) => (await api.delete(`/contact/${id}`)).data,
-    successMessage: 'Message supprimé.',
+    successMessage: t.admin.messages.deleted,
     invalidate: [['admin', 'contact'], ['admin', 'dashboard']],
     onSuccess: () => {
       setPendingDelete(null);
@@ -71,10 +73,7 @@ export const MessagesAdmin = () => {
 
   return (
     <div>
-      <PageHeader
-        title="Messages"
-        description="Les messages envoyés depuis le formulaire de contact du site."
-      />
+      <PageHeader title={t.admin.messages.title} description={t.admin.messages.description} />
 
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <SearchInput
@@ -83,7 +82,7 @@ export const MessagesAdmin = () => {
             setSearch(value);
             setPage(1);
           }}
-          placeholder="Rechercher un message…"
+          placeholder={t.admin.messages.searchPlaceholder}
         />
 
         <div className="flex gap-2">
@@ -97,7 +96,11 @@ export const MessagesAdmin = () => {
               }}
               className={filterClass(filter === value)}
             >
-              {value === 'all' ? 'Tous' : value === 'unread' ? 'Non lus' : 'Lus'}
+              {value === 'all'
+                ? t.admin.messages.filterAll
+                : value === 'unread'
+                  ? t.admin.messages.filterUnread
+                  : t.admin.messages.filterRead}
             </button>
           ))}
         </div>
@@ -110,11 +113,13 @@ export const MessagesAdmin = () => {
       ) : !listQuery.data?.data.length ? (
         <EmptyState
           icon={Mail}
-          title={search || filter !== 'all' ? 'Aucun résultat' : 'Aucun message'}
+          title={
+            search || filter !== 'all' ? t.admin.common.noResults : t.admin.messages.emptyTitle
+          }
           description={
             search || filter !== 'all'
-              ? 'Aucun message ne correspond à ces critères.'
-              : 'Les messages envoyés depuis la page Contact apparaîtront ici.'
+              ? t.admin.messages.emptyFilteredDescription
+              : t.admin.messages.emptyDescription
           }
         />
       ) : (
@@ -125,7 +130,7 @@ export const MessagesAdmin = () => {
                 <button
                   type="button"
                   onClick={() => openMessage(message)}
-                  className="min-w-0 flex-1 text-left"
+                  className="min-w-0 flex-1 text-start"
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <span
@@ -136,7 +141,7 @@ export const MessagesAdmin = () => {
                     >
                       {message.subject}
                     </span>
-                    {!message.isRead && <Badge tone="orange">Non lu</Badge>}
+                    {!message.isRead && <Badge tone="orange">{t.admin.messages.unreadBadge}</Badge>}
                   </div>
                   <p className="mt-1 truncate text-xs text-navy/55">
                     {message.name} · {message.email}
@@ -145,17 +150,19 @@ export const MessagesAdmin = () => {
                 </button>
 
                 <div className="flex shrink-0 items-center gap-1">
-                  <span className="hidden pr-2 text-xs text-navy/40 sm:inline">
-                    {new Date(message.createdAt).toLocaleDateString('fr-FR')}
+                  <span className="hidden pe-2 text-xs text-navy/40 sm:inline">
+                    {t.admin.common.formatDate(message.createdAt)}
                   </span>
                   <IconButton
-                    label={message.isRead ? 'Marquer comme non lu' : 'Marquer comme lu'}
+                    label={
+                      message.isRead ? t.admin.messages.markAsUnread : t.admin.messages.markAsRead
+                    }
                     icon={message.isRead ? Mail : MailOpen}
                     onClick={() => setRead.mutate({ id: message.id, isRead: !message.isRead })}
                     disabled={setRead.isPending}
                   />
                   <IconButton
-                    label="Supprimer"
+                    label={t.common.delete}
                     icon={Trash2}
                     tone="danger"
                     onClick={() => setPendingDelete(message)}
@@ -180,22 +187,22 @@ export const MessagesAdmin = () => {
         title={opened?.subject ?? ''}
         description={
           opened
-            ? `${opened.name} · ${new Date(opened.createdAt).toLocaleString('fr-FR')}`
+            ? `${opened.name} · ${t.admin.common.formatDateTime(opened.createdAt)}`
             : undefined
         }
         footer={
           opened ? (
             <>
               <Button variant="danger" onClick={() => setPendingDelete(opened)}>
-                <Trash2 className="h-4 w-4" /> Supprimer
+                <Trash2 className="h-4 w-4" /> {t.common.delete}
               </Button>
               <Button
                 onClick={() => {
-                  const subject = encodeURIComponent(`Re : ${opened.subject}`);
+                  const subject = encodeURIComponent(t.admin.messages.replySubject(opened.subject));
                   window.location.href = `mailto:${opened.email}?subject=${subject}`;
                 }}
               >
-                Répondre par email
+                {t.admin.messages.replyByEmail}
               </Button>
             </>
           ) : undefined
@@ -205,7 +212,8 @@ export const MessagesAdmin = () => {
           <div className="space-y-4">
             <div className="rounded-lg bg-warm-muted px-4 py-3 text-sm">
               <p className="text-navy/60">
-                De : <span className="font-semibold text-navy">{opened.name}</span>
+                {t.admin.messages.fromLabel}{' '}
+                <span className="font-semibold text-navy">{opened.name}</span>
               </p>
               <a href={`mailto:${opened.email}`} className="text-blue hover:underline">
                 {opened.email}
@@ -220,8 +228,8 @@ export const MessagesAdmin = () => {
 
       <ConfirmDialog
         isOpen={Boolean(pendingDelete)}
-        title="Supprimer ce message ?"
-        message="Le message sera définitivement supprimé. Cette action est irréversible."
+        title={t.admin.messages.deleteTitle}
+        message={t.admin.messages.deleteMessage}
         isLoading={deleteMutation.isPending}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}

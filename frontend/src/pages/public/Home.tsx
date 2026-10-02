@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Heart, ImageIcon, Users } from 'lucide-react';
 import { useHomepage } from '../../lib/queries/publicHooks';
@@ -14,45 +14,84 @@ import { DonationCard } from '../../components/public/DonationCard';
 import { PaymentMethodCard } from '../../components/public/PaymentMethodCard';
 import { ErrorState, SkeletonCards, Skeleton } from '../../components/ui/States';
 import { BRAND, WARM_SURFACE, readableOn } from '../../lib/brand';
-import { t } from '../../lib/types';
+import { cn } from '../../lib/cn';
+import { useLocale } from '../../context/LocaleContext';
+import { hasTranslation, localized } from '../../lib/i18n/resolve';
+import { useT } from '../../lib/i18n/useT';
+import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 import type { GalleryImage } from '../../lib/types';
 
 const Home = () => {
   const { data, isLoading, isError, refetch } = useHomepage();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const { locale, isRtl } = useLocale();
+  const t = useT();
+  const p = usePagesT();
 
   // Declared once: the loading, empty and loaded branches show the same
   // heading, and duplicated copies are one edit away from drifting apart.
   const missionsHeading = (
     <SectionHeading
-      eyebrow="Nos domaines d'action"
-      title="Nos piliers d'intervention à Louga"
-      description="Nous améliorons les conditions de vie à Louga à travers des domaines d'intervention complémentaires."
+      eyebrow={p.shared.missionsEyebrow}
+      title={p.shared.missionsTitle}
+      description={p.shared.missionsDescription}
       accent="green"
     />
+  );
+
+  const settings = data?.settings;
+  const homepage = settings?.homepage;
+  const organization = settings?.organization;
+  const gallery = data?.gallery ?? [];
+  const partners = data?.partners ?? [];
+
+  /*
+    Every list the homepage shows is filtered to the displayed language.
+
+    A card whose title has no Arabic would sit in an Arabic grid reading French,
+    which is exactly the "looks translated when it is not" the resolver was
+    written to prevent. `hasTranslation` is false only when the requested
+    language is empty, so at `fr` none of these filters removes anything and the
+    French homepage is byte-for-byte the page it was.
+
+    Photographs are the exception: an image says the same thing in both
+    languages, so the gallery strip is never filtered - only its captions are
+    read strictly, and a caption with no Arabic is simply not drawn, the way an
+    uncaptioned photo already behaves.
+
+    Partners are the other exception: a partner is a name and a logo. GIZ is GIZ.
+  */
+  const missions = useMemo(
+    () => (data?.missions ?? []).filter((mission) => hasTranslation(mission.title, locale)),
+    [data?.missions, locale],
+  );
+
+  const impact = useMemo(
+    () => (data?.impact ?? []).filter((stat) => hasTranslation(stat.label, locale)),
+    [data?.impact, locale],
+  );
+
+  const news = useMemo(
+    () => (data?.news ?? []).filter((article) => hasTranslation(article.title, locale)),
+    [data?.news, locale],
+  );
+
+  const donations = useMemo(
+    () => (data?.donations ?? []).filter((method) => hasTranslation(method.title, locale)),
+    [data?.donations, locale],
   );
 
   if (isError) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-24">
         <ErrorState
-          title="Le site est momentanément indisponible"
-          message="Impossible de charger le contenu. Merci de réessayer dans quelques instants."
+          title={p.home.errorTitle}
+          message={p.home.errorMessage}
           onRetry={() => void refetch()}
         />
       </div>
     );
   }
-
-  const settings = data?.settings;
-  const homepage = settings?.homepage;
-  const organization = settings?.organization;
-  const missions = data?.missions ?? [];
-  const impact = data?.impact ?? [];
-  const news = data?.news ?? [];
-  const gallery = data?.gallery ?? [];
-  const partners = data?.partners ?? [];
-  const donations = data?.donations ?? [];
 
   // Each slot shows only the image chosen for it. Borrowing one from another
   // section used to fill the gap, which made a gallery photo appear in the
@@ -64,9 +103,15 @@ const Home = () => {
 
   const slides = gallery.map((image: GalleryImage) => ({
     src: image.media.url,
-    alt: image.media.altText?.fr || t(image.caption, 'Photo des actions de LDS'),
-    caption: t(image.caption),
+    alt: localized(image.media.altText, locale) || localized(image.caption, locale) || p.alt.ldsPhoto,
+    caption: localized(image.caption, locale),
   }));
+
+  /** "Onwards" follows the script, and so does the nudge it makes on hover. */
+  const forwardArrow = cn(
+    'h-4 w-4 transition-transform',
+    isRtl ? 'rotate-180 group-hover:-translate-x-1' : 'group-hover:translate-x-1',
+  );
 
   return (
     <>
@@ -90,7 +135,7 @@ const Home = () => {
           <div className="min-w-[min(100%,320px)] flex-[1_1_460px]">
             <span className="mb-4 inline-flex items-center rounded-full bg-green/15 px-3.5 py-1.5 text-eyebrow uppercase sm:mb-6 sm:px-4 sm:py-2"
               style={{ color: readableOn(BRAND.green, WARM_SURFACE) }}>
-              {organization?.name ?? 'Louga Développement Solidaire'}
+              {organization?.name ?? t.common.organizationName}
             </span>
 
             {isLoading ? (
@@ -113,24 +158,29 @@ const Home = () => {
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
               <CtaLink to="/nous-soutenir" size="lg">
-                <Heart className="h-4 w-4" aria-hidden /> Faire un don
+                {/* A heart is a heart in both scripts: it is never flipped. */}
+                <Heart className="h-4 w-4" aria-hidden /> {p.cta.donate}
               </CtaLink>
               <CtaLink to="/nos-actions" variant="secondary" size="lg">
-                Découvrir nos actions
+                {p.cta.discoverActions}
               </CtaLink>
             </div>
           </div>
 
           <div className="relative mx-auto min-w-[min(100%,280px)] max-w-[400px] flex-[1_1_320px]">
-            {/* Offset frame: one accent colour, squared off behind the photo. */}
+            {/*
+              Offset frame: one accent colour, squared off behind the photo. The
+              offset is logical, so the frame sits behind the outer edge of the
+              photo in both directions instead of crossing it in Arabic.
+            */}
             <div
-              className="absolute -bottom-3 -right-3 left-6 top-6 rounded-panel bg-green/20 sm:-bottom-4 sm:-right-4 sm:left-8 sm:top-8"
+              className="absolute -bottom-3 -end-3 start-6 top-6 rounded-panel bg-green/20 sm:-bottom-4 sm:-end-4 sm:start-8 sm:top-8"
               aria-hidden
             />
             {heroImage ? (
               <img
                 src={heroImage.url}
-                alt={heroImage.altText?.fr || "Bénévoles de l'association en action"}
+                alt={localized(heroImage.altText, locale) || p.alt.volunteers}
                 width={900}
                 height={1200}
                 fetchPriority="high"
@@ -144,7 +194,7 @@ const Home = () => {
             )}
 
             {homepage?.heroBadgeTitle && (
-              <div className="absolute -bottom-4 left-2 flex items-center gap-2.5 rounded-2xl bg-white px-4 py-3 shadow-e3 sm:-bottom-5 sm:-left-5 sm:gap-3 sm:px-5 sm:py-3.5">
+              <div className="absolute -bottom-4 start-2 flex items-center gap-2.5 rounded-2xl bg-white px-4 py-3 shadow-e3 sm:-bottom-5 sm:-start-5 sm:gap-3 sm:px-5 sm:py-3.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green text-white sm:h-10 sm:w-10">
                   <Users className="h-4.5 w-4.5 sm:h-5 sm:w-5" aria-hidden />
                 </span>
@@ -166,9 +216,11 @@ const Home = () => {
       <section className="bg-white section-y">
         <div className="container-page flex flex-wrap items-center gap-10 lg:gap-16">
           <div className="min-w-[min(100%,300px)] flex-[1_1_440px]">
+            {/* `align="left"` means "aligned to the reading edge": the shared
+                heading resolves that to `text-start`, so it follows the script. */}
             <SectionHeading
-              eyebrow="Qui sommes-nous"
-              title="L'association au service des Lougatois"
+              eyebrow={p.shared.whoWeAreEyebrow}
+              title={p.shared.whoWeAreTitle}
               align="left"
               className="mb-6"
             />
@@ -183,7 +235,8 @@ const Home = () => {
                 <p className="mb-5 text-body-lg leading-[1.75] text-navy/75">{organization?.about}</p>
                 <p className="mb-9 text-body-lg leading-[1.75] text-navy/75">{organization?.mission}</p>
                 {organization?.quote && (
-                  <blockquote className="flex items-start gap-4 border-l-4 border-green bg-warm-muted/60 p-6">
+                  // The rule hangs where the text begins, in either script.
+                  <blockquote className="flex items-start gap-4 border-s-4 border-green bg-warm-muted/60 p-6">
                     <p className="font-lora text-lead italic leading-relaxed text-navy">
                       {organization.quote}
                     </p>
@@ -195,8 +248,8 @@ const Home = () => {
               to="/a-propos"
               className="group mt-8 inline-flex items-center gap-2 text-body font-bold text-blue"
             >
-              En savoir plus sur l'association
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
+              {p.cta.learnMoreAbout}
+              <ArrowRight className={forwardArrow} aria-hidden />
             </Link>
           </div>
 
@@ -204,7 +257,7 @@ const Home = () => {
             {aboutImage ? (
               <img
                 src={aboutImage.url}
-                alt={aboutImage.altText?.fr || "Action de l'association sur le terrain"}
+                alt={localized(aboutImage.altText, locale) || p.alt.fieldAction}
                 loading="lazy"
                 decoding="async"
                 width={1200}
@@ -232,15 +285,22 @@ const Home = () => {
             <>
               {missionsHeading}
               <p className="text-center text-navy/50">
-                Les domaines d'action seront publiés prochainement.
+                {/*
+                  Nothing published and nothing translated are two different
+                  statements, and the Arabic visitor is owed the second one
+                  rather than being told the association does no work.
+                */}
+                {(data?.missions ?? []).length > 0
+                  ? p.shared.untranslatedDescription
+                  : p.home.missionsEmpty}
               </p>
             </>
           ) : (
             <MissionGrid
               missions={missions}
-              eyebrow="Nos domaines d'action"
-              title="Nos piliers d'intervention à Louga"
-              description="Nous améliorons les conditions de vie à Louga à travers des domaines d'intervention complémentaires."
+              eyebrow={p.shared.missionsEyebrow}
+              title={p.shared.missionsTitle}
+              description={p.shared.missionsDescription}
             />
           )}
         </div>
@@ -250,17 +310,13 @@ const Home = () => {
       {impact.length > 0 && (
         <section className="relative overflow-hidden bg-navy section-y">
           <div
-            className="absolute right-0 top-0 h-[600px] w-[600px] bg-[radial-gradient(circle,rgba(135,206,24,0.08),transparent_70%)]"
+            className="absolute end-0 top-0 h-[600px] w-[600px] bg-[radial-gradient(circle,rgba(135,206,24,0.08),transparent_70%)]"
             aria-hidden
           />
           <div className="relative z-10 container-page">
             <div className="mb-9 text-center sm:mb-14">
-              <p className="mb-3.5 text-eyebrow uppercase text-green">
-                Notre impact
-              </p>
-              <h2 className="text-h2 font-extrabold text-white">
-                Des résultats concrets sur le terrain
-              </h2>
+              <p className="mb-3.5 text-eyebrow uppercase text-green">{p.shared.impactEyebrow}</p>
+              <h2 className="text-h2 font-extrabold text-white">{p.home.impactTitle}</h2>
             </div>
 
             <ImpactFigures stats={impact} />
@@ -270,8 +326,8 @@ const Home = () => {
                 to="/impact"
                 className="group inline-flex items-center gap-2 text-body font-bold text-green"
               >
-                Voir tout notre impact
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
+                {p.cta.allImpact}
+                <ArrowRight className={forwardArrow} aria-hidden />
               </Link>
             </div>
           </div>
@@ -283,9 +339,9 @@ const Home = () => {
         <section className="bg-white section-y">
           <div className="container-page">
             <SectionHeading
-              eyebrow="Actualités"
-              title="Nos dernières actions"
-              description="Retour sur nos événements et bilans les plus récents."
+              eyebrow={p.shared.newsEyebrow}
+              title={p.home.newsTitle}
+              description={p.home.newsDescription}
               accent="green"
             />
 
@@ -300,7 +356,7 @@ const Home = () => {
                 to="/actualites"
                 className="rounded-full border-[1.5px] border-navy/15 px-7 py-3 text-body font-bold text-navy transition-colors hover:border-navy"
               >
-                Toutes les actualités
+                {p.cta.allNews}
               </Link>
             </div>
           </div>
@@ -312,36 +368,40 @@ const Home = () => {
         <section className="bg-warm-muted section-y">
           <div className="container-page">
             <SectionHeading
-              eyebrow="Galerie"
-              title="Nos actions en images"
-              description="Des moments forts de nos interventions sur le terrain, à Louga."
+              eyebrow={p.shared.galleryEyebrow}
+              title={p.shared.galleryTitle}
+              description={p.home.galleryDescription}
             />
 
             <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
-              {gallery.slice(0, 6).map((image, index) => (
-                <button
-                  key={image.id}
-                  type="button"
-                  onClick={() => setLightboxIndex(index)}
-                  aria-label={`Agrandir : ${t(image.caption, 'photo')}`}
-                  className="group relative aspect-[4/3] overflow-hidden rounded-2xl shadow-e1 transition-shadow hover:shadow-e3"
-                >
-                  <img
-                    src={image.media.url}
-                    alt={image.media.altText?.fr || t(image.caption, 'Action de LDS')}
-                    loading="lazy"
-                    decoding="async"
-                    width={800}
-                    height={600}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                  {image.caption && (
-                    <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/85 to-transparent px-3.5 pb-3 pt-8 text-left text-caption font-semibold text-white">
-                      {t(image.caption)}
-                    </span>
-                  )}
-                </button>
-              ))}
+              {gallery.slice(0, 6).map((image, index) => {
+                const caption = localized(image.caption, locale);
+
+                return (
+                  <button
+                    key={image.id}
+                    type="button"
+                    onClick={() => setLightboxIndex(index)}
+                    aria-label={p.gallery.enlarge(caption || p.alt.photo)}
+                    className="group relative aspect-[4/3] overflow-hidden rounded-2xl shadow-e1 transition-shadow hover:shadow-e3"
+                  >
+                    <img
+                      src={image.media.url}
+                      alt={localized(image.media.altText, locale) || caption || p.alt.ldsAction}
+                      loading="lazy"
+                      decoding="async"
+                      width={800}
+                      height={600}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    {caption && (
+                      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/85 to-transparent px-3.5 pb-3 pt-8 text-start text-caption font-semibold text-white">
+                        {caption}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="mt-8 text-center sm:mt-12">
@@ -349,7 +409,7 @@ const Home = () => {
                 to="/galerie"
                 className="rounded-full border-[1.5px] border-navy/15 bg-white px-7 py-3 text-body font-bold text-navy transition-colors hover:border-navy"
               >
-                Voir toute la galerie
+                {p.cta.allGallery}
               </Link>
             </div>
           </div>
@@ -374,10 +434,17 @@ const Home = () => {
 
         <div className="relative z-10 mx-auto max-w-[1040px] gutter-x">
           <p className="mb-9 font-lora text-h2 font-medium italic leading-[1.35] text-white">
-            « {homepage?.ctaQuote ?? 'Ensemble, pour le développement de Louga.'} »
+            {/*
+              French sets a space inside its guillemets, Arabic does not: the
+              punctuation travels with the language instead of being hard-coded
+              around the quote.
+            */}
+            {isRtl ? '«' : '« '}
+            {homepage?.ctaQuote ?? p.home.ctaQuote}
+            {isRtl ? '»' : ' »'}
           </p>
           <CtaLink to="/nous-soutenir" size="lg">
-            Rejoindre le mouvement
+            {p.cta.joinMovement}
           </CtaLink>
         </div>
       </section>
@@ -387,9 +454,9 @@ const Home = () => {
         <section className="bg-white section-y">
           <div className="mx-auto max-w-[1120px] gutter-x">
             <SectionHeading
-              eyebrow="Nous soutenir"
-              title="Comment nous soutenir ?"
-              description="Chaque contribution, financière, matérielle ou humaine, étend notre impact."
+              eyebrow={p.home.supportEyebrow}
+              title={p.home.supportTitle}
+              description={p.home.supportDescription}
               accent="orange"
             />
 
@@ -410,11 +477,9 @@ const Home = () => {
       {partners.length > 0 && (
         <section className="border-y border-navy/5 bg-warm-muted section-y-sm">
           <div className="container-page text-center">
-            <p className="mb-3.5 text-eyebrow uppercase text-green">
-              Partenaires
-            </p>
+            <p className="mb-3.5 text-eyebrow uppercase text-green">{p.shared.partnersEyebrow}</p>
             <h2 className="mb-7 text-h2 font-extrabold text-navy sm:mb-10">
-              Ils nous accompagnent
+              {p.home.partnersTitle}
             </h2>
 
             <PartnerCarousel partners={partners} />

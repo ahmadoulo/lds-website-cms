@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { LocaleProvider } from '../context/LocaleContext';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
@@ -29,6 +30,7 @@ const renderAt = (url: string, authenticated = true) => {
   mockAuth.mockReturnValue({ isAuthenticated: authenticated });
   return render(
     <MemoryRouter initialEntries={[url]}>
+      <LocaleProvider>
       <PreviewProvider>
         <Routes>
           <Route
@@ -42,6 +44,7 @@ const renderAt = (url: string, authenticated = true) => {
           />
         </Routes>
       </PreviewProvider>
+      </LocaleProvider>
     </MemoryRouter>,
   );
 };

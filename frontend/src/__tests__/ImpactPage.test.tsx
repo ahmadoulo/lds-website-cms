@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { LocaleProvider } from '../context/LocaleContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -55,7 +56,9 @@ const renderPage = () => {
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
-        <ImpactPage />
+        <LocaleProvider>
+          <ImpactPage />
+        </LocaleProvider>
       </MemoryRouter>
     </QueryClientProvider>,
   );

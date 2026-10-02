@@ -1,6 +1,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { LocaleProvider } from '../context/LocaleContext';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 
@@ -20,6 +21,7 @@ const renderRoutes = (initialPath: string) =>
   render(
     <QueryClientProvider client={createTestQueryClient()}>
       <MemoryRouter initialEntries={[initialPath]}>
+        <LocaleProvider>
         <AuthProvider>
           <Routes>
             <Route path="/admin/login" element={<p>Page de connexion</p>} />
@@ -32,6 +34,7 @@ const renderRoutes = (initialPath: string) =>
             </Route>
           </Routes>
         </AuthProvider>
+        </LocaleProvider>
       </MemoryRouter>
     </QueryClientProvider>,
   );

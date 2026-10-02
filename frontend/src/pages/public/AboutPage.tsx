@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ImageIcon, Mail, MapPin, Phone } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
@@ -7,10 +7,16 @@ import { Seo } from '../../components/seo/Seo';
 import { ImpactFigures } from '../../components/public/ImpactFigures';
 import { SectionHeading } from '../../components/public/SectionHeading';
 import { Skeleton } from '../../components/ui/States';
+import { cn } from '../../lib/cn';
+import { useLocale } from '../../context/LocaleContext';
+import { hasTranslation, localized } from '../../lib/i18n/resolve';
+import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 
 export const AboutPage = () => {
   const { settings, isLoading } = useSettings();
   const { data: impact } = useImpactStats();
+  const { locale, isRtl } = useLocale();
+  const p = usePagesT();
 
   const organization = settings?.organization;
   const contact = settings?.global_contact;
@@ -18,10 +24,16 @@ export const AboutPage = () => {
   // unrelated image appear here, with no way for the administrator to trace it.
   const photo = settings?.homepage.aboutImage ?? null;
 
+  // A figure whose label has no Arabic is left out rather than shown in French.
+  const visibleImpact = useMemo(
+    () => (impact ?? []).filter((stat) => hasTranslation(stat.label, locale)),
+    [impact, locale],
+  );
+
   return (
     <>
       <Seo
-        title="À propos"
+        title={p.about.seoTitle}
         description={organization?.about?.slice(0, 160)}
         image={settings?.seo.ogImage?.url ?? photo?.url}
       />
@@ -29,9 +41,11 @@ export const AboutPage = () => {
       <section className="bg-white section-y">
         <div className="container-page flex flex-wrap items-center gap-10 lg:gap-16">
           <div className="min-w-[min(100%,300px)] flex-[1_1_440px]">
+            {/* `align="left"` means "aligned to the reading edge": the shared
+                heading resolves that to `text-start`, so it follows the script. */}
             <SectionHeading
-              eyebrow="Qui sommes-nous"
-              title="L'association au service des Lougatois"
+              eyebrow={p.shared.whoWeAreEyebrow}
+              title={p.shared.whoWeAreTitle}
               align="left"
               as="h1"
               className="mb-8"
@@ -47,7 +61,8 @@ export const AboutPage = () => {
               <>
                 <p className="mb-6 text-body-lg leading-[1.75] text-navy/75">{organization?.about}</p>
                 {organization?.quote && (
-                  <blockquote className="border-l-4 border-green bg-warm-muted/60 p-6">
+                  // The rule hangs where the text begins, in either script.
+                  <blockquote className="border-s-4 border-green bg-warm-muted/60 p-6">
                     <p className="font-lora text-lead italic leading-relaxed text-navy">
                       {organization.quote}
                     </p>
@@ -61,7 +76,7 @@ export const AboutPage = () => {
             {photo ? (
               <img
                 src={photo.url}
-                alt={photo.altText?.fr || "Action de l'association sur le terrain"}
+                alt={localized(photo.altText, locale) || p.alt.fieldAction}
                 loading="lazy"
                 decoding="async"
                 width={1200}
@@ -70,6 +85,7 @@ export const AboutPage = () => {
               />
             ) : (
               <div className="flex aspect-[4/3] w-full items-center justify-center rounded-2xl bg-warm-muted">
+                {/* A picture frame has no reading direction. */}
                 <ImageIcon className="h-10 w-10 text-navy/15" aria-hidden />
               </div>
             )}
@@ -80,7 +96,11 @@ export const AboutPage = () => {
       {/* Mission */}
       <section className="bg-warm-muted section-y">
         <div className="mx-auto max-w-[840px] gutter-x">
-          <SectionHeading eyebrow="Notre mission" title="Ce que nous faisons" accent="blue" />
+          <SectionHeading
+            eyebrow={p.about.missionEyebrow}
+            title={p.about.missionTitle}
+            accent="blue"
+          />
           <p className="text-center text-body-lg leading-[1.8] text-navy/75">
             {organization?.mission}
           </p>
@@ -89,21 +109,31 @@ export const AboutPage = () => {
               to="/nos-actions"
               className="group inline-flex items-center gap-2 rounded-full bg-navy px-7 py-3.5 text-body font-bold text-white transition-colors hover:bg-blue"
             >
-              Découvrir nos domaines d'action
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
+              {p.cta.discoverDomains}
+              {/*
+                "Onwards" is the direction of reading: the arrow turns with the
+                script, and so does the nudge it makes on hover.
+              */}
+              <ArrowRight
+                className={cn(
+                  'h-4 w-4 transition-transform',
+                  isRtl ? 'rotate-180 group-hover:-translate-x-1' : 'group-hover:translate-x-1',
+                )}
+                aria-hidden
+              />
             </Link>
           </div>
         </div>
       </section>
 
       {/* Key figures */}
-      {impact && impact.length > 0 && (
+      {visibleImpact.length > 0 && (
         <section className="bg-navy section-y-sm">
           <div className="mx-auto max-w-[1080px] gutter-x">
             <h2 className="mb-8 text-center text-h2 font-extrabold text-white sm:mb-12">
-              Notre impact en chiffres
+              {p.shared.impactFiguresTitle}
             </h2>
-            <ImpactFigures stats={impact} />
+            <ImpactFigures stats={visibleImpact} />
           </div>
         </section>
       )}
@@ -111,7 +141,7 @@ export const AboutPage = () => {
       {/* Contact details */}
       <section className="bg-white section-y">
         <div className="mx-auto max-w-[900px] gutter-x">
-          <SectionHeading eyebrow="Nous joindre" title="Nos coordonnées" />
+          <SectionHeading eyebrow={p.about.contactEyebrow} title={p.about.contactTitle} />
 
           <div className="grid gap-4 sm:grid-cols-3 sm:gap-6">
             {contact?.address && (
@@ -123,8 +153,10 @@ export const AboutPage = () => {
             {contact?.phone && (
               <div className="rounded-2xl border border-navy/8 p-6 text-center">
                 <Phone className="mx-auto mb-4 h-6 w-6 text-blue" aria-hidden />
+                {/* A phone number reads left to right in both languages. */}
                 <a
                   href={`tel:${contact.phone.replace(/\s+/g, '')}`}
+                  dir="ltr"
                   className="block text-sm font-semibold text-navy hover:text-blue"
                 >
                   {contact.phone}
@@ -132,6 +164,7 @@ export const AboutPage = () => {
                 {contact.phoneSecondary && (
                   <a
                     href={`tel:${contact.phoneSecondary.replace(/\s+/g, '')}`}
+                    dir="ltr"
                     className="mt-1 block text-sm text-navy/60 hover:text-blue"
                   >
                     {contact.phoneSecondary}
@@ -144,6 +177,7 @@ export const AboutPage = () => {
                 <Mail className="mx-auto mb-4 h-6 w-6 text-orange" aria-hidden />
                 <a
                   href={`mailto:${contact.email}`}
+                  dir="ltr"
                   className="break-all text-sm font-semibold text-navy hover:text-blue"
                 >
                   {contact.email}

@@ -1,5 +1,7 @@
 import React from 'react';
 import { cn } from '../../../lib/cn';
+import { useShellLocale } from '../../../lib/i18n/dictionaries/adminShell';
+import { useShellT } from '../../../lib/i18n/useT';
 
 export interface Column<T> {
   key: string;
@@ -9,6 +11,10 @@ export interface Column<T> {
   className?: string;
   /** Hide this column on the mobile card layout (e.g. thumbnails). */
   hideOnMobile?: boolean;
+  /**
+   * Which edge the value hangs off. The names are reading positions, not screen
+   * positions: `right` is the end of the line, so it is the left edge in Arabic.
+   */
   align?: 'left' | 'right';
 }
 
@@ -33,11 +39,14 @@ export function DataTable<T>({
   actions,
   mobileTitle,
 }: DataTableProps<T>) {
+  const t = useShellT();
+  const { isRtl } = useShellLocale();
+
   return (
     <>
       {/* Desktop */}
       <div className="hidden overflow-x-auto rounded-xl border border-navy/8 bg-white md:block">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-start text-sm">
           <thead className="border-b border-navy/8 bg-warm-muted/50">
             <tr>
               {columns.map((column) => (
@@ -46,7 +55,13 @@ export function DataTable<T>({
                   scope="col"
                   className={cn(
                     'px-5 py-3.5 text-eyebrow uppercase text-navy/55',
-                    column.align === 'right' && 'text-right',
+                    /*
+                      `text-eyebrow` spaces its letters out, which reads well in
+                      a small French heading and badly in Arabic, where the
+                      letters of a word are joined to one another.
+                    */
+                    isRtl && 'tracking-normal',
+                    column.align === 'right' && 'text-end',
                     column.className,
                   )}
                 >
@@ -54,8 +69,14 @@ export function DataTable<T>({
                 </th>
               ))}
               {actions && (
-                <th scope="col" className="px-5 py-3.5 text-right text-eyebrow uppercase text-navy/55">
-                  Actions
+                <th
+                  scope="col"
+                  className={cn(
+                    'px-5 py-3.5 text-end text-eyebrow uppercase text-navy/55',
+                    isRtl && 'tracking-normal',
+                  )}
+                >
+                  {t.adminShell.table.actions}
                 </th>
               )}
             </tr>
@@ -66,13 +87,13 @@ export function DataTable<T>({
                 {columns.map((column) => (
                   <td
                     key={column.key}
-                    className={cn('px-5 py-4 align-middle', column.align === 'right' && 'text-right')}
+                    className={cn('px-5 py-4 align-middle', column.align === 'right' && 'text-end')}
                   >
                     {column.render(row)}
                   </td>
                 ))}
                 {actions && (
-                  <td className="px-5 py-4 text-right">
+                  <td className="px-5 py-4 text-end">
                     <div className="flex justify-end gap-1">{actions(row)}</div>
                   </td>
                 )}
@@ -92,7 +113,12 @@ export function DataTable<T>({
                 .filter((column) => !column.hideOnMobile)
                 .map((column) => (
                   <div key={column.key} className="flex items-center justify-between gap-3">
-                    <dt className="text-xs font-medium uppercase tracking-wide text-navy/45">
+                    <dt
+                      className={cn(
+                        'text-xs font-medium uppercase text-navy/45',
+                        !isRtl && 'tracking-wide',
+                      )}
+                    >
                       {column.header}
                     </dt>
                     <dd className="text-sm text-navy">{column.render(row)}</dd>

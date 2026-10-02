@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Edit2, Eye, EyeOff, Images, Plus, Trash2, Upload } from 'lucide-react';
-import api, { apiErrorMessage } from '../../lib/api/axios';
+import api from '../../lib/api/axios';
+import { apiErrorMessage } from '../../lib/apiErrorMessage';
+import { useLocale } from '../../context/LocaleContext';
+import { useT } from '../../lib/i18n/useT';
+import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { useAdminMutation, uploadMedia, validateImageFile } from '../../lib/queries/adminHooks';
 import { useToast } from '../../components/ui/Toast';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
@@ -15,7 +19,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Checkbox, Field, Input, Textarea } from '../../components/ui/Field';
 import { EmptyState, ErrorState, LoadingState, Spinner } from '../../components/ui/States';
 import { IconButton } from '../../components/admin/ui/DataTable';
-import { t, type GalleryAlbum, type GalleryImage } from '../../lib/types';
+import type { GalleryAlbum, GalleryImage } from '../../lib/types';
 
 interface AlbumFormValues {
   title: string;
@@ -26,6 +30,8 @@ interface AlbumFormValues {
 const EMPTY_FORM: AlbumFormValues = { title: '', description: '', isPublished: true };
 
 export const GalleryAdmin = () => {
+  const t = useT();
+  const { locale } = useLocale();
   const toast = useToast();
   const [editingAlbum, setEditingAlbum] = useState<GalleryAlbum | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -55,8 +61,9 @@ export const GalleryAdmin = () => {
   const openEdit = (album: GalleryAlbum) => {
     setEditingAlbum(album);
     reset({
-      title: t(album.title),
-      description: t(album.description),
+      // The form writes the French source, whatever language the screen is in.
+      title: localized(album.title, 'fr'),
+      description: localized(album.description, 'fr'),
       isPublished: album.isPublished,
     });
     setIsFormOpen(true);
@@ -80,7 +87,7 @@ export const GalleryAdmin = () => {
         ? (await api.patch(`/gallery/${editingAlbum.id}`, payload)).data
         : (await api.post('/gallery', payload)).data;
     },
-    successMessage: editingAlbum ? 'Album mis à jour.' : 'Album créé.',
+    successMessage: editingAlbum ? t.admin.gallery.albumUpdated : t.admin.gallery.albumCreated,
     invalidate: [['admin', 'gallery']],
     onSuccess: closeForm,
   });
@@ -88,13 +95,13 @@ export const GalleryAdmin = () => {
   const toggleAlbum = useAdminMutation<GalleryAlbum>({
     mutationFn: async (album) =>
       (await api.patch(`/gallery/${album.id}`, { isPublished: !album.isPublished })).data,
-    successMessage: 'Statut de l\u2019album mis à jour.',
+    successMessage: t.admin.gallery.albumStatusUpdated,
     invalidate: [['admin', 'gallery']],
   });
 
   const deleteAlbum = useAdminMutation<string>({
     mutationFn: async (id) => (await api.delete(`/gallery/${id}`)).data,
-    successMessage: 'Album supprimé.',
+    successMessage: t.admin.gallery.albumDeleted,
     invalidate: [['admin', 'gallery']],
     onSuccess: () => setPendingAlbumDelete(null),
   });
@@ -102,13 +109,13 @@ export const GalleryAdmin = () => {
   const attachImage = useAdminMutation<{ albumId: string; mediaId: string }>({
     mutationFn: async ({ albumId, mediaId }) =>
       (await api.post(`/gallery/${albumId}/images`, { mediaId })).data,
-    successMessage: 'Photo ajoutée à l\u2019album.',
+    successMessage: t.admin.gallery.photoAdded,
     invalidate: [['admin', 'gallery']],
   });
 
   const detachImage = useAdminMutation<string>({
     mutationFn: async (imageId) => (await api.delete(`/gallery/images/${imageId}`)).data,
-    successMessage: 'Photo retirée de l\u2019album.',
+    successMessage: t.admin.gallery.photoRemoved,
     invalidate: [['admin', 'gallery']],
     onSuccess: () => setPendingImageDelete(null),
   });
@@ -120,18 +127,18 @@ export const GalleryAdmin = () => {
     setUploadingAlbumId(albumId);
     try {
       for (const file of Array.from(files)) {
-        const validationError = validateImageFile(file);
+        const validationError = validateImageFile(file, false, locale);
         if (validationError) {
-          toast.error(`${file.name} : ${validationError}`);
+          toast.error(t.admin.gallery.fileError(file.name, validationError));
           continue;
         }
         const media = await uploadMedia(file, 'gallery');
         await api.post(`/gallery/${albumId}/images`, { mediaId: media.id });
       }
       await listQuery.refetch();
-      toast.success('Photos ajoutées.');
+      toast.success(t.admin.gallery.photosAdded);
     } catch (error) {
-      toast.error(apiErrorMessage(error, "Échec de l'ajout des photos."));
+      toast.error(apiErrorMessage(error, t.admin.gallery.uploadFailed, locale));
     } finally {
       setUploadingAlbumId(null);
     }
@@ -140,13 +147,13 @@ export const GalleryAdmin = () => {
   return (
     <div>
       <PageHeader
-        title="Galerie"
-        description="Organisez vos photos en albums. Seuls les albums publiés apparaissent sur le site."
+        title={t.admin.gallery.title}
+        description={t.admin.gallery.description}
         actions={
           <>
-            <PreviewButton path="/galerie" />
+            <PreviewButton path="/galerie" label={t.admin.common.preview} />
             <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" /> Nouvel album
+            <Plus className="h-4 w-4" /> {t.admin.gallery.newAlbum}
             </Button>
           </>
         }
@@ -159,11 +166,11 @@ export const GalleryAdmin = () => {
       ) : !listQuery.data?.length ? (
         <EmptyState
           icon={Images}
-          title="Aucun album"
-          description="Créez un premier album pour regrouper les photos de vos actions."
+          title={t.admin.gallery.emptyTitle}
+          description={t.admin.gallery.emptyDescription}
           action={
             <Button onClick={openCreate}>
-              <Plus className="h-4 w-4" /> Créer un album
+              <Plus className="h-4 w-4" /> {t.admin.gallery.emptyAction}
             </Button>
           }
         />
@@ -174,16 +181,20 @@ export const GalleryAdmin = () => {
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-base font-bold text-navy">{t(album.title)}</h2>
+                    <h2 className="text-base font-bold text-navy">
+                      {localizedOrSource(album.title, locale).text}
+                    </h2>
                     <Badge tone={album.isPublished ? 'green' : 'neutral'}>
-                      {album.isPublished ? 'Publié' : 'Brouillon'}
+                      {album.isPublished ? t.admin.common.published : t.admin.common.draft}
                     </Badge>
                   </div>
                   {album.description && (
-                    <p className="mt-1 text-sm text-navy/60">{t(album.description)}</p>
+                    <p className="mt-1 text-sm text-navy/60">
+                      {localizedOrSource(album.description, locale).text}
+                    </p>
                   )}
                   <p className="mt-1 text-xs text-navy/45">
-                    {album.images.length} photo{album.images.length > 1 ? 's' : ''}
+                    {t.admin.gallery.photoCount(album.images.length)}
                   </p>
                 </div>
 
@@ -205,23 +216,23 @@ export const GalleryAdmin = () => {
                       ) : (
                         <Upload className="h-3.5 w-3.5" />
                       )}
-                      Téléverser
+                      {t.admin.gallery.upload}
                     </span>
                   </label>
 
                   <Button variant="ghost" size="sm" onClick={() => setLibraryAlbumId(album.id)}>
-                    <Images className="h-3.5 w-3.5" /> Bibliothèque
+                    <Images className="h-3.5 w-3.5" /> {t.admin.gallery.library}
                   </Button>
 
                   <IconButton
-                    label={album.isPublished ? 'Dépublier' : 'Publier'}
+                    label={album.isPublished ? t.admin.common.unpublish : t.admin.common.publish}
                     icon={album.isPublished ? EyeOff : Eye}
                     onClick={() => toggleAlbum.mutate(album)}
                     disabled={toggleAlbum.isPending}
                   />
-                  <IconButton label="Modifier" icon={Edit2} onClick={() => openEdit(album)} />
+                  <IconButton label={t.common.edit} icon={Edit2} onClick={() => openEdit(album)} />
                   <IconButton
-                    label="Supprimer"
+                    label={t.common.delete}
                     icon={Trash2}
                     tone="danger"
                     onClick={() => setPendingAlbumDelete(album)}
@@ -231,7 +242,7 @@ export const GalleryAdmin = () => {
 
               {album.images.length === 0 ? (
                 <p className="rounded-lg border border-dashed border-navy/15 px-4 py-8 text-center text-sm text-navy/50">
-                  Cet album est vide. Téléversez des photos ou choisissez-en dans la bibliothèque.
+                  {t.admin.gallery.emptyAlbum}
                 </p>
               ) : (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
@@ -242,15 +253,18 @@ export const GalleryAdmin = () => {
                     >
                       <img
                         src={image.media.url}
-                        alt={t(image.caption, image.media.originalName)}
+                        alt={
+                          localizedOrSource(image.caption, locale).text ||
+                          image.media.originalName
+                        }
                         loading="lazy"
                         className="aspect-square w-full object-cover"
                       />
                       <button
                         type="button"
                         onClick={() => setPendingImageDelete(image)}
-                        aria-label="Retirer cette photo"
-                        className="absolute right-1.5 top-1.5 rounded-lg bg-white/90 p-1.5 text-red-600 opacity-0 shadow transition-opacity group-hover:opacity-100 focus:opacity-100"
+                        aria-label={t.admin.gallery.removePhoto}
+                        className="absolute end-1.5 top-1.5 rounded-lg bg-white/90 p-1.5 text-red-600 opacity-0 shadow transition-opacity group-hover:opacity-100 focus:opacity-100"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -266,14 +280,14 @@ export const GalleryAdmin = () => {
       <Modal
         isOpen={isFormOpen}
         onClose={closeForm}
-        title={editingAlbum ? "Modifier l'album" : 'Nouvel album'}
+        title={editingAlbum ? t.admin.gallery.editTitle : t.admin.gallery.createTitle}
         footer={
           <>
             <Button variant="outline" onClick={closeForm} disabled={saveAlbum.isPending}>
-              Annuler
+              {t.common.cancel}
             </Button>
             <Button form="album-form" type="submit" isLoading={saveAlbum.isPending}>
-              {editingAlbum ? 'Enregistrer' : "Créer l'album"}
+              {editingAlbum ? t.common.save : t.admin.gallery.createSubmit}
             </Button>
           </>
         }
@@ -283,25 +297,34 @@ export const GalleryAdmin = () => {
           onSubmit={handleSubmit((values) => saveAlbum.mutate(values))}
           className="space-y-5"
         >
-          <Field label="Titre" htmlFor="album-title" required error={errors.title?.message}>
+          <Field
+            label={t.admin.gallery.titleLabel}
+            htmlFor="album-title"
+            required
+            error={errors.title?.message}
+          >
             <Input
               id="album-title"
-              placeholder="Distribution de kits scolaires 2026"
+              placeholder={t.admin.gallery.titlePlaceholder}
               aria-invalid={Boolean(errors.title)}
               {...register('title', {
-                required: 'Le titre est obligatoire',
-                minLength: { value: 2, message: 'Le titre est trop court' },
+                required: t.admin.gallery.titleRequired,
+                minLength: { value: 2, message: t.admin.gallery.titleTooShort },
               })}
             />
           </Field>
 
-          <Field label="Description" htmlFor="album-description" hint="Facultatif.">
+          <Field
+            label={t.admin.gallery.descriptionLabel}
+            htmlFor="album-description"
+            hint={t.admin.gallery.descriptionHint}
+          >
             <Textarea id="album-description" rows={3} {...register('description')} />
           </Field>
 
           <Checkbox
             id="album-published"
-            label="Publier cet album sur le site"
+            label={t.admin.gallery.publishCheckbox}
             {...register('isPublished')}
           />
         </form>
@@ -320,8 +343,8 @@ export const GalleryAdmin = () => {
 
       <ConfirmDialog
         isOpen={Boolean(pendingAlbumDelete)}
-        title="Supprimer cet album ?"
-        message="L'album et son organisation seront supprimés. Les images restent disponibles dans la bibliothèque de médias."
+        title={t.admin.gallery.deleteAlbumTitle}
+        message={t.admin.gallery.deleteAlbumMessage}
         isLoading={deleteAlbum.isPending}
         onCancel={() => setPendingAlbumDelete(null)}
         onConfirm={() => pendingAlbumDelete && deleteAlbum.mutate(pendingAlbumDelete.id)}
@@ -329,9 +352,9 @@ export const GalleryAdmin = () => {
 
       <ConfirmDialog
         isOpen={Boolean(pendingImageDelete)}
-        title="Retirer cette photo de l'album ?"
-        message="La photo reste dans la bibliothèque de médias et pourra être réutilisée."
-        confirmLabel="Retirer"
+        title={t.admin.gallery.removePhotoTitle}
+        message={t.admin.gallery.removePhotoMessage}
+        confirmLabel={t.admin.gallery.removeConfirm}
         isLoading={detachImage.isPending}
         onCancel={() => setPendingImageDelete(null)}
         onConfirm={() => pendingImageDelete && detachImage.mutate(pendingImageDelete.id)}

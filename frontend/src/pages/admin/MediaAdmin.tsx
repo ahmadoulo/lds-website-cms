@@ -1,6 +1,10 @@
 import React, { useRef, useState } from 'react';
 import { Eraser, ImageIcon, Link2, Pencil, Trash2, Upload } from 'lucide-react';
-import api, { apiErrorMessage } from '../../lib/api/axios';
+import api from '../../lib/api/axios';
+import { apiErrorMessage } from '../../lib/apiErrorMessage';
+import { useLocale } from '../../context/LocaleContext';
+import { useT } from '../../lib/i18n/useT';
+import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import {
   formatBytes,
   useAdminMutation,
@@ -22,6 +26,8 @@ import { cn } from '../../lib/cn';
 import type { Media } from '../../lib/types';
 
 export const MediaAdmin = () => {
+  const t = useT();
+  const { locale } = useLocale();
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [page, setPage] = useState(1);
@@ -38,14 +44,14 @@ export const MediaAdmin = () => {
 
   const purgeMutation = useAdminMutation<void>({
     mutationFn: async () => (await api.delete('/media/orphans')).data,
-    successMessage: 'Fichiers inutilisés supprimés.',
+    successMessage: t.admin.media.purged,
     invalidate: [['admin', 'media']],
     onSuccess: () => setIsPurging(false),
   });
 
   const deleteMutation = useAdminMutation<string>({
     mutationFn: async (id) => (await api.delete(`/media/${id}`)).data,
-    successMessage: 'Média supprimé.',
+    successMessage: t.admin.media.deleted,
     invalidate: [['admin', 'media']],
     onSuccess: () => setPendingDelete(null),
   });
@@ -53,7 +59,7 @@ export const MediaAdmin = () => {
   const altMutation = useAdminMutation<{ id: string; altText: string }>({
     mutationFn: async ({ id, altText }) =>
       (await api.patch(`/media/${id}`, { altText: altText ? { fr: altText } : undefined })).data,
-    successMessage: 'Description enregistrée.',
+    successMessage: t.admin.media.altSaved,
     invalidate: [['admin', 'media']],
     onSuccess: () => setEditingAlt(null),
   });
@@ -65,9 +71,9 @@ export const MediaAdmin = () => {
     let uploaded = 0;
     try {
       for (const file of Array.from(files)) {
-        const validationError = validateImageFile(file);
+        const validationError = validateImageFile(file, false, locale);
         if (validationError) {
-          toast.error(`${file.name} : ${validationError}`);
+          toast.error(t.admin.gallery.fileError(file.name, validationError));
           continue;
         }
         await uploadMedia(file, folder || 'general');
@@ -76,10 +82,10 @@ export const MediaAdmin = () => {
       if (uploaded > 0) {
         await libraryQuery.refetch();
         await foldersQuery.refetch();
-        toast.success(`${uploaded} fichier(s) téléversé(s).`);
+        toast.success(t.admin.media.uploaded(uploaded));
       }
     } catch (error) {
-      toast.error(apiErrorMessage(error, 'Échec du téléversement.'));
+      toast.error(apiErrorMessage(error, t.admin.media.uploadFailed, locale));
     } finally {
       setIsUploading(false);
       if (inputRef.current) inputRef.current.value = '';
@@ -95,15 +101,15 @@ export const MediaAdmin = () => {
   return (
     <div>
       <PageHeader
-        title="Médias"
-        description="Toutes les images du site, stockées dans MinIO et servies par l'API."
+        title={t.admin.media.title}
+        description={t.admin.media.description}
         actions={
           <>
             <Button variant="outline" onClick={() => setIsPurging(true)}>
-              <Eraser className="h-4 w-4" /> Nettoyer les inutilisés
+              <Eraser className="h-4 w-4" /> {t.admin.media.purgeButton}
             </Button>
             <Button onClick={() => inputRef.current?.click()} isLoading={isUploading}>
-              <Upload className="h-4 w-4" /> Téléverser
+              <Upload className="h-4 w-4" /> {t.admin.media.uploadButton}
             </Button>
           </>
         }
@@ -125,7 +131,7 @@ export const MediaAdmin = () => {
             setSearch(value);
             setPage(1);
           }}
-          placeholder="Rechercher un fichier…"
+          placeholder={t.admin.media.searchPlaceholder}
         />
 
         <div className="flex flex-wrap gap-2">
@@ -137,7 +143,7 @@ export const MediaAdmin = () => {
             }}
             className={folderButtonClass(folder === '')}
           >
-            Tous
+            {t.admin.media.allFolders}
           </button>
           {foldersQuery.data?.map((item) => (
             <button
@@ -162,16 +168,16 @@ export const MediaAdmin = () => {
       ) : !libraryQuery.data?.data.length ? (
         <EmptyState
           icon={ImageIcon}
-          title={search || folder ? 'Aucun résultat' : 'Aucun média'}
+          title={search || folder ? t.admin.common.noResults : t.admin.media.emptyTitle}
           description={
             search || folder
-              ? 'Aucun fichier ne correspond à ces critères.'
-              : 'Téléversez vos premières images pour illustrer le contenu du site.'
+              ? t.admin.media.emptyFilteredDescription
+              : t.admin.media.emptyDescription
           }
           action={
             !search && !folder ? (
               <Button onClick={() => inputRef.current?.click()}>
-                <Upload className="h-4 w-4" /> Téléverser une image
+                <Upload className="h-4 w-4" /> {t.admin.media.emptyAction}
               </Button>
             ) : undefined
           }
@@ -187,18 +193,18 @@ export const MediaAdmin = () => {
                 <div className="relative">
                   <img
                     src={media.url}
-                    alt={media.altText?.fr || media.originalName}
+                    alt={localizedOrSource(media.altText, locale).text || media.originalName}
                     loading="lazy"
                     className="aspect-square w-full object-cover"
                   />
-                  <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+                  <div className="absolute end-2 top-2 flex gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
                     <button
                       type="button"
                       onClick={() => {
                         setEditingAlt(media);
-                        setAltDraft(media.altText?.fr ?? '');
+                        setAltDraft(localized(media.altText, 'fr'));
                       }}
-                      aria-label={`Décrire ${media.originalName}`}
+                      aria-label={t.admin.media.describeAria(media.originalName)}
                       className="rounded-lg bg-white/90 p-1.5 text-navy shadow transition-colors hover:bg-white"
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -207,7 +213,7 @@ export const MediaAdmin = () => {
                       href={media.url}
                       target="_blank"
                       rel="noreferrer noopener"
-                      aria-label={`Voir ${media.originalName} en taille réelle`}
+                      aria-label={t.admin.media.viewFullSizeAria(media.originalName)}
                       className="rounded-lg bg-white/90 p-1.5 text-navy shadow transition-colors hover:bg-white"
                     >
                       <ImageIcon className="h-3.5 w-3.5" />
@@ -218,10 +224,10 @@ export const MediaAdmin = () => {
                       disabled={Boolean(media.usedIn?.length)}
                       title={
                         media.usedIn?.length
-                          ? `Utilisée dans : ${media.usedIn.join(' · ')}`
+                          ? t.admin.media.usedIn(media.usedIn.join(' · '))
                           : undefined
                       }
-                      aria-label={`Supprimer ${media.originalName}`}
+                      aria-label={t.admin.media.deleteAria(media.originalName)}
                       className="rounded-lg bg-white/90 p-1.5 text-red-600 shadow transition-colors hover:bg-white disabled:cursor-not-allowed disabled:text-navy/25"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -234,10 +240,10 @@ export const MediaAdmin = () => {
                   </p>
                   <p className="mt-0.5 text-xs text-navy/45">
                     {media.width && media.height ? `${media.width}×${media.height} · ` : ''}
-                    {formatBytes(media.size)}
+                    {formatBytes(media.size, locale)}
                   </p>
                   <p className="text-xs text-navy/40">
-                    {media.folder} · {new Date(media.createdAt).toLocaleDateString('fr-FR')}
+                    {media.folder} · {t.admin.common.formatDate(media.createdAt)}
                   </p>
 
                   {media.usedIn && media.usedIn.length > 0 ? (
@@ -246,10 +252,12 @@ export const MediaAdmin = () => {
                       title={media.usedIn.join(' · ')}
                     >
                       <Link2 className="mt-px h-3 w-3 shrink-0" aria-hidden />
-                      <span className="line-clamp-2">Utilisée dans : {media.usedIn.join(' · ')}</span>
+                      <span className="line-clamp-2">
+                        {t.admin.media.usedIn(media.usedIn.join(' · '))}
+                      </span>
                     </p>
                   ) : (
-                    <p className="mt-1.5 text-xs text-navy/35">Non utilisée</p>
+                    <p className="mt-1.5 text-xs text-navy/35">{t.admin.media.notUsed}</p>
                   )}
                 </figcaption>
               </figure>
@@ -267,20 +275,20 @@ export const MediaAdmin = () => {
 
       {isUploading && (
         <div className="mt-4 flex items-center gap-2 text-sm text-navy/60">
-          <Spinner className="h-4 w-4" /> Téléversement en cours…
+          <Spinner className="h-4 w-4" /> {t.admin.media.uploading}
         </div>
       )}
 
       <Modal
         isOpen={Boolean(editingAlt)}
         onClose={() => setEditingAlt(null)}
-        title="Décrire l'image"
-        description="Ce texte est lu par les lecteurs d'écran et s'affiche si l'image ne charge pas."
+        title={t.admin.media.altTitle}
+        description={t.admin.media.altDescription}
         size="sm"
         footer={
           <>
             <Button variant="outline" onClick={() => setEditingAlt(null)}>
-              Annuler
+              {t.common.cancel}
             </Button>
             <Button
               isLoading={altMutation.isPending}
@@ -288,7 +296,7 @@ export const MediaAdmin = () => {
                 editingAlt && altMutation.mutate({ id: editingAlt.id, altText: altDraft.trim() })
               }
             >
-              Enregistrer
+              {t.common.save}
             </Button>
           </>
         }
@@ -297,20 +305,20 @@ export const MediaAdmin = () => {
           <div className="space-y-4">
             <img
               src={editingAlt.url}
-              alt={editingAlt.altText?.fr || editingAlt.originalName}
+              alt={localizedOrSource(editingAlt.altText, locale).text || editingAlt.originalName}
               className="max-h-48 w-full rounded-lg object-contain"
             />
             <Field
-              label="Description"
+              label={t.admin.media.altLabel}
               htmlFor="media-alt"
-              hint="Décrivez ce que montre l'image. Exemple : « Distribution de fournitures scolaires par LDS »."
+              hint={t.admin.media.altHint}
             >
               <Textarea
                 id="media-alt"
                 rows={3}
                 value={altDraft}
                 onChange={(event) => setAltDraft(event.target.value)}
-                placeholder="Distribution de fournitures scolaires par Louga Développement Solidaire"
+                placeholder={t.admin.media.altPlaceholder}
               />
             </Field>
           </div>
@@ -319,9 +327,9 @@ export const MediaAdmin = () => {
 
       <ConfirmDialog
         isOpen={isPurging}
-        title="Supprimer les fichiers inutilisés ?"
-        message="Tous les fichiers qu'aucun contenu ne référence seront définitivement supprimés du stockage. Les images utilisées, y compris par un brouillon, sont conservées."
-        confirmLabel="Nettoyer"
+        title={t.admin.media.purgeTitle}
+        message={t.admin.media.purgeMessage}
+        confirmLabel={t.admin.media.purgeConfirm}
         isLoading={purgeMutation.isPending}
         onCancel={() => setIsPurging(false)}
         onConfirm={() => purgeMutation.mutate()}
@@ -329,8 +337,8 @@ export const MediaAdmin = () => {
 
       <ConfirmDialog
         isOpen={Boolean(pendingDelete)}
-        title="Supprimer ce média ?"
-        message={`« ${pendingDelete?.originalName ?? ''} » sera définitivement supprimé du stockage. La suppression est refusée si le fichier est encore utilisé par un contenu.`}
+        title={t.admin.media.deleteTitle}
+        message={t.admin.media.deleteMessage(pendingDelete?.originalName ?? '')}
         isLoading={deleteMutation.isPending}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}

@@ -1,7 +1,11 @@
 import React from 'react';
 import { ChevronRight, ImageIcon } from 'lucide-react';
 import { resolveIcon } from '../../lib/icons';
-import { t, type Mission } from '../../lib/types';
+import { cn } from '../../lib/cn';
+import { useLocale } from '../../context/LocaleContext';
+import { useComponentsT } from '../../lib/i18n/dictionaries/components';
+import { localized, localizedOrSource } from '../../lib/i18n/resolve';
+import type { Mission } from '../../lib/types';
 
 /**
  * The logo gives the brand three equal accents; navy is the structural colour,
@@ -26,13 +30,29 @@ export const MissionCard = ({
   index: number;
   onOpen: () => void;
 }) => {
+  const t = useComponentsT();
+  const { locale, isRtl } = useLocale();
   const Icon = resolveIcon(mission.icon);
   const accent = ACCENTS[index % ACCENTS.length];
+
+  /*
+    A domain the association has not translated yet is still one of its five
+    pillars: hiding it from an Arabic visitor would be worse than showing it in
+    French. So the source text is shown and said to be French - `lang` makes a
+    screen reader switch voice, `dir` keeps the sentence shaped left to right
+    inside a right-to-left card - rather than being passed off as a translation.
+  */
+  const title = localizedOrSource(mission.title, locale);
+  const description = localizedOrSource(mission.description, locale);
+
+  // The alt text is the photo's own, in this language; the title is the
+  // fallback, as it was before, because it describes what the photo illustrates.
+  const altText = localized(mission.image?.altText, locale) || title.text;
 
   const image = mission.image ? (
     <img
       src={mission.image.url}
-      alt={mission.image.altText?.fr || t(mission.title)}
+      alt={altText}
       loading="lazy"
       decoding="async"
       width={1200}
@@ -63,7 +83,9 @@ export const MissionCard = ({
 
         {/* The overlapping badge only has room in the vertical composition. */}
         <span
-          className={`absolute -bottom-6 left-6 hidden h-14 w-14 items-center justify-center rounded-2xl text-white shadow-e2 ring-4 ring-white sm:flex ${accent}`}
+          /* `start-6`, not `left-6`: the badge hangs off the leading corner of
+             the photo, which is the right-hand one in Arabic. */
+          className={`absolute -bottom-6 start-6 hidden h-14 w-14 items-center justify-center rounded-2xl text-white shadow-e2 ring-4 ring-white sm:flex ${accent}`}
           aria-hidden
         >
           <Icon className="h-6 w-6" />
@@ -86,16 +108,22 @@ export const MissionCard = ({
             /* `cursor` is inherited, so the ::after overlay that covers the card
                takes the pointer with it. Without this the whole card is
                clickable but nothing says so. */
-            className="min-w-0 cursor-pointer text-left outline-none after:absolute after:inset-0 after:rounded-card after:content-['']"
+            className="min-w-0 cursor-pointer text-start outline-none after:absolute after:inset-0 after:rounded-card after:content-['']"
+            lang={title.untranslated ? 'fr' : undefined}
+            dir={title.untranslated ? 'ltr' : undefined}
           >
             {/* No extra label here: the text of this button is also the text of
                 the heading that wraps it, and anything added would be read as
                 part of the heading in a screen reader's headings list. */}
-            {t(mission.title)}
+            {title.text}
           </button>
         </h3>
-        <p className="line-clamp-3 text-caption text-navy/70 sm:line-clamp-none sm:text-body">
-          {t(mission.description)}
+        <p
+          className="line-clamp-3 text-caption text-navy/70 sm:line-clamp-none sm:text-body"
+          lang={description.untranslated ? 'fr' : undefined}
+          dir={description.untranslated ? 'ltr' : undefined}
+        >
+          {description.text}
         </p>
 
         {/*
@@ -104,9 +132,14 @@ export const MissionCard = ({
           nothing. On desktop it is what tells the visitor the card opens.
         */}
         <span className="mt-4 hidden items-center text-caption font-bold text-orange sm:inline-flex">
-          En savoir plus
+          {t.mission.learnMore}
+          {/* The chevron points the way on, so it follows the reading
+              direction; the nudge on hover travels the same way. */}
           <ChevronRight
-            className="ml-1 h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1"
+            className={cn(
+              'ms-1 h-3.5 w-3.5 transition-transform duration-300',
+              isRtl ? 'rotate-180 group-hover:-translate-x-1' : 'group-hover:translate-x-1',
+            )}
             aria-hidden
           />
         </span>

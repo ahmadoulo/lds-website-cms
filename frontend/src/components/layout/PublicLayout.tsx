@@ -8,20 +8,30 @@ import {
   YouTubeIcon,
 } from '../public/SocialIcons';
 import { useSettings } from '../../context/SettingsContext';
+import { useLocale } from '../../context/LocaleContext';
+import { useT } from '../../lib/i18n/useT';
+import { useLayoutT, type NavKey } from '../../lib/i18n/dictionaries/layout';
 import { cn } from '../../lib/cn';
 import { SiteLogo } from '../public/SiteLogo';
 import { CtaLink } from '../public/CtaLink';
+import { LocaleSwitch } from '../public/LocaleSwitch';
 import { PreviewBanner } from '../public/PreviewBanner';
 
-const NAV = [
-  { label: 'Accueil', href: '/' },
-  { label: 'À propos', href: '/a-propos' },
-  { label: 'Nos actions', href: '/nos-actions' },
-  { label: 'Actualités', href: '/actualites' },
-  { label: 'Galerie', href: '/galerie' },
-  { label: 'Impact', href: '/impact' },
-  { label: 'Partenaires', href: '/partenaires' },
-  { label: 'Contact', href: '/contact' },
+/*
+  The labels used to live here as French text, which made this table the one
+  place a second language could not reach. It now holds a dictionary key, so the
+  eight entries are written once and read in whichever language is displayed -
+  in the header, in the mobile panel and in the footer alike.
+*/
+const NAV: readonly { key: NavKey; href: string }[] = [
+  { key: 'home', href: '/' },
+  { key: 'about', href: '/a-propos' },
+  { key: 'actions', href: '/nos-actions' },
+  { key: 'news', href: '/actualites' },
+  { key: 'gallery', href: '/galerie' },
+  { key: 'impact', href: '/impact' },
+  { key: 'partners', href: '/partenaires' },
+  { key: 'contact', href: '/contact' },
 ];
 
 const SOCIAL_ICONS = [
@@ -33,6 +43,9 @@ const SOCIAL_ICONS = [
 
 export const PublicLayout = () => {
   const { settings } = useSettings();
+  const { locale, isRtl } = useLocale();
+  const t = useT();
+  const layout = useLayoutT();
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -43,6 +56,15 @@ export const PublicLayout = () => {
   const social = settings?.global_social;
   const organization = settings?.organization;
 
+  /*
+    The settings hold one name and one tagline, both written in French. French
+    keeps reading them, and Arabic reads the glossary's form of the name and the
+    translated tagline rather than dropping a French sentence into an Arabic
+    page. The day those settings carry two languages, these two lines are where
+    that arrives.
+  */
+  const organizationName = (locale === 'fr' && organization?.name) || t.common.organizationName;
+  const tagline = (locale === 'fr' && organization?.tagline) || layout.footer.tagline;
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 16);
@@ -91,9 +113,11 @@ export const PublicLayout = () => {
       <PreviewBanner />
       <a
         href="#contenu"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-navy focus:px-4 focus:py-2 focus:text-white"
+        /* start-4 rather than left-4: the shortcut has to land at the edge the
+           reader starts from, which is the right one in Arabic. */
+        className="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-navy focus:px-4 focus:py-2 focus:text-white"
       >
-        Aller au contenu principal
+        {layout.header.skipToContent}
       </a>
 
       {/* Contact bar */}
@@ -115,22 +139,30 @@ export const PublicLayout = () => {
             )}
           </div>
 
-          {activeSocial.length > 0 && (
-            <div className="flex gap-2">
-              {activeSocial.map(({ key, Icon, label }) => (
-                <a
-                  key={key}
-                  href={social![key]}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  aria-label={label}
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-blue"
-                >
-                  <Icon className="h-3 w-3" aria-hidden />
-                </a>
-              ))}
-            </div>
-          )}
+          {/*
+            The language switch sits where a visitor looks for it before reading
+            anything: the quiet bar above the header. The mobile panel carries
+            the same switch, because this bar is hidden on a phone.
+          */}
+          <div className="flex items-center gap-4">
+            {activeSocial.length > 0 && (
+              <div className="flex gap-2">
+                {activeSocial.map(({ key, Icon, label }) => (
+                  <a
+                    key={key}
+                    href={social![key]}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    aria-label={label}
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-blue"
+                  >
+                    <Icon className="h-3 w-3" aria-hidden />
+                  </a>
+                ))}
+              </div>
+            )}
+            <LocaleSwitch />
+          </div>
         </div>
       </div>
 
@@ -148,7 +180,7 @@ export const PublicLayout = () => {
             isScrolled ? 'py-2 sm:py-3' : 'py-2.5 sm:py-4',
           )}
         >
-          <Link to="/" className="flex shrink-0 items-center" aria-label="Accueil">
+          <Link to="/" className="flex shrink-0 items-center" aria-label={layout.header.home}>
             <SiteLogo />
           </Link>
 
@@ -160,7 +192,7 @@ export const PublicLayout = () => {
           */}
           <nav
             className="hidden shrink-0 items-center gap-4 lg:flex xl:gap-7"
-            aria-label="Navigation principale"
+            aria-label={layout.header.mainNavigation}
           >
             {NAV.map((item) => (
               <NavLink
@@ -171,7 +203,10 @@ export const PublicLayout = () => {
                   cn(
                     'relative whitespace-nowrap py-1 text-body font-semibold transition-colors',
                     'after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-blue',
-                    'after:origin-left after:transition-transform after:duration-300',
+                    'after:transition-transform after:duration-300',
+                    /* The underline grows in the direction of reading, so it is
+                       anchored at the side the line starts on. */
+                    isRtl ? 'after:origin-right' : 'after:origin-left',
                     isActive
                       ? 'text-navy after:scale-x-100'
                       : 'text-navy/70 hover:text-navy after:scale-x-0 hover:after:scale-x-100',
@@ -179,11 +214,11 @@ export const PublicLayout = () => {
                 }
                 aria-current={undefined}
               >
-                {item.label}
+                {layout.nav[item.key]}
               </NavLink>
             ))}
-            <CtaLink to="/nous-soutenir" className="ml-1 shrink-0 whitespace-nowrap">
-              <Heart className="h-4 w-4" aria-hidden /> Faire un don
+            <CtaLink to="/nous-soutenir" className="ms-1 shrink-0 whitespace-nowrap">
+              <Heart className="h-4 w-4" aria-hidden /> {layout.actions.donate}
             </CtaLink>
           </nav>
 
@@ -191,11 +226,12 @@ export const PublicLayout = () => {
             type="button"
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-expanded={isMenuOpen}
-            aria-label={isMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+            aria-label={isMenuOpen ? layout.header.closeMenu : layout.header.openMenu}
             aria-controls="menu-mobile"
             ref={menuButtonRef}
-            /* 44px of tappable area; the negative margin keeps the icon on the gutter. */
-            className="-mr-2.5 flex h-11 w-11 items-center justify-center rounded-xl text-navy transition-colors active:bg-navy/5 lg:hidden"
+            /* 44px of tappable area; the negative margin keeps the icon on the
+               gutter - logical, so it is the trailing gutter in both directions. */
+            className="-me-2.5 flex h-11 w-11 items-center justify-center rounded-xl text-navy transition-colors active:bg-navy/5 lg:hidden"
           >
             {isMenuOpen ? <X className="h-6 w-6" aria-hidden /> : <Menu className="h-6 w-6" aria-hidden />}
           </button>
@@ -206,7 +242,7 @@ export const PublicLayout = () => {
             id="menu-mobile"
             className="absolute inset-x-0 top-full max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain border-t border-navy/8 bg-white p-3 shadow-e3 lg:hidden"
           >
-            <nav className="flex flex-col" aria-label="Navigation mobile">
+            <nav className="flex flex-col" aria-label={layout.header.mobileNavigation}>
               {NAV.map((item) => (
                 <NavLink
                   key={item.href}
@@ -219,13 +255,22 @@ export const PublicLayout = () => {
                     )
                   }
                 >
-                  {item.label}
+                  {layout.nav[item.key]}
                 </NavLink>
               ))}
             </nav>
             <CtaLink to="/nous-soutenir" size="lg" className="mt-4 w-full">
-              <Heart className="h-4 w-4" aria-hidden /> Faire un don
+              <Heart className="h-4 w-4" aria-hidden /> {layout.actions.donate}
             </CtaLink>
+            {/*
+              The switch's own links drop to a compact height from sm upwards,
+              which is right in the contact bar and wrong here: this panel is
+              still a touch target between 640 and 1024px. The child selector
+              holds the 44px without editing the shared component.
+            */}
+            <div className="mt-3 flex justify-center border-t border-navy/8 pt-2">
+              <LocaleSwitch className="[&>a]:min-h-11" />
+            </div>
           </div>
         )}
       </header>
@@ -241,10 +286,7 @@ export const PublicLayout = () => {
             <span className="mb-4 block sm:mb-5">
               <SiteLogo variant="dark" />
             </span>
-            <p className="mb-5 max-w-xs leading-relaxed text-white/65 sm:mb-6">
-              {organization?.tagline ||
-                "Association à but non lucratif engagée pour l'éducation, la santé et le développement durable des Lougatois."}
-            </p>
+            <p className="mb-5 max-w-xs leading-relaxed text-white/65 sm:mb-6">{tagline}</p>
             {activeSocial.length > 0 && (
               <div className="flex gap-3">
                 {activeSocial.map(({ key, Icon, label }) => (
@@ -263,8 +305,8 @@ export const PublicLayout = () => {
             )}
           </div>
 
-          <nav aria-label="Navigation du pied de page">
-            <h2 className="mb-4 text-body font-bold sm:mb-5">Navigation</h2>
+          <nav aria-label={layout.footer.footerNavigation}>
+            <h2 className="mb-4 text-body font-bold sm:mb-5">{layout.footer.navigationHeading}</h2>
             <ul className="grid grid-cols-2 gap-x-4 text-white/65 sm:flex sm:flex-col sm:gap-3">
               {NAV.map((item) => (
                 <li key={item.href}>
@@ -272,7 +314,7 @@ export const PublicLayout = () => {
                     to={item.href}
                     className="inline-flex min-h-11 items-center transition-colors hover:text-white sm:min-h-0"
                   >
-                    {item.label}
+                    {layout.nav[item.key]}
                   </Link>
                 </li>
               ))}
@@ -280,7 +322,7 @@ export const PublicLayout = () => {
           </nav>
 
           <div>
-            <h2 className="mb-4 text-body font-bold sm:mb-5">Contact</h2>
+            <h2 className="mb-4 text-body font-bold sm:mb-5">{layout.footer.contactHeading}</h2>
             <address className="flex flex-col gap-4 not-italic text-white/65">
               {contact?.address && (
                 <span className="flex items-start gap-3">
@@ -315,18 +357,17 @@ export const PublicLayout = () => {
             </address>
 
             <CtaLink to="/nous-soutenir" className="mt-6 w-full sm:w-auto">
-              <Heart className="h-4 w-4" aria-hidden /> Faire un don
+              <Heart className="h-4 w-4" aria-hidden /> {layout.actions.donate}
             </CtaLink>
           </div>
         </div>
 
         <div className="container-page mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6 text-sm text-white/45 sm:mt-14 sm:pt-8">
           <span>
-            © {new Date().getFullYear()} {organization?.name || 'Louga Développement Solidaire'}. Tous
-            droits réservés.
+            © {new Date().getFullYear()} {organizationName}. {layout.footer.rights}
           </span>
           <Link to="/admin/login" className="transition-colors hover:text-white/80">
-            Administration
+            {layout.footer.administration}
           </Link>
         </div>
       </footer>

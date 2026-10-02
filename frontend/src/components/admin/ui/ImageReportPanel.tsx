@@ -3,6 +3,8 @@ import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react';
 import { formatBytes } from '../../../lib/queries/adminHooks';
 import { analyseImage, formatRatio, type ImageSlot } from '../../../lib/imageAnalysis';
 import { cn } from '../../../lib/cn';
+import { useShellLocale } from '../../../lib/i18n/dictionaries/adminShell';
+import { useShellT } from '../../../lib/i18n/useT';
 
 const LEVEL_STYLES = {
   error: { icon: XCircle, className: 'text-red-600', row: 'bg-red-50 border-red-200' },
@@ -27,31 +29,33 @@ interface ImageStats {
  */
 export const ImageReportPanel = ({ stats, slot }: { stats: ImageStats; slot: ImageSlot }) => {
   const report = analyseImage(stats, slot);
+  const t = useShellT();
+  const { locale } = useShellLocale();
 
   return (
     <div className="space-y-2">
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-navy/60">
         <div className="flex justify-between gap-2">
-          <dt>Dimensions</dt>
+          <dt>{t.adminShell.imageReport.dimensions}</dt>
           <dd className="font-semibold text-navy">
             {report.width && report.height ? `${report.width}×${report.height}` : '—'}
           </dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt>Conseillé</dt>
+          <dt>{t.adminShell.imageReport.recommended}</dt>
           <dd className="font-semibold text-navy">
             {slot.width}×{slot.height}
           </dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt>Poids</dt>
-          <dd className="font-semibold text-navy">{formatBytes(stats.size)}</dd>
+          <dt>{t.adminShell.imageReport.weight}</dt>
+          <dd className="font-semibold text-navy">{formatBytes(stats.size, locale)}</dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt>Format</dt>
+          <dt>{t.adminShell.imageReport.ratio}</dt>
           <dd className="font-semibold text-navy">
             {formatRatio(report.ratio)}
-            <span className="ml-1 font-normal text-navy/45">/ {slot.ratioLabel}</span>
+            <span className="ms-1 font-normal text-navy/45">/ {slot.ratioLabel}</span>
           </dd>
         </div>
       </dl>
@@ -59,7 +63,7 @@ export const ImageReportPanel = ({ stats, slot }: { stats: ImageStats; slot: Ima
       {report.issues.length === 0 ? (
         <p className="flex items-center gap-1.5 rounded-lg border border-green/25 bg-green/5 px-2.5 py-1.5 text-xs font-medium text-[#4d7c0f]">
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-          Cette image convient parfaitement à cet emplacement.
+          {t.adminShell.imageReport.allGood}
         </p>
       ) : (
         <ul className="space-y-1.5">
@@ -84,10 +88,7 @@ export const ImageReportPanel = ({ stats, slot }: { stats: ImageStats; slot: Ima
       {slot.note && <p className="text-xs italic text-navy/45">{slot.note}</p>}
 
       {stats.width !== null && (
-        <p className="text-xs text-navy/45">
-          Pensez à décrire l'image dans la bibliothèque de médias : cette description est
-          lue par les lecteurs d'écran et affichée si l'image ne charge pas.
-        </p>
+        <p className="text-xs text-navy/45">{t.adminShell.imageReport.describeHint}</p>
       )}
     </div>
   );
