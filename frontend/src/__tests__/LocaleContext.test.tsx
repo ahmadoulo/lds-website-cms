@@ -19,6 +19,9 @@ const Probe = () => {
       <button type="button" onClick={() => setLocale('ar')}>
         passer en arabe
       </button>
+      <button type="button" onClick={() => setLocale('fr')}>
+        repasser en français
+      </button>
       <Link to="/a-propos">À propos</Link>
     </>
   );
@@ -72,6 +75,38 @@ describe('locale provider', () => {
     // shareable after one click and its canonical points at the French page.
     expect(screen.getByTestId('url')).toHaveTextContent('/a-propos?lang=ar');
     expect(screen.getByTestId('locale')).toHaveTextContent('ar');
+  });
+
+  it('goes back to French, and stays there', async () => {
+    const user = userEvent.setup();
+    renderAt('/?lang=ar');
+    expect(screen.getByTestId('locale')).toHaveTextContent('ar');
+
+    await user.click(screen.getByRole('button', { name: 'repasser en français' }));
+
+    /*
+      The language used to live in React state alongside the address, and the
+      two committed in separate renders: going back to French produced a render
+      still holding `ar` with an address that had already lost its parameter,
+      and the effect put `?lang=ar` back. The switch appeared to do nothing and
+      the visitor was locked in Arabic.
+    */
+    expect(screen.getByTestId('locale')).toHaveTextContent('fr');
+    expect(screen.getByTestId('url').textContent).not.toContain('lang=');
+    expect(screen.getByTestId('dir')).toHaveTextContent('ltr');
+  });
+
+  it('still goes back to French after navigating in Arabic', async () => {
+    const user = userEvent.setup();
+    renderAt('/?lang=ar');
+
+    await user.click(screen.getByRole('link', { name: 'À propos' }));
+    expect(screen.getByTestId('url')).toHaveTextContent('/a-propos?lang=ar');
+
+    await user.click(screen.getByRole('button', { name: 'repasser en français' }));
+    expect(screen.getByTestId('locale')).toHaveTextContent('fr');
+    expect(screen.getByTestId('url')).toHaveTextContent('/a-propos');
+    expect(screen.getByTestId('url').textContent).not.toContain('lang=');
   });
 
   it('remembers the choice for the next visit', async () => {

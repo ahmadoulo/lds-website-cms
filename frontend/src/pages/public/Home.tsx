@@ -16,7 +16,7 @@ import { ErrorState, SkeletonCards, Skeleton } from '../../components/ui/States'
 import { BRAND, WARM_SURFACE, readableOn } from '../../lib/brand';
 import { cn } from '../../lib/cn';
 import { useLocale } from '../../context/LocaleContext';
-import { hasTranslation, localized } from '../../lib/i18n/resolve';
+import { hasTranslation, localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { useT } from '../../lib/i18n/useT';
 import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 import type { GalleryImage } from '../../lib/types';
@@ -134,7 +134,10 @@ const Home = () => {
           <div className="min-w-[min(100%,320px)] flex-[1_1_460px]">
             <span className="mb-4 inline-flex items-center rounded-full bg-green/15 px-3.5 py-1.5 text-eyebrow uppercase sm:mb-6 sm:px-4 sm:py-2"
               style={{ color: readableOn(BRAND.green, WARM_SURFACE) }}>
-              {organization?.name ?? t.common.organizationName}
+              {/* The registered name is one string in both languages, so its
+                  Arabic reading comes from the dictionary - the same rule the
+                  header and the footer already follow. */}
+              {(locale === 'fr' && organization?.name) || t.common.organizationName}
             </span>
 
             {isLoading ? (
@@ -147,10 +150,10 @@ const Home = () => {
               <>
                 {/* The line height belongs to the --text-h1 token, not here. */}
                 <h1 className="mb-4 text-h1 font-extrabold text-navy sm:mb-5">
-                  {localized(homepage?.heroTitle, locale)}
+                  {localizedOrSource(homepage?.heroTitle, locale).text}
                 </h1>
                 <p className="mb-7 max-w-[520px] text-lead leading-relaxed text-navy/70 sm:mb-9">
-                  {localized(homepage?.heroSubtitle, locale)}
+                  {localizedOrSource(homepage?.heroSubtitle, locale).text}
                 </p>
               </>
             )}
@@ -199,10 +202,10 @@ const Home = () => {
                 </span>
                 <span>
                   <span className="block text-body font-extrabold leading-tight text-navy">
-                    {localized(homepage.heroBadgeTitle, locale)}
+                    {localizedOrSource(homepage.heroBadgeTitle, locale).text}
                   </span>
                   <span className="block text-xs text-navy/60">
-                    {localized(homepage.heroBadgeSubtitle, locale)}
+                    {localizedOrSource(homepage.heroBadgeSubtitle, locale).text}
                   </span>
                 </span>
               </div>
@@ -231,13 +234,13 @@ const Home = () => {
               </>
             ) : (
               <>
-                <p className="mb-5 text-body-lg leading-[1.75] text-navy/75">{localized(organization?.about, locale)}</p>
-                <p className="mb-9 text-body-lg leading-[1.75] text-navy/75">{localized(organization?.mission, locale)}</p>
+                <p className="mb-5 text-body-lg leading-[1.75] text-navy/75">{localizedOrSource(organization?.about, locale).text}</p>
+                <p className="mb-9 text-body-lg leading-[1.75] text-navy/75">{localizedOrSource(organization?.mission, locale).text}</p>
                 {organization?.quote && (
                   // The rule hangs where the text begins, in either script.
                   <blockquote className="flex items-start gap-4 border-s-4 border-green bg-warm-muted/60 p-6">
                     <p className="font-lora text-lead italic leading-relaxed text-navy">
-                      {localized(organization.quote, locale)}
+                      {localizedOrSource(organization.quote, locale).text}
                     </p>
                   </blockquote>
                 )}
@@ -439,7 +442,7 @@ const Home = () => {
               around the quote.
             */}
             {isRtl ? '«' : '« '}
-            {localized(homepage?.ctaQuote, locale) || p.home.ctaQuote}
+            {localizedOrSource(homepage?.ctaQuote, locale).text || p.home.ctaQuote}
             {isRtl ? '»' : ' »'}
           </p>
           <CtaLink to="/nous-soutenir" size="lg">

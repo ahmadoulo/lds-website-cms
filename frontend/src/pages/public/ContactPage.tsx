@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { localized } from '../../lib/i18n/resolve';
+import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { AlertCircle, CheckCircle, Mail, MapPin, Phone, Send } from 'lucide-react';
@@ -90,7 +90,7 @@ export const ContactPage = () => {
                 <div className="rounded-2xl border border-navy/8 bg-white p-6">
                   <MapPin className="mb-3 h-5 w-5 text-green" aria-hidden />
                   <h2 className="mb-1 text-sm font-bold text-navy">{p.contact.addressLabel}</h2>
-                  <p className="text-sm leading-relaxed text-navy/65">{localized(contact.address, locale)}</p>
+                  <p className="text-sm leading-relaxed text-navy/65">{localizedOrSource(contact.address, locale).text}</p>
                 </div>
               )}
               {contact?.phone && (

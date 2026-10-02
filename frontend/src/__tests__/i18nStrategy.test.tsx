@@ -15,6 +15,7 @@ vi.mock('../context/SettingsContext', () => ({
 import api from '../lib/api/axios';
 import { ImpactPage } from '../pages/public/ImpactPage';
 import { renderWithProviders } from './testUtils';
+import { localizedOrSource } from '../lib/i18n/resolve';
 
 const mockedApi = api as unknown as { get: ReturnType<typeof vi.fn> };
 
@@ -49,5 +50,38 @@ describe('incomplete translations', () => {
     // The untranslated figure is left out rather than shown in French: a page
     // that mixes the two reads as translated when it is not.
     expect(screen.queryByText('Arbres plantés')).toBeNull();
+  });
+});
+
+describe('settings that carry the page structure', () => {
+  const SETTINGS = {
+    organization: { name: 'Louga Développement Solidaire', shortName: 'LDS' },
+    homepage: {
+      // The association has written the French and not yet the Arabic.
+      heroTitle: { fr: 'Solidarité et action pour un avenir meilleur à Louga' },
+      heroSubtitle: { fr: 'Association à but non lucratif.' },
+    },
+  };
+
+  it('never leaves the headline empty, whatever the language', () => {
+    /*
+      A record with no Arabic is left out of an Arabic listing, and that is
+      right: nothing is missing from the page. A setting is different - it IS
+      the page. An untranslated H1 resolved strictly renders an empty heading,
+      which is a worse answer than an untranslated one, so these fall back and
+      say that they did.
+    */
+    const resolved = localizedOrSource(SETTINGS.homepage.heroTitle, 'ar');
+    expect(resolved.text).toBe('Solidarité et action pour un avenir meilleur à Louga');
+    expect(resolved.untranslated).toBe(true);
+  });
+
+  it('prefers the Arabic as soon as it exists', () => {
+    const resolved = localizedOrSource(
+      { fr: 'Solidarité et action', ar: 'تضامن وعمل' },
+      'ar',
+    );
+    expect(resolved.text).toBe('تضامن وعمل');
+    expect(resolved.untranslated).toBe(false);
   });
 });

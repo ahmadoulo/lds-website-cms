@@ -56,48 +56,61 @@ function urlFor(next: Locale, location: { pathname: string; search: string; hash
 }
 
 export const LocaleProvider = ({ children }: { children: React.ReactNode }) => {
-  const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof window === 'undefined') return DEFAULT_LOCALE;
-    return detectLocale({
-      search: window.location.search,
-      stored: read(LOCALE_STORAGE_KEY),
-      languages: window.navigator.languages ?? [window.navigator.language],
-    });
-  });
-
   const location = useLocation();
   const navigate = useNavigate();
 
   /*
-    The address is the source of truth once the page is open: a link shared in
-    Arabic must open in Arabic, and the back button must change the language
-    back with the page.
+    The address is the single source of truth for the language.
 
-    This has to watch the router's location rather than `popstate`, because a
-    <Link> navigates with pushState, which fires no event. Watching popstate
-    alone meant the language survived a click - it is remembered - but the
-    parameter fell out of the address, so an Arabic page stopped being
-    shareable after the first navigation, and its canonical and hreflang went
-    back to pointing at the French one.
+    It used to be a piece of React state kept in step with the URL by an effect,
+    and the two could not be updated together: `setLocaleState` is React state
+    while `navigate` is the router's, so they commit in separate renders. Going
+    back to French produced a render that still held `ar` while the address had
+    already lost its parameter - and the effect, seeing a language that needed a
+    parameter and an address without one, helpfully put `?lang=ar` back. The
+    language then bounced between the two sources and the visitor was locked in
+    Arabic with a switch that appeared to do nothing.
+
+    Deriving it removes the second source entirely: there is nothing left to
+    disagree with the address.
   */
+  const [remembered, setRemembered] = useState<string | null>(() => read(LOCALE_STORAGE_KEY));
+
+  const locale = useMemo<Locale>(() => {
+    const fromUrl = new URLSearchParams(location.search).get(LOCALE_PARAM);
+    // An explicit parameter is a choice, including `?lang=fr`.
+    if (fromUrl !== null) return normalizeLocale(fromUrl);
+
+    return detectLocale({
+      stored: remembered,
+      languages:
+        typeof window === 'undefined'
+          ? []
+          : (window.navigator.languages ?? [window.navigator.language]),
+    });
+  }, [location.search, remembered]);
+
+  // The address always states what is being read, so a page stays shareable
+  // after a <Link> navigation, which carries no query of its own.
   useEffect(() => {
     const fromUrl = new URLSearchParams(location.search).get(LOCALE_PARAM);
-
-    if (fromUrl !== null) {
-      const requested = normalizeLocale(fromUrl);
-      if (requested !== locale) {
-        write(LOCALE_STORAGE_KEY, requested);
-        setLocaleState(requested);
-      }
-      return;
-    }
-
-    // No parameter in a language that needs one: put it back, in place, so the
-    // address always states what the visitor is reading.
-    if (locale !== DEFAULT_LOCALE) {
+    if (fromUrl === null && locale !== DEFAULT_LOCALE) {
       navigate(urlFor(locale, location), { replace: true });
     }
   }, [location, locale, navigate]);
+
+  /*
+    Whatever the address says is also what gets remembered - in storage for the
+    next visit, and in state so the resolution above stays consistent. Without
+    the second half, opening a shared `?lang=ar` link and then following any
+    <Link> fell back to French: the link carries no query of its own, and the
+    language resolved from the address had never reached the value the fallback
+    reads.
+  */
+  useEffect(() => {
+    write(LOCALE_STORAGE_KEY, locale);
+    setRemembered(locale);
+  }, [locale]);
 
   // The document itself has to say what it is: assistive technology, the
   // browser's own hyphenation and every logical CSS property read from here.
@@ -111,7 +124,9 @@ export const LocaleProvider = ({ children }: { children: React.ReactNode }) => {
     (next: Locale) => {
       const safe = normalizeLocale(next);
       write(LOCALE_STORAGE_KEY, safe);
-      setLocaleState(safe);
+      // Re-read even when the address does not change, so choosing the default
+      // language from a page that already has no parameter still takes effect.
+      setRemembered(safe);
 
       // Replace rather than push: switching language is not a step a visitor
       // wants to walk back through with the back button.
