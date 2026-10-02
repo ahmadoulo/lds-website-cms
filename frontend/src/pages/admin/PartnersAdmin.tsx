@@ -340,7 +340,10 @@ export const PartnersAdmin = () => {
             <Select id="partner-icon" {...register('icon')}>
               {PARTNER_ICON_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {/* The pictogram is the same in both languages; only its name is
+                      translated. The French label is the fallback so a newly added
+                      icon is never a blank line. */}
+                  {t.iconLabels.partner[option.value] ?? option.label}
                 </option>
               ))}
             </Select>

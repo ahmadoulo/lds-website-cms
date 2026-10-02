@@ -277,7 +277,10 @@ export const MissionsAdmin = () => {
                 <Select id="mission-icon" {...register('icon')}>
                   {MISSION_ICON_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
-                      {option.label}
+                      {/* The pictogram is the same in both languages; only its name is
+                          translated. The French label is the fallback so a newly added
+                          icon is never a blank line. */}
+                      {t.iconLabels.mission[option.value] ?? option.label}
                     </option>
                   ))}
                 </Select>

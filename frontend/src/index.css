@@ -187,6 +187,21 @@
   }
 
   /*
+    Arabic is cursive: its letters join, and letter-spacing pulls those joins
+    apart into a row of disconnected glyphs. Every design-system token that
+    spaces letters out - the eyebrow, the tight logo lockup, an uppercase table
+    header - is therefore neutralised here rather than fought class by class at
+    each call site. That matters: `cn()` is tailwind-merge, which cannot see
+    that `text-eyebrow` carries a letter-spacing of its own, so a
+    `tracking-normal` written beside it is silently dropped and the fix looks
+    applied while doing nothing.
+  */
+  [lang='ar'],
+  [lang='ar'] * {
+    letter-spacing: normal;
+  }
+
+  /*
     Arabic sits lower and taller in its line than Latin: at the same size and
     leading it reads cramped. A little more line height, applied only to Arabic,
     costs the French layout nothing.

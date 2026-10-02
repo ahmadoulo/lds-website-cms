@@ -90,7 +90,9 @@ const queryClient = new QueryClient({
 /** Shown while a lazily-loaded route chunk is being fetched. */
 const RouteFallback = () => (
   <div className="flex min-h-screen items-center justify-center bg-warm">
-    <LoadingState label="Chargement…" />
+    {/* No label passed: LoadingState resolves it from the dictionary, so the
+        fallback speaks the language of the page it is loading into. */}
+    <LoadingState />
   </div>
 );
 

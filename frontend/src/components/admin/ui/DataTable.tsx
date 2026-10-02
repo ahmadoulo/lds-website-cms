@@ -60,7 +60,6 @@ export function DataTable<T>({
                       a small French heading and badly in Arabic, where the
                       letters of a word are joined to one another.
                     */
-                    isRtl && 'tracking-normal',
                     column.align === 'right' && 'text-end',
                     column.className,
                   )}
@@ -73,7 +72,6 @@ export function DataTable<T>({
                   scope="col"
                   className={cn(
                     'px-5 py-3.5 text-end text-eyebrow uppercase text-navy/55',
-                    isRtl && 'tracking-normal',
                   )}
                 >
                   {t.adminShell.table.actions}

@@ -39,9 +39,9 @@ export const pagesFr = {
       translated yet. French never reaches it - the filter is a no-op at `fr` -
       but the key still has to exist in both languages for the type to hold.
     */
-    untranslatedTitle: 'Pas encore disponible en arabe',
+    untranslatedTitle: 'Pas encore disponible dans cette langue',
     untranslatedDescription:
-      "Ce contenu n'a pas encore été traduit en arabe. Vous pouvez le consulter en français.",
+      "Ce contenu n'a pas encore été traduit. Il reste consultable dans l'autre langue du site.",
   },
 
   /** Calls to action, declared once so the same button never reads two ways. */
@@ -129,9 +129,9 @@ export const pagesFr = {
       visitor is told so and keeps the pagination, rather than being shown an
       empty grid or dropped back to page one.
     */
-    untranslatedTitle: 'Aucune actualité traduite en arabe sur cette page',
+    untranslatedTitle: 'Aucune actualité traduite sur cette page',
     untranslatedDescription:
-      "Les articles de cette page n'ont pas encore de version arabe. Continuez la navigation ou consultez-les en français.",
+      "Les articles de cette page n'ont pas encore de version dans cette langue. Continuez la navigation ou changez de langue pour les consulter.",
     paginationLabel: 'Pagination des actualités',
     pageOf: (page: number, total: number) => `Page ${page} sur ${total}`,
   },

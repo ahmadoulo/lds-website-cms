@@ -126,7 +126,7 @@ export const PublicLayout = () => {
           <div className="flex flex-wrap gap-6">
             {contact?.email && (
               <a href={`mailto:${contact.email}`} className="flex items-center gap-2 transition-colors hover:text-white">
-                <Mail className="h-3.5 w-3.5 text-green" aria-hidden /> {contact.email}
+                <Mail className="h-3.5 w-3.5 text-green" aria-hidden /> <bdi>{contact.email}</bdi>
               </a>
             )}
             {contact?.phone && (
@@ -134,7 +134,7 @@ export const PublicLayout = () => {
                 href={`tel:${contact.phone.replace(/\s+/g, '')}`}
                 className="flex items-center gap-2 transition-colors hover:text-white"
               >
-                <Phone className="h-3.5 w-3.5 text-green" aria-hidden /> {contact.phone}
+                <Phone className="h-3.5 w-3.5 text-green" aria-hidden /> <bdi>{contact.phone}</bdi>
               </a>
             )}
           </div>
@@ -327,7 +327,7 @@ export const PublicLayout = () => {
               {contact?.address && (
                 <span className="flex items-start gap-3">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-green" aria-hidden />
-                  <span>{contact.address}</span>
+                  <bdi>{contact.address}</bdi>
                 </span>
               )}
               {contact?.phone && (
@@ -335,7 +335,7 @@ export const PublicLayout = () => {
                   href={`tel:${contact.phone.replace(/\s+/g, '')}`}
                   className="flex items-center gap-3 transition-colors hover:text-white"
                 >
-                  <Phone className="h-4 w-4 shrink-0 text-green" aria-hidden /> {contact.phone}
+                  <Phone className="h-4 w-4 shrink-0 text-green" aria-hidden /> <bdi>{contact.phone}</bdi>
                 </a>
               )}
               {contact?.phoneSecondary && (
@@ -343,7 +343,7 @@ export const PublicLayout = () => {
                   href={`tel:${contact.phoneSecondary.replace(/\s+/g, '')}`}
                   className="flex items-center gap-3 transition-colors hover:text-white"
                 >
-                  <Phone className="h-4 w-4 shrink-0 text-green" aria-hidden /> {contact.phoneSecondary}
+                  <Phone className="h-4 w-4 shrink-0 text-green" aria-hidden /> <bdi>{contact.phoneSecondary}</bdi>
                 </a>
               )}
               {contact?.email && (
@@ -351,7 +351,7 @@ export const PublicLayout = () => {
                   href={`mailto:${contact.email}`}
                   className="flex items-center gap-3 break-all transition-colors hover:text-white"
                 >
-                  <Mail className="h-4 w-4 shrink-0 text-green" aria-hidden /> {contact.email}
+                  <Mail className="h-4 w-4 shrink-0 text-green" aria-hidden /> <bdi>{contact.email}</bdi>
                 </a>
               )}
             </address>

@@ -1,4 +1,5 @@
 import { useLocale } from '../../../context/LocaleContext';
+import { isolate } from '../bidi';
 import type { Locale } from '../locale';
 
 /**
@@ -43,18 +44,18 @@ export const componentsFr = {
     position: (current: number, total: number) => `${current} / ${total}`,
   },
   donation: {
-    copied: (value: string) => `${value} copié dans le presse-papiers.`,
+    copied: (value: string) => `${isolate(value)} copié dans le presse-papiers.`,
     /** Shown instead when the browser refuses clipboard access. */
-    dial: (value: string) => `Numéro à composer : ${value}`,
+    dial: (value: string) => `Numéro à composer : ${isolate(value)}`,
   },
   payment: {
-    beneficiary: (name: string) => `Bénéficiaire : ${name}`,
+    beneficiary: (name: string) => `Bénéficiaire : ${isolate(name)}`,
     numberLabel: 'Numéro',
-    payWith: (provider: string) => `Payer avec ${provider}`,
+    payWith: (provider: string) => `Payer avec ${isolate(provider)}`,
     copied: 'Copié',
     copyNumber: 'Copier le numéro',
     dial: 'Composer',
-    enterNumber: (value: string) => `Numéro à saisir : ${value}`,
+    enterNumber: (value: string) => `Numéro à saisir : ${isolate(value)}`,
   },
   /*
     The provider names and instructions used to live in lib/paymentProviders.ts
@@ -127,17 +128,17 @@ export const componentsAr: ComponentsDictionary = {
     position: (current: number, total: number) => `${current} / ${total}`,
   },
   donation: {
-    copied: (value: string) => `تمّ نسخ ${value} إلى الحافظة.`,
-    dial: (value: string) => `الرقم المطلوب الاتصال به: ${value}`,
+    copied: (value: string) => `تمّ نسخ ${isolate(value)} إلى الحافظة.`,
+    dial: (value: string) => `الرقم المطلوب الاتصال به: ${isolate(value)}`,
   },
   payment: {
-    beneficiary: (name: string) => `المستفيد: ${name}`,
+    beneficiary: (name: string) => `المستفيد: ${isolate(name)}`,
     numberLabel: 'الرقم',
-    payWith: (provider: string) => `ادفع عبر ${provider}`,
+    payWith: (provider: string) => `ادفع عبر ${isolate(provider)}`,
     copied: 'تمّ النسخ',
     copyNumber: 'نسخ الرقم',
     dial: 'اتصال',
-    enterNumber: (value: string) => `الرقم المطلوب إدخاله: ${value}`,
+    enterNumber: (value: string) => `الرقم المطلوب إدخاله: ${isolate(value)}`,
   },
   providerLabel: {
     // Brand names travel untranslated, as GLOSSARY.md allows for Wave and GIZ.

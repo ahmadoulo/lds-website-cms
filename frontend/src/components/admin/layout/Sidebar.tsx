@@ -53,9 +53,7 @@ export const Sidebar = ({ isOpen, onClose, unreadMessages = 0 }: SidebarProps) =
             <div key={group.title}>
               <p
                 className={cn(
-                  'mb-1.5 px-3 text-eyebrow uppercasest text-white/35',
-                  // Arabic letters join up: tracking them apart breaks the word.
-                  isRtl && 'tracking-normal',
+                  'mb-1.5 px-3 text-eyebrow uppercase text-white/35',
                 )}
               >
                 {/*

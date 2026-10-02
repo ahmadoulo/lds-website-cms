@@ -3,6 +3,7 @@ import { adminScreensAr, adminScreensFr } from './dictionaries/adminScreens';
 import { adminShellAr, adminShellFr } from './dictionaries/adminShell';
 import { commonAr, commonFr } from './dictionaries/common';
 import { componentsAr, componentsFr } from './dictionaries/components';
+import { iconLabelsAr, iconLabelsFr } from './dictionaries/iconLabels';
 import { layoutAr, layoutFr } from './dictionaries/layout';
 import { pagesAr, pagesFr } from './dictionaries/pages';
 import type { Locale } from './locale';
@@ -23,6 +24,7 @@ const DICTIONARIES = {
     components: componentsFr,
     adminShell: adminShellFr,
     admin: adminScreensFr,
+    iconLabels: iconLabelsFr,
   },
   ar: {
     common: commonAr,
@@ -31,6 +33,7 @@ const DICTIONARIES = {
     components: componentsAr,
     adminShell: adminShellAr,
     admin: adminScreensAr,
+    iconLabels: iconLabelsAr,
   },
 } as const;
 

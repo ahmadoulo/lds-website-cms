@@ -32,7 +32,6 @@ export const Badge = ({ tone = 'neutral', className, children }: BadgeProps) => 
           spacing them apart pulls the word into pieces, so the tracking is
           dropped and only the size and the weight are kept.
         */
-        isRtl && 'tracking-normal',
         TONES[tone],
         className,
       )}
