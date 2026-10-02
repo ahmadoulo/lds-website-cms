@@ -5,10 +5,13 @@ import { BarChart3, Edit2, Eye, EyeOff, Plus, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
 import { useLocale } from '../../context/LocaleContext';
 import { useT } from '../../lib/i18n/useT';
-import { localized, localizedOrSource } from '../../lib/i18n/resolve';
+import { localizedOrSource } from '../../lib/i18n/resolve';
 import { IMPACT_ICON_OPTIONS, resolveIcon } from '../../lib/icons';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
+import { LocalizedFormField } from '../../components/i18n/LocalizedFormField';
+import { TranslationStatus } from '../../components/i18n/TranslationStatus';
+import { cleanLocalized, type LocalizedValue } from '../../components/i18n/LocalizedField';
 import { PreviewButton } from '../../components/admin/ui/PreviewButton';
 import { DataTable, IconButton, type Column } from '../../components/admin/ui/DataTable';
 import { Modal } from '../../components/ui/Modal';
@@ -20,7 +23,9 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States
 import type { ImpactStat } from '../../lib/types';
 
 interface FormValues {
-  label: string;
+  /* Only the wording is linguistic: the figure, its colour, its pictogram
+     and its order are the same in both languages. */
+  label: LocalizedValue;
   value: number;
   color: string;
   icon: string;
@@ -31,7 +36,7 @@ interface FormValues {
 const BRAND_COLORS = ['#87CE18', '#00A4DE', '#EE7900', '#172642'] as const;
 
 const EMPTY_FORM: FormValues = {
-  label: '',
+  label: {},
   value: 0,
   color: BRAND_COLORS[0],
   icon: '',
@@ -56,6 +61,7 @@ export const ImpactAdmin = () => {
     reset,
     watch,
     formState: { errors },
+  control,
   } = useForm<FormValues>({ defaultValues: EMPTY_FORM });
 
   const selectedColor = watch('color');
@@ -80,7 +86,7 @@ export const ImpactAdmin = () => {
     setEditing(stat);
     reset({
       // The form writes the French source, whatever language the screen is in.
-      label: localized(stat.label, 'fr'),
+      label: stat.label ?? {},
       value: stat.value,
       color: stat.color,
       icon: stat.icon ?? '',
@@ -98,7 +104,7 @@ export const ImpactAdmin = () => {
   const saveMutation = useAdminMutation<FormValues>({
     mutationFn: async (values) => {
       const payload = {
-        label: { fr: values.label },
+        label: cleanLocalized(values.label),
         value: Number(values.value),
         color: values.color,
         // Empty means "no pictogram"; the figure is then shown on its own.
@@ -156,6 +162,7 @@ export const ImpactAdmin = () => {
               </span>
             )}
             {text(stat.label)}
+            <TranslationStatus fields={[stat.label]} />
           </span>
         );
       },
@@ -261,22 +268,15 @@ export const ImpactAdmin = () => {
           onSubmit={handleSubmit((values) => saveMutation.mutate(values))}
           className="space-y-5"
         >
-          <Field
+          <LocalizedFormField
+            control={control}
+            name="label"
+            id="impact-label"
             label={t.admin.impact.labelLabel}
-            htmlFor="impact-label"
+            placeholder={t.admin.impact.labelPlaceholder}
+            maxLength={160}
             required
-            error={errors.label?.message}
-          >
-            <Input
-              id="impact-label"
-              placeholder={t.admin.impact.labelPlaceholder}
-              aria-invalid={Boolean(errors.label)}
-              {...register('label', {
-                required: t.admin.impact.labelRequired,
-                minLength: { value: 2, message: t.admin.impact.labelTooShort },
-              })}
-            />
-          </Field>
+          />
 
           <Field
             label={t.admin.impact.valueLabel}

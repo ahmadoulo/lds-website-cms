@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { LocaleProvider } from '../context/LocaleContext';
 import userEvent from '@testing-library/user-event';
 
 import {
@@ -23,7 +25,13 @@ const Harness = ({ initial = {} as LocalizedValue }) => {
 describe('localized field', () => {
   it('edits one record in two languages, not two records', async () => {
     const user = userEvent.setup();
-    render(<Harness />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+          <Harness />
+        </LocaleProvider>
+      </MemoryRouter>,
+    );
 
     await user.type(screen.getByRole('textbox'), 'Éducation');
     await user.click(screen.getByRole('tab', { name: /العربية/ }));
@@ -38,7 +46,13 @@ describe('localized field', () => {
 
   it('keeps each language in its own writing direction', async () => {
     const user = userEvent.setup();
-    render(<Harness />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+          <Harness />
+        </LocaleProvider>
+      </MemoryRouter>,
+    );
 
     expect(screen.getByRole('textbox')).toHaveAttribute('dir', 'ltr');
     await user.click(screen.getByRole('tab', { name: /العربية/ }));
@@ -46,7 +60,13 @@ describe('localized field', () => {
   });
 
   it('says the Arabic is missing without opening its tab', () => {
-    render(<Harness initial={{ fr: 'Éducation' }} />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+          <Harness initial={{ fr: 'Éducation' }} />
+        </LocaleProvider>
+      </MemoryRouter>,
+    );
 
     expect(screen.getByText('Traduction arabe manquante')).toBeInTheDocument();
     // The warning is on the tab itself, so it is visible while editing French.
@@ -55,12 +75,24 @@ describe('localized field', () => {
   });
 
   it('stops warning once the Arabic is there', () => {
-    render(<Harness initial={{ fr: 'Éducation', ar: 'التعليم' }} />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+          <Harness initial={{ fr: 'Éducation', ar: 'التعليم' }} />
+        </LocaleProvider>
+      </MemoryRouter>,
+    );
     expect(screen.queryByText('Traduction arabe manquante')).toBeNull();
   });
 
   it('does not report the French tab as missing when it is filled', () => {
-    render(<Harness initial={{ fr: 'Éducation' }} />);
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+          <Harness initial={{ fr: 'Éducation' }} />
+        </LocaleProvider>
+      </MemoryRouter>,
+    );
     const frenchTab = screen.getByRole('tab', { name: /Français/ });
     expect(within(frenchTab).queryByLabelText('Traduction manquante')).toBeNull();
   });
@@ -85,9 +117,13 @@ describe('cleanLocalized', () => {
 describe('translation status', () => {
   it('reports a record complete only when every field has the language', () => {
     render(
-      <TranslationStatus
+      <MemoryRouter>
+        <LocaleProvider>
+          <TranslationStatus
         fields={[{ fr: 'Titre', ar: 'العنوان' }, { fr: 'Résumé' }]}
-      />,
+      />
+        </LocaleProvider>
+      </MemoryRouter>,
     );
 
     // A title in Arabic with no summary is not a translated article.
@@ -97,9 +133,13 @@ describe('translation status', () => {
 
   it('reports both languages complete when they are', () => {
     render(
-      <TranslationStatus
+      <MemoryRouter>
+        <LocaleProvider>
+          <TranslationStatus
         fields={[{ fr: 'Titre', ar: 'العنوان' }, { fr: 'Résumé', ar: 'الملخّص' }]}
-      />,
+      />
+        </LocaleProvider>
+      </MemoryRouter>,
     );
     expect(screen.getByText('ع').closest('span')!.className).toContain('bg-green/15');
   });

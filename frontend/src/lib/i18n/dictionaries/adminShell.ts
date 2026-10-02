@@ -309,11 +309,6 @@ export const adminShellAr: AdminShellDictionary = {
   },
 };
 
-const ADMIN_SHELL: Record<Locale, AdminShellDictionary> = {
-  fr: adminShellFr,
-  ar: adminShellAr,
-};
-
 /**
  * The locale, for a component that may be rendered without a LocaleProvider.
  *

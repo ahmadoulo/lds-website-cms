@@ -27,6 +27,14 @@ export const commonFr = {
   organizationName: 'Louga Développement Solidaire',
   /** The label of the language switch, in each language. */
   switchLanguage: 'Changer de langue',
+
+  /* The bilingual editor. One record, two languages, in the same form. */
+  fieldLanguage: 'Langue du champ',
+  translationMissing: 'Traduction manquante',
+  arabicMissing: 'Traduction arabe manquante',
+  frenchRequired: 'Le français est obligatoire',
+  translationComplete: 'Traduction complète',
+  translationIncomplete: 'Traduction incomplète',
 } as const;
 
 /**
@@ -57,4 +65,11 @@ export const commonAr: CommonDictionary = {
   // Arabic reading of the city name.
   organizationName: 'لوغا للتنمية والتضامن',
   switchLanguage: 'تغيير اللغة',
+
+  fieldLanguage: 'لغة الحقل',
+  translationMissing: 'الترجمة ناقصة',
+  arabicMissing: 'الترجمة العربية ناقصة',
+  frenchRequired: 'الفرنسية إلزامية',
+  translationComplete: 'الترجمة مكتملة',
+  translationIncomplete: 'الترجمة غير مكتملة',
 };

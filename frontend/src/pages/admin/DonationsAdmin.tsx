@@ -5,25 +5,30 @@ import { Edit2, Eye, EyeOff, HeartHandshake, Plus, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
 import { useLocale } from '../../context/LocaleContext';
 import { useT } from '../../lib/i18n/useT';
-import { localized, localizedOrSource } from '../../lib/i18n/resolve';
+import { localizedOrSource } from '../../lib/i18n/resolve';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
+import { LocalizedFormField } from '../../components/i18n/LocalizedFormField';
+import { TranslationStatus } from '../../components/i18n/TranslationStatus';
+import { cleanLocalized, type LocalizedValue } from '../../components/i18n/LocalizedField';
 import { PreviewButton } from '../../components/admin/ui/PreviewButton';
 import { DataTable, IconButton, type Column } from '../../components/admin/ui/DataTable';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Badge } from '../../components/ui/Badge';
-import { Checkbox, Field, Input, Select, Textarea } from '../../components/ui/Field';
+import { Checkbox, Field, Input, Select } from '../../components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import type { DonationMethod } from '../../lib/types';
 
 interface FormValues {
-  title: string;
-  description: string;
+  /* Linguistic. The provider, the number, the link and the beneficiary are
+     not: a phone number reads the same in both languages. */
+  title: LocalizedValue;
+  description: LocalizedValue;
   actionType: DonationMethod['actionType'];
   actionData: string;
-  actionLabel: string;
+  actionLabel: LocalizedValue;
   iconColor: DonationMethod['iconColor'];
   isPublished: boolean;
   provider: string;
@@ -48,11 +53,11 @@ const COLORS = ['orange', 'blue', 'green', 'navy'] as const;
 const PROVIDERS = ['', 'wave', 'orange_money', 'bank', 'cash', 'other'] as const;
 
 const EMPTY_FORM: FormValues = {
-  title: '',
-  description: '',
+  title: {},
+  description: {},
   actionType: 'phone',
   actionData: '',
-  actionLabel: '',
+  actionLabel: {},
   iconColor: 'orange',
   isPublished: true,
   provider: '',
@@ -78,6 +83,7 @@ export const DonationsAdmin = () => {
     reset,
     watch,
     formState: { errors },
+  control,
   } = useForm<FormValues>({ defaultValues: EMPTY_FORM });
 
   const actionType = watch('actionType');
@@ -123,11 +129,11 @@ export const DonationsAdmin = () => {
     reset({
       // The form writes the French source; the language of the interface has no
       // say over which version of the text is being edited.
-      title: localized(method.title, 'fr'),
-      description: localized(method.description, 'fr'),
+      title: method.title ?? {},
+      description: method.description ?? {},
       actionType: method.actionType,
       actionData: method.actionData,
-      actionLabel: localized(method.actionLabel, 'fr'),
+      actionLabel: method.actionLabel ?? {},
       iconColor: method.iconColor,
       isPublished: method.isPublished,
       provider: method.provider ?? '',
@@ -146,11 +152,11 @@ export const DonationsAdmin = () => {
   const saveMutation = useAdminMutation<FormValues>({
     mutationFn: async (values) => {
       const payload = {
-        title: { fr: values.title },
-        description: { fr: values.description },
+        title: cleanLocalized(values.title),
+        description: cleanLocalized(values.description),
         actionType: values.actionType,
         actionData: values.actionData,
-        actionLabel: { fr: values.actionLabel },
+        actionLabel: cleanLocalized(values.actionLabel),
         iconColor: values.iconColor,
         isPublished: values.isPublished,
         // Empty means "not a payment provider"; null keeps the column clean.
@@ -190,6 +196,10 @@ export const DonationsAdmin = () => {
         <div className="min-w-0">
           <p className="truncate font-semibold text-navy">{text(method.title)}</p>
           <p className="line-clamp-1 text-xs text-navy/50">{text(method.description)}</p>
+          <TranslationStatus
+            className="mt-1"
+            fields={[method.title, method.description, method.actionLabel]}
+          />
         </div>
       ),
     },
@@ -291,33 +301,26 @@ export const DonationsAdmin = () => {
           onSubmit={handleSubmit((values) => saveMutation.mutate(values))}
           className="space-y-5"
         >
-          <Field
+          <LocalizedFormField
+            control={control}
+            name="title"
+            id="donation-title"
             label={t.admin.donations.titleLabel}
-            htmlFor="donation-title"
+            placeholder={t.admin.donations.titlePlaceholder}
+            maxLength={160}
             required
-            error={errors.title?.message}
-          >
-            <Input
-              id="donation-title"
-              placeholder={t.admin.donations.titlePlaceholder}
-              aria-invalid={Boolean(errors.title)}
-              {...register('title', { required: t.admin.donations.titleRequired })}
-            />
-          </Field>
+          />
 
-          <Field
+          <LocalizedFormField
+            control={control}
+            name="description"
+            id="donation-description"
             label={t.admin.donations.descriptionLabel}
-            htmlFor="donation-description"
+            multiline
+            rows={3}
+            maxLength={1200}
             required
-            error={errors.description?.message}
-          >
-            <Textarea
-              id="donation-description"
-              rows={3}
-              aria-invalid={Boolean(errors.description)}
-              {...register('description', { required: t.admin.donations.descriptionRequired })}
-            />
-          </Field>
+          />
 
           <Field label={t.admin.donations.typeLabel} htmlFor="donation-type">
             <Select id="donation-type" {...register('actionType')}>
@@ -343,19 +346,15 @@ export const DonationsAdmin = () => {
             />
           </Field>
 
-          <Field
+          <LocalizedFormField
+            control={control}
+            name="actionLabel"
+            id="donation-label"
             label={t.admin.donations.buttonLabel}
-            htmlFor="donation-label"
+            placeholder={t.admin.donations.buttonLabelPlaceholder}
+            maxLength={160}
             required
-            error={errors.actionLabel?.message}
-          >
-            <Input
-              id="donation-label"
-              placeholder={t.admin.donations.buttonLabelPlaceholder}
-              aria-invalid={Boolean(errors.actionLabel)}
-              {...register('actionLabel', { required: t.admin.donations.buttonLabelRequired })}
-            />
-          </Field>
+          />
 
           <Field
             label={t.admin.donations.providerLabel}

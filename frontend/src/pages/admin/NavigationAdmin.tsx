@@ -5,9 +5,12 @@ import { ArrowDown, ArrowUp, Edit2, Menu, Plus, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
 import { useLocale } from '../../context/LocaleContext';
 import { useT } from '../../lib/i18n/useT';
-import { localized, localizedOrSource } from '../../lib/i18n/resolve';
+import { localizedOrSource } from '../../lib/i18n/resolve';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
+import { LocalizedFormField } from '../../components/i18n/LocalizedFormField';
+import { TranslationStatus } from '../../components/i18n/TranslationStatus';
+import { cleanLocalized, type LocalizedValue } from '../../components/i18n/LocalizedField';
 import { IconButton } from '../../components/admin/ui/DataTable';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
@@ -17,11 +20,12 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States
 import type { NavigationItem } from '../../lib/types';
 
 interface FormValues {
-  label: string;
+  /* The href is an address, not a sentence: it stays single-valued. */
+  label: LocalizedValue;
   href: string;
 }
 
-const EMPTY_FORM: FormValues = { label: '', href: '' };
+const EMPTY_FORM: FormValues = { label: {}, href: '' };
 
 export const NavigationAdmin = () => {
   const t = useT();
@@ -40,6 +44,7 @@ export const NavigationAdmin = () => {
     handleSubmit,
     reset,
     formState: { errors },
+  control,
   } = useForm<FormValues>({ defaultValues: EMPTY_FORM });
 
   const openCreate = () => {
@@ -51,7 +56,7 @@ export const NavigationAdmin = () => {
   const openEdit = (item: NavigationItem) => {
     setEditing(item);
     // The form writes the French source, whatever language the screen is in.
-    reset({ label: localized(item.label, 'fr'), href: item.href });
+    reset({ label: item.label ?? {}, href: item.href });
     setIsFormOpen(true);
   };
 
@@ -63,7 +68,7 @@ export const NavigationAdmin = () => {
 
   const saveMutation = useAdminMutation<FormValues>({
     mutationFn: async (values) => {
-      const payload = { label: { fr: values.label }, href: values.href };
+      const payload = { label: cleanLocalized(values.label), href: values.href };
       return editing
         ? (await api.patch(`/navigation/${editing.id}`, payload)).data
         : (await api.post('/navigation', payload)).data;
@@ -135,7 +140,12 @@ export const NavigationAdmin = () => {
                 <p className="truncate font-semibold text-navy">
                   {localizedOrSource(item.label, locale).text}
                 </p>
-                <p className="truncate text-xs text-navy/50">{item.href}</p>
+                <p className="truncate text-xs text-navy/50">
+                  {/* An address has no language: isolated so a leading slash
+                      does not jump to the far side of a right-to-left line. */}
+                  <bdi>{item.href}</bdi>
+                </p>
+                <TranslationStatus className="mt-1" fields={[item.label]} />
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <IconButton
@@ -183,19 +193,15 @@ export const NavigationAdmin = () => {
           onSubmit={handleSubmit((values) => saveMutation.mutate(values))}
           className="space-y-5"
         >
-          <Field
+          <LocalizedFormField
+            control={control}
+            name="label"
+            id="nav-label"
             label={t.admin.navigation.labelLabel}
-            htmlFor="nav-label"
+            placeholder={t.admin.navigation.labelPlaceholder}
+            maxLength={160}
             required
-            error={errors.label?.message}
-          >
-            <Input
-              id="nav-label"
-              placeholder={t.admin.navigation.labelPlaceholder}
-              aria-invalid={Boolean(errors.label)}
-              {...register('label', { required: t.admin.navigation.labelRequired })}
-            />
-          </Field>
+          />
 
           <Field
             label={t.admin.navigation.hrefLabel}

@@ -82,7 +82,11 @@ describe('NewsAdmin', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Nouvelle actualité/i }));
     await userEvent.click(screen.getByRole('button', { name: /Créer l'actualité/i }));
 
-    expect(await screen.findByText('Le titre est obligatoire')).toBeInTheDocument();
+    // Every bilingual field reports the same thing, because it is the same
+    // rule: French is the editorial source and the API requires it.
+    // Three required bilingual fields, so three identical messages: the form
+    // reports every missing one at once rather than the first.
+    expect(await screen.findAllByText('Le français est obligatoire')).toHaveLength(3);
     expect(mockedApi.post).not.toHaveBeenCalled();
   });
 
@@ -94,7 +98,7 @@ describe('NewsAdmin', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Nouvelle actualité/i }));
 
     await userEvent.type(screen.getByLabelText(/^Titre/i), 'Nouvelle action');
-    await userEvent.type(screen.getByLabelText(/Extrait/i), 'Un court résumé');
+    await userEvent.type(screen.getByLabelText(/^Extrait/i), 'Un court résumé');
     await userEvent.type(screen.getByLabelText(/^Contenu/i), 'Le contenu complet');
     await userEvent.click(screen.getByRole('button', { name: /Créer l'actualité/i }));
 
@@ -119,7 +123,7 @@ describe('NewsAdmin', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Nouvelle actualité/i }));
     await userEvent.type(screen.getByLabelText(/^Titre/i), 'Titre');
     await userEvent.type(screen.getByLabelText(/Slug/i), 'Pas Valide!');
-    await userEvent.type(screen.getByLabelText(/Extrait/i), 'Résumé');
+    await userEvent.type(screen.getByLabelText(/^Extrait/i), 'Résumé');
     await userEvent.type(screen.getByLabelText(/^Contenu/i), 'Contenu');
     await userEvent.click(screen.getByRole('button', { name: /Créer l'actualité/i }));
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TriangleAlert } from 'lucide-react';
 import { LOCALES, LOCALE_LABEL, DIRECTION, type Locale } from '../../lib/i18n/locale';
+import { useT } from '../../lib/i18n/useT';
 import { cn } from '../../lib/cn';
 
 export type LocalizedValue = Partial<Record<Locale, string>>;
@@ -46,6 +47,7 @@ export const LocalizedField = ({
   className?: string;
 }) => {
   const [active, setActive] = useState<Locale>('fr');
+  const t = useT();
 
   const filled = (locale: Locale) => Boolean(value[locale]?.trim());
   const controlId = `${id}-${active}`;
@@ -72,7 +74,7 @@ export const LocalizedField = ({
         {/* Named for what it does, not for the field: sharing the field's name
             makes the tablist and the input indistinguishable to a screen
             reader asked for "Titre". */}
-        <div role="tablist" aria-label={`Langue du champ : ${label}`} className="flex gap-1">
+        <div role="tablist" aria-label={`${t.common.fieldLanguage} : ${label}`} className="flex gap-1">
           {LOCALES.map((locale) => (
             <button
               key={locale}
@@ -90,10 +92,7 @@ export const LocalizedField = ({
             >
               <span lang={locale}>{LOCALE_LABEL[locale]}</span>
               {!filled(locale) && (
-                <TriangleAlert
-                  className="h-3 w-3 text-orange"
-                  aria-label="Traduction manquante"
-                />
+                <TriangleAlert className="h-3 w-3 text-orange" aria-label={t.common.translationMissing} />
               )}
             </button>
           ))}
@@ -139,7 +138,7 @@ export const LocalizedField = ({
       {!filled('ar') && !error && (
         <p className="flex items-center gap-1.5 text-xs text-orange">
           <TriangleAlert className="h-3 w-3 shrink-0" aria-hidden />
-          Traduction arabe manquante
+          {t.common.arabicMissing}
         </p>
       )}
     </div>

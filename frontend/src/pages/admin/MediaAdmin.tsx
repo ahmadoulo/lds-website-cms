@@ -4,7 +4,7 @@ import api from '../../lib/api/axios';
 import { apiErrorMessage } from '../../lib/apiErrorMessage';
 import { useLocale } from '../../context/LocaleContext';
 import { useT } from '../../lib/i18n/useT';
-import { localized, localizedOrSource } from '../../lib/i18n/resolve';
+import { localizedOrSource } from '../../lib/i18n/resolve';
 import {
   formatBytes,
   useAdminMutation,
@@ -15,12 +15,17 @@ import {
 } from '../../lib/queries/adminHooks';
 import { useToast } from '../../components/ui/Toast';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
+import {
+  LocalizedField,
+  cleanLocalized,
+  type LocalizedValue,
+} from '../../components/i18n/LocalizedField';
 import { SearchInput } from '../../components/admin/ui/SearchInput';
 import { Pagination } from '../../components/admin/ui/Pagination';
 import { Button } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Modal } from '../../components/ui/Modal';
-import { Field, Textarea } from '../../components/ui/Field';
+
 import { EmptyState, ErrorState, LoadingState, Spinner } from '../../components/ui/States';
 import { cn } from '../../lib/cn';
 import type { Media } from '../../lib/types';
@@ -37,7 +42,7 @@ export const MediaAdmin = () => {
   const [pendingDelete, setPendingDelete] = useState<Media | null>(null);
   const [isPurging, setIsPurging] = useState(false);
   const [editingAlt, setEditingAlt] = useState<Media | null>(null);
-  const [altDraft, setAltDraft] = useState('');
+  const [altDraft, setAltDraft] = useState<LocalizedValue>({});
 
   const libraryQuery = useMediaLibrary({ page, folder, search });
   const foldersQuery = useMediaFolders();
@@ -56,9 +61,13 @@ export const MediaAdmin = () => {
     onSuccess: () => setPendingDelete(null),
   });
 
-  const altMutation = useAdminMutation<{ id: string; altText: string }>({
+  const altMutation = useAdminMutation<{ id: string; altText: LocalizedValue }>({
     mutationFn: async ({ id, altText }) =>
-      (await api.patch(`/media/${id}`, { altText: altText ? { fr: altText } : undefined })).data,
+      // undefined leaves the column alone; the API merges what is sent, so a
+      // language left untouched here is never dropped.
+      (await api.patch(`/media/${id}`, {
+        altText: Object.keys(altText).length ? altText : undefined,
+      })).data,
     successMessage: t.admin.media.altSaved,
     invalidate: [['admin', 'media']],
     onSuccess: () => setEditingAlt(null),
@@ -202,7 +211,7 @@ export const MediaAdmin = () => {
                       type="button"
                       onClick={() => {
                         setEditingAlt(media);
-                        setAltDraft(localized(media.altText, 'fr'));
+                        setAltDraft(media.altText ?? {});
                       }}
                       aria-label={t.admin.media.describeAria(media.originalName)}
                       className="rounded-lg bg-white/90 p-1.5 text-navy shadow transition-colors hover:bg-white"
@@ -293,7 +302,8 @@ export const MediaAdmin = () => {
             <Button
               isLoading={altMutation.isPending}
               onClick={() =>
-                editingAlt && altMutation.mutate({ id: editingAlt.id, altText: altDraft.trim() })
+                editingAlt &&
+                altMutation.mutate({ id: editingAlt.id, altText: cleanLocalized(altDraft) })
               }
             >
               {t.common.save}
@@ -308,19 +318,19 @@ export const MediaAdmin = () => {
               alt={localizedOrSource(editingAlt.altText, locale).text || editingAlt.originalName}
               className="max-h-48 w-full rounded-lg object-contain"
             />
-            <Field
+            {/* The file is the same in both languages; only what it is
+                described as is not. */}
+            <LocalizedField
+              id="media-alt"
               label={t.admin.media.altLabel}
-              htmlFor="media-alt"
               hint={t.admin.media.altHint}
-            >
-              <Textarea
-                id="media-alt"
-                rows={3}
-                value={altDraft}
-                onChange={(event) => setAltDraft(event.target.value)}
-                placeholder={t.admin.media.altPlaceholder}
-              />
-            </Field>
+              placeholder={t.admin.media.altPlaceholder}
+              multiline
+              rows={3}
+              maxLength={500}
+              value={altDraft}
+              onChange={setAltDraft}
+            />
           </div>
         )}
       </Modal>

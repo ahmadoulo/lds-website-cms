@@ -1,6 +1,5 @@
 import React from 'react';
 import { cn } from '../../lib/cn';
-import { useShellLocale } from '../../lib/i18n/dictionaries/adminShell';
 
 type Tone = 'green' | 'blue' | 'orange' | 'navy' | 'neutral' | 'red';
 
@@ -19,10 +18,8 @@ interface BadgeProps {
   children: React.ReactNode;
 }
 
-export const Badge = ({ tone = 'neutral', className, children }: BadgeProps) => {
-  const { isRtl } = useShellLocale();
-
-  return (
+export const Badge = ({ tone = 'neutral', className, children }: BadgeProps) => (
+  
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-eyebrow uppercase',
@@ -38,5 +35,4 @@ export const Badge = ({ tone = 'neutral', className, children }: BadgeProps) => 
     >
       {children}
     </span>
-  );
-};
+);

@@ -5,7 +5,6 @@ import { Edit2, Eye, EyeOff, ImageIcon, Plus, Target, Trash2 } from 'lucide-reac
 import api from '../../lib/api/axios';
 import { useLocale } from '../../context/LocaleContext';
 import { useT } from '../../lib/i18n/useT';
-import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { MISSION_ICON_OPTIONS, resolveIcon } from '../../lib/icons';
 import { commitImage, type ImageSelection } from '../../lib/pendingImage';
@@ -17,22 +16,28 @@ import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Badge } from '../../components/ui/Badge';
-import { Checkbox, Field, Input, Select, Textarea } from '../../components/ui/Field';
+import { Checkbox, Field, Select } from '../../components/ui/Field';
+import { LocalizedFormField } from '../../components/i18n/LocalizedFormField';
+import { TranslationStatus } from '../../components/i18n/TranslationStatus';
+import { localizedOrSource } from '../../lib/i18n/resolve';
+import { cleanLocalized, type LocalizedValue } from '../../components/i18n/LocalizedField';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import type { Mission } from '../../lib/types';
 
 interface FormValues {
-  title: string;
-  description: string;
-  content: string;
+  /* One record, both languages. The icon, the cover and the publication state
+     are not linguistic and stay single-valued. */
+  title: LocalizedValue;
+  description: LocalizedValue;
+  content: LocalizedValue;
   icon: string;
   isPublished: boolean;
 }
 
 const EMPTY_FORM: FormValues = {
-  title: '',
-  description: '',
-  content: '',
+  title: {},
+  description: {},
+  content: {},
   icon: MISSION_ICON_OPTIONS[0].value,
   isPublished: true,
 };
@@ -54,7 +59,7 @@ export const MissionsAdmin = () => {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    control,
   } = useForm<FormValues>({ defaultValues: EMPTY_FORM });
 
   const text = (value: Parameters<typeof localizedOrSource>[0]) =>
@@ -71,10 +76,11 @@ export const MissionsAdmin = () => {
     setEditing(mission);
     setCover(mission.image);
     reset({
-      // The form writes the French source, whatever language the screen is in.
-      title: localized(mission.title, 'fr'),
-      description: localized(mission.description, 'fr'),
-      content: localized(mission.content, 'fr'),
+      // The stored object is loaded whole, so editing one language never drops
+      // the other - the form is the record, not a view of one language of it.
+      title: mission.title ?? {},
+      description: mission.description ?? {},
+      content: mission.content ?? {},
       icon: mission.icon ?? MISSION_ICON_OPTIONS[0].value,
       isPublished: mission.isPublished,
     });
@@ -94,11 +100,13 @@ export const MissionsAdmin = () => {
       const uploaded = await commitImage(cover, 'missions');
 
       const payload = {
-        title: { fr: values.title },
-        description: { fr: values.description },
+        title: cleanLocalized(values.title),
+        description: cleanLocalized(values.description),
         // null clears the long form server-side; omitting the key would leave
-        // whatever was there.
-        content: values.content.trim() ? { fr: values.content } : null,
+        // whatever was there. An empty object means every language was cleared.
+        content: Object.keys(cleanLocalized(values.content)).length
+          ? cleanLocalized(values.content)
+          : null,
         icon: values.icon,
         imageId: uploaded?.id ?? null,
         isPublished: values.isPublished,
@@ -150,6 +158,10 @@ export const MissionsAdmin = () => {
             {text(mission.title) || t.admin.dashboard.untitled}
           </p>
           <p className="line-clamp-1 text-xs text-navy/50">{text(mission.description)}</p>
+          <TranslationStatus
+            className="mt-1"
+            fields={[mission.title, mission.description]}
+          />
         </div>
       ),
     },
@@ -256,22 +268,15 @@ export const MissionsAdmin = () => {
         >
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-5">
-              <Field
+              <LocalizedFormField
+                control={control}
+                name="title"
+                id="mission-title"
                 label={t.admin.missions.labelLabel}
-                htmlFor="mission-title"
+                placeholder={t.admin.missions.labelPlaceholder}
+                maxLength={160}
                 required
-                error={errors.title?.message}
-              >
-                <Input
-                  id="mission-title"
-                  placeholder={t.admin.missions.labelPlaceholder}
-                  aria-invalid={Boolean(errors.title)}
-                  {...register('title', {
-                    required: t.admin.missions.labelRequired,
-                    minLength: { value: 2, message: t.admin.missions.labelTooShort },
-                  })}
-                />
-              </Field>
+              />
 
               <Field label={t.admin.missions.iconLabel} htmlFor="mission-icon">
                 <Select id="mission-icon" {...register('icon')}>
@@ -295,39 +300,30 @@ export const MissionsAdmin = () => {
             />
           </div>
 
-          <Field
+          <LocalizedFormField
+            control={control}
+            name="description"
+            id="mission-description"
             label={t.admin.missions.descriptionLabel}
-            htmlFor="mission-description"
-            required
             hint={t.admin.missions.descriptionHint}
-            error={errors.description?.message}
-          >
-            <Textarea
-              id="mission-description"
-              rows={4}
-              aria-invalid={Boolean(errors.description)}
-              {...register('description', {
-                required: t.admin.missions.descriptionRequired,
-                maxLength: { value: 1200, message: t.admin.missions.descriptionMax },
-              })}
-            />
-          </Field>
+            multiline
+            rows={4}
+            maxLength={1200}
+            required
+          />
 
-          <Field
+          {/* The long form is optional, so no `required`: a domain can ship
+              with its description alone, in either language. */}
+          <LocalizedFormField
+            control={control}
+            name="content"
+            id="mission-content"
             label={t.admin.missions.contentLabel}
-            htmlFor="mission-content"
             hint={t.admin.missions.contentHint}
-            error={errors.content?.message}
-          >
-            <Textarea
-              id="mission-content"
-              rows={8}
-              aria-invalid={Boolean(errors.content)}
-              {...register('content', {
-                maxLength: { value: 20000, message: t.admin.missions.contentMax },
-              })}
-            />
-          </Field>
+            multiline
+            rows={8}
+            maxLength={20000}
+          />
 
           <Checkbox
             id="mission-published"

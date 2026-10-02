@@ -6,10 +6,13 @@ import { Edit2, Eye, EyeOff, FileText, ImageIcon, Plus, ScanEye, Tag, Trash2 } f
 import api from '../../lib/api/axios';
 import { useLocale } from '../../context/LocaleContext';
 import { useT } from '../../lib/i18n/useT';
-import { localized, localizedOrSource } from '../../lib/i18n/resolve';
+import { localizedOrSource } from '../../lib/i18n/resolve';
 import { useAdminMutation } from '../../lib/queries/adminHooks';
 import { commitImage, type ImageSelection } from '../../lib/pendingImage';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
+import { LocalizedFormField } from '../../components/i18n/LocalizedFormField';
+import { TranslationStatus } from '../../components/i18n/TranslationStatus';
+import { cleanLocalized, type LocalizedValue } from '../../components/i18n/LocalizedField';
 import { PreviewButton, openPreview } from '../../components/admin/ui/PreviewButton';
 import { DataTable, IconButton, type Column } from '../../components/admin/ui/DataTable';
 import { SearchInput } from '../../components/admin/ui/SearchInput';
@@ -19,24 +22,25 @@ import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Badge } from '../../components/ui/Badge';
-import { Checkbox, Field, Input, Select, Textarea } from '../../components/ui/Field';
+import { Checkbox, Field, Input, Select } from '../../components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import type { NewsArticle, NewsCategory, Paginated } from '../../lib/types';
 
 interface FormValues {
-  title: string;
+  /* The slug, the cover, the category and the date are not linguistic. */
+  title: LocalizedValue;
   slug: string;
-  excerpt: string;
-  content: string;
+  excerpt: LocalizedValue;
+  content: LocalizedValue;
   categoryId: string;
   isPublished: boolean;
 }
 
 const EMPTY_FORM: FormValues = {
-  title: '',
+  title: {},
   slug: '',
-  excerpt: '',
-  content: '',
+  excerpt: {},
+  content: {},
   categoryId: '',
   isPublished: false,
 };
@@ -73,6 +77,7 @@ export const NewsAdmin = () => {
     handleSubmit,
     reset,
     formState: { errors },
+  control,
   } = useForm<FormValues>({ defaultValues: EMPTY_FORM });
 
   const text = (value: Parameters<typeof localizedOrSource>[0]) =>
@@ -90,10 +95,10 @@ export const NewsAdmin = () => {
     setCover(article.image);
     reset({
       // The form writes the French source, whatever language the screen is in.
-      title: localized(article.title, 'fr'),
+      title: article.title ?? {},
       slug: article.slug,
-      excerpt: localized(article.excerpt, 'fr'),
-      content: localized(article.content, 'fr'),
+      excerpt: article.excerpt ?? {},
+      content: article.content ?? {},
       categoryId: article.categoryId ?? '',
       isPublished: article.isPublished,
     });
@@ -133,9 +138,9 @@ export const NewsAdmin = () => {
       const uploaded = await commitImage(cover, 'news');
 
       const payload = {
-        title: { fr: values.title },
-        excerpt: { fr: values.excerpt },
-        content: { fr: values.content },
+        title: cleanLocalized(values.title),
+        excerpt: cleanLocalized(values.excerpt),
+        content: cleanLocalized(values.content),
         slug: values.slug || undefined,
         categoryId: values.categoryId || undefined,
         imageId: uploaded?.id ?? null,
@@ -192,7 +197,15 @@ export const NewsAdmin = () => {
           <p className="truncate font-semibold text-navy">
             {text(article.title) || t.admin.dashboard.untitled}
           </p>
-          <p className="truncate text-xs text-navy/45">/{article.slug}</p>
+          <p className="truncate text-xs text-navy/45">
+            {/* A slug has no language: isolated so its leading slash does not
+                jump to the far side of a right-to-left line. */}
+            <bdi>/{article.slug}</bdi>
+          </p>
+          <TranslationStatus
+            className="mt-1"
+            fields={[article.title, article.excerpt, article.content]}
+          />
         </div>
       ),
     },
@@ -337,21 +350,14 @@ export const NewsAdmin = () => {
         >
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-5">
-              <Field
+              <LocalizedFormField
+                control={control}
+                name="title"
+                id="news-title"
                 label={t.admin.news.titleLabel}
-                htmlFor="news-title"
+                maxLength={200}
                 required
-                error={errors.title?.message}
-              >
-                <Input
-                  id="news-title"
-                  aria-invalid={Boolean(errors.title)}
-                  {...register('title', {
-                    required: t.admin.news.titleRequired,
-                    minLength: { value: 3, message: t.admin.news.titleTooShort },
-                  })}
-                />
-              </Field>
+              />
 
               <Field
                 label={t.admin.news.slugLabel}
@@ -392,38 +398,31 @@ export const NewsAdmin = () => {
             />
           </div>
 
-          <Field
+          <LocalizedFormField
+            control={control}
+            name="excerpt"
+            id="news-excerpt"
             label={t.admin.news.excerptLabel}
-            htmlFor="news-excerpt"
-            required
             hint={t.admin.news.excerptHint}
-            error={errors.excerpt?.message}
-          >
-            <Textarea
-              id="news-excerpt"
-              rows={2}
-              aria-invalid={Boolean(errors.excerpt)}
-              {...register('excerpt', {
-                required: t.admin.news.excerptRequired,
-                maxLength: { value: 600, message: t.admin.news.excerptMax },
-              })}
-            />
-          </Field>
-
-          <Field
-            label={t.admin.news.contentLabel}
-            htmlFor="news-content"
+            multiline
+            rows={2}
+            maxLength={600}
             required
+          />
+
+          {/* The body is HTML in both languages, each stored independently:
+              switching tab never carries one language's markup into the other. */}
+          <LocalizedFormField
+            control={control}
+            name="content"
+            id="news-content"
+            label={t.admin.news.contentLabel}
             hint={t.admin.news.contentHint}
-            error={errors.content?.message}
-          >
-            <Textarea
-              id="news-content"
-              rows={10}
-              aria-invalid={Boolean(errors.content)}
-              {...register('content', { required: t.admin.news.contentRequired })}
-            />
-          </Field>
+            multiline
+            rows={10}
+            maxLength={100000}
+            required
+          />
 
           <Checkbox
             id="news-published"

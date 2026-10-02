@@ -6,28 +6,32 @@ import api from '../../lib/api/axios';
 import { apiErrorMessage } from '../../lib/apiErrorMessage';
 import { useLocale } from '../../context/LocaleContext';
 import { useT } from '../../lib/i18n/useT';
-import { localized, localizedOrSource } from '../../lib/i18n/resolve';
+import { localizedOrSource } from '../../lib/i18n/resolve';
 import { useAdminMutation, uploadMedia, validateImageFile } from '../../lib/queries/adminHooks';
 import { useToast } from '../../components/ui/Toast';
 import { PageHeader } from '../../components/admin/ui/PageHeader';
+import { LocalizedFormField } from '../../components/i18n/LocalizedFormField';
+import { TranslationStatus } from '../../components/i18n/TranslationStatus';
+import { cleanLocalized, type LocalizedValue } from '../../components/i18n/LocalizedField';
 import { PreviewButton } from '../../components/admin/ui/PreviewButton';
 import { MediaLibraryModal } from '../../components/admin/ui/MediaPicker';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Badge } from '../../components/ui/Badge';
-import { Checkbox, Field, Input, Textarea } from '../../components/ui/Field';
+import { Checkbox } from '../../components/ui/Field';
 import { EmptyState, ErrorState, LoadingState, Spinner } from '../../components/ui/States';
 import { IconButton } from '../../components/admin/ui/DataTable';
 import type { GalleryAlbum, GalleryImage } from '../../lib/types';
 
 interface AlbumFormValues {
-  title: string;
-  description: string;
+  /* The cover, the order and the publication state are not linguistic. */
+  title: LocalizedValue;
+  description: LocalizedValue;
   isPublished: boolean;
 }
 
-const EMPTY_FORM: AlbumFormValues = { title: '', description: '', isPublished: true };
+const EMPTY_FORM: AlbumFormValues = { title: {}, description: {}, isPublished: true };
 
 export const GalleryAdmin = () => {
   const t = useT();
@@ -49,7 +53,7 @@ export const GalleryAdmin = () => {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+  control,
   } = useForm<AlbumFormValues>({ defaultValues: EMPTY_FORM });
 
   const openCreate = () => {
@@ -62,8 +66,8 @@ export const GalleryAdmin = () => {
     setEditingAlbum(album);
     reset({
       // The form writes the French source, whatever language the screen is in.
-      title: localized(album.title, 'fr'),
-      description: localized(album.description, 'fr'),
+      title: album.title ?? {},
+      description: album.description ?? {},
       isPublished: album.isPublished,
     });
     setIsFormOpen(true);
@@ -78,8 +82,11 @@ export const GalleryAdmin = () => {
   const saveAlbum = useAdminMutation<AlbumFormValues>({
     mutationFn: async (values) => {
       const payload = {
-        title: { fr: values.title },
-        description: values.description.trim() ? { fr: values.description } : undefined,
+        title: cleanLocalized(values.title),
+        // undefined leaves the column alone; an empty object would clear it.
+        description: Object.keys(cleanLocalized(values.description)).length
+          ? cleanLocalized(values.description)
+          : undefined,
         isPublished: values.isPublished,
       };
 
@@ -187,6 +194,7 @@ export const GalleryAdmin = () => {
                     <Badge tone={album.isPublished ? 'green' : 'neutral'}>
                       {album.isPublished ? t.admin.common.published : t.admin.common.draft}
                     </Badge>
+                    <TranslationStatus fields={[album.title]} />
                   </div>
                   {album.description && (
                     <p className="mt-1 text-sm text-navy/60">
@@ -297,30 +305,26 @@ export const GalleryAdmin = () => {
           onSubmit={handleSubmit((values) => saveAlbum.mutate(values))}
           className="space-y-5"
         >
-          <Field
+          <LocalizedFormField
+            control={control}
+            name="title"
+            id="album-title"
             label={t.admin.gallery.titleLabel}
-            htmlFor="album-title"
+            placeholder={t.admin.gallery.titlePlaceholder}
+            maxLength={160}
             required
-            error={errors.title?.message}
-          >
-            <Input
-              id="album-title"
-              placeholder={t.admin.gallery.titlePlaceholder}
-              aria-invalid={Boolean(errors.title)}
-              {...register('title', {
-                required: t.admin.gallery.titleRequired,
-                minLength: { value: 2, message: t.admin.gallery.titleTooShort },
-              })}
-            />
-          </Field>
+          />
 
-          <Field
+          <LocalizedFormField
+            control={control}
+            name="description"
+            id="album-description"
             label={t.admin.gallery.descriptionLabel}
-            htmlFor="album-description"
             hint={t.admin.gallery.descriptionHint}
-          >
-            <Textarea id="album-description" rows={3} {...register('description')} />
-          </Field>
+            multiline
+            rows={3}
+            maxLength={1200}
+          />
 
           <Checkbox
             id="album-published"
