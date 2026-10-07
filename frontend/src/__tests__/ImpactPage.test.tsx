@@ -99,10 +99,13 @@ describe('ImpactPage', () => {
     renderPage();
 
     expect(await screen.findByText('Ces chiffres en images')).toBeInTheDocument();
-    expect(screen.getByRole('img')).toHaveAttribute(
-      'src',
-      'http://api.test/api/v1/media/1/file',
+    const photo = screen.getByRole('img');
+    // The width is a rendering size asked of our own endpoint; what must never
+    // appear is a MinIO host, which is on the private network.
+    expect(photo.getAttribute('src')).toMatch(
+      /^http:\/\/api\.test\/api\/v1\/media\/1\/file(\?w=\d+)?$/,
     );
+    expect(photo.getAttribute('srcset')).toContain('w=320 320w');
   });
 
   it('omits a supporting section rather than inventing content for it', async () => {

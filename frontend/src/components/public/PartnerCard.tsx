@@ -2,6 +2,7 @@ import React from 'react';
 import { resolveIcon } from '../../lib/icons';
 import { cn } from '../../lib/cn';
 import type { Partner } from '../../lib/types';
+import { responsiveImage } from '../../lib/imageSrc';
 
 /**
  * One partner, shown the same way everywhere.
@@ -20,7 +21,9 @@ export const PartnerCard = ({ partner, className }: { partner: Partner; classNam
       <span className="mb-4 flex h-14 w-full items-center justify-center">
         {partner.logo ? (
           <img
-            src={partner.logo.url}
+            /* Drawn at most 56px tall. 320 is already generous at 2x, and
+               offering more invites a high-density screen to take it. */
+            {...responsiveImage(partner.logo.url, '220px', 320)}
             alt=""
             loading="lazy"
             decoding="async"

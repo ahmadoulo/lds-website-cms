@@ -11,6 +11,7 @@ import { cn } from '../../lib/cn';
 import { useLocale } from '../../context/LocaleContext';
 import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { usePagesT } from '../../lib/i18n/dictionaries/pages';
+import { responsiveImage } from '../../lib/imageSrc';
 
 export const AboutPage = () => {
   const { settings, isLoading } = useSettings();
@@ -77,7 +78,7 @@ export const AboutPage = () => {
           <div className="min-w-[min(100%,300px)] flex-[1_1_380px]">
             {photo ? (
               <img
-                src={photo.url}
+                {...responsiveImage(photo.url, '(min-width: 1024px) 50vw, 100vw', 1280)}
                 alt={localized(photo.altText, locale) || p.alt.fieldAction}
                 loading="lazy"
                 decoding="async"

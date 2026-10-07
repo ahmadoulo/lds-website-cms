@@ -20,6 +20,7 @@ import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { useT } from '../../lib/i18n/useT';
 import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 import type { GalleryImage } from '../../lib/types';
+import { responsiveImage, variantUrl } from '../../lib/imageSrc';
 
 const Home = () => {
   const { data, isLoading, isError, refetch } = useHomepage();
@@ -85,7 +86,9 @@ const Home = () => {
   const ctaImage = homepage?.ctaImage ?? null;
 
   const slides = gallery.map((image: GalleryImage) => ({
-    src: image.media.url,
+    /* The lightbox draws the photo as large as the screen allows, so it takes
+       the widest render - but still a render, not the 3072px upload. */
+    src: variantUrl(image.media.url, 1920),
     alt: localized(image.media.altText, locale) || localized(image.caption, locale) || p.alt.ldsPhoto,
     caption: localized(image.caption, locale),
   }));
@@ -164,7 +167,17 @@ const Home = () => {
             />
             {heroImage ? (
               <img
-                src={heroImage.url}
+                /*
+                  The LCP element. It is the one image worth a 1280px entry:
+                  it is drawn roughly half the page on a desktop and the whole
+                  width on a phone, and it is never lazy - it is what the
+                  visitor is waiting for.
+                */
+                {...responsiveImage(
+                  heroImage.url,
+                  '(min-width: 1024px) 45vw, 100vw',
+                  1280,
+                )}
                 alt={localized(heroImage.altText, locale) || p.alt.volunteers}
                 width={900}
                 height={1200}
@@ -241,7 +254,7 @@ const Home = () => {
           <div className="min-w-[min(100%,300px)] flex-[1_1_380px]">
             {aboutImage ? (
               <img
-                src={aboutImage.url}
+                {...responsiveImage(aboutImage.url, '(min-width: 1024px) 50vw, 100vw', 1280)}
                 alt={localized(aboutImage.altText, locale) || p.alt.fieldAction}
                 loading="lazy"
                 decoding="async"
@@ -369,7 +382,11 @@ const Home = () => {
                     className="group relative aspect-[4/3] overflow-hidden rounded-2xl shadow-e1 transition-shadow hover:shadow-e3"
                   >
                     <img
-                      src={image.media.url}
+                      {...responsiveImage(
+                        image.media.url,
+                        '(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw',
+                        640,
+                      )}
                       alt={localized(image.media.altText, locale) || caption || p.alt.ldsAction}
                       loading="lazy"
                       decoding="async"
@@ -403,7 +420,9 @@ const Home = () => {
       <section className="relative overflow-hidden section-y text-center">
         {ctaImage ? (
           <img
-            src={ctaImage.url}
+            /* A full-bleed band behind text, dimmed to 45%: it is never read
+               closely, so the 1280 entry is as far as it is worth going. */
+            {...responsiveImage(ctaImage.url, '100vw', 1280)}
             alt=""
             aria-hidden
             loading="lazy"

@@ -6,6 +6,7 @@ import { useLocale } from '../../context/LocaleContext';
 import { useComponentsT } from '../../lib/i18n/dictionaries/components';
 import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import type { Mission } from '../../lib/types';
+import { responsiveImage } from '../../lib/imageSrc';
 
 /**
  * The logo gives the brand three equal accents; navy is the structural colour,
@@ -51,7 +52,11 @@ export const MissionCard = ({
 
   const image = mission.image ? (
     <img
-      src={mission.image.url}
+      {...responsiveImage(
+        mission.image.url,
+        '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw',
+        960,
+      )}
       alt={altText}
       loading="lazy"
       decoding="async"

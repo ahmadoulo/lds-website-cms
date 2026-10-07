@@ -148,7 +148,29 @@ describe('Home', () => {
     const images = await screen.findAllByAltText('Distribution de kits scolaires');
     expect(images.length).toBeGreaterThan(0);
     for (const image of images) {
-      expect(image).toHaveAttribute('src', 'http://api.test/api/v1/media/m1/file');
+      // The width is the rendering size asked of our own endpoint; what must
+      // never appear is a MinIO host, which is on the private network.
+      expect(image.getAttribute('src')).toMatch(
+        /^http:\/\/api\.test\/api\/v1\/media\/m1\/file(\?w=\d+)?$/,
+      );
+    }
+  });
+
+  it('never asks the browser for the full-size upload', async () => {
+    mockedApi.get.mockResolvedValue({ data: HOMEPAGE });
+    renderWithProviders(<Home />);
+
+    /*
+      The homepage was shipping 7.7 MB of photographs - a 2560x1920 JPEG drawn
+      in a card. Every image now declares the widths it can use and how wide it
+      is actually drawn; without `sizes` a browser assumes the full viewport
+      and takes the largest entry regardless.
+    */
+    const images = await screen.findAllByAltText('Distribution de kits scolaires');
+    for (const image of images) {
+      expect(image.getAttribute('srcset')).toContain('w=320 320w');
+      expect(image.getAttribute('sizes')).toBeTruthy();
+      expect(image.getAttribute('src')).toContain('?w=');
     }
   });
 

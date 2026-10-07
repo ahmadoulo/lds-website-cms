@@ -11,6 +11,7 @@ import { EmptyState, ErrorState, Skeleton } from '../../components/ui/States';
 import { useLocale } from '../../context/LocaleContext';
 import { localized } from '../../lib/i18n/resolve';
 import { usePagesT } from '../../lib/i18n/dictionaries/pages';
+import { responsiveImage } from '../../lib/imageSrc';
 
 /**
  * Four numbers and a button did not justify a page of its own.
@@ -154,7 +155,11 @@ export const ImpactPage = () => {
               {evidence.map((image) => (
                 <li key={image.id} className="overflow-hidden rounded-card shadow-e1">
                   <img
-                    src={image.media.url}
+                    {...responsiveImage(
+                      image.media.url,
+                      '(min-width: 640px) 33vw, 50vw',
+                      640,
+                    )}
                     alt={
                       localized(image.media.altText, locale) ||
                       localized(image.caption, locale) ||

@@ -7,6 +7,7 @@ import { useLocale } from '../../context/LocaleContext';
 import { useComponentsT } from '../../lib/i18n/dictionaries/components';
 import { localizedOrSource } from '../../lib/i18n/resolve';
 import type { Mission } from '../../lib/types';
+import { responsiveImage } from '../../lib/imageSrc';
 
 /**
  * The full record of one domain of intervention.
@@ -48,7 +49,7 @@ export const MissionDetailDialog = ({
             <div className="aspect-[16/9]">
               {mission.image ? (
                 <img
-                  src={mission.image.url}
+                  {...responsiveImage(mission.image.url, '(min-width: 768px) 720px, 100vw', 1280)}
                   /* The dialog is already named by its heading: a caption here
                      would have a screen reader read the title twice. */
                   alt=""

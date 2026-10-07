@@ -6,6 +6,7 @@ import { useLocale } from '../../context/LocaleContext';
 import { INTL_LOCALE, useComponentsT } from '../../lib/i18n/dictionaries/components';
 import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import type { NewsArticle } from '../../lib/types';
+import { responsiveImage } from '../../lib/imageSrc';
 
 /**
  * One component, two compositions.
@@ -51,7 +52,14 @@ export const NewsCard = ({ article }: { article: NewsArticle }) => {
         <div className="aspect-square sm:aspect-[16/10]">
           {article.image ? (
             <img
-              src={article.image.url}
+              /* 96px thumbnail on a phone, a third of the page on desktop.
+                 Declared because a browser with no `sizes` assumes the full
+                 viewport and downloads the largest file every time. */
+              {...responsiveImage(
+                article.image.url,
+                '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 96px',
+                960,
+              )}
               alt={altText}
               loading="lazy"
               decoding="async"

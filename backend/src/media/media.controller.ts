@@ -9,16 +9,31 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import type { Response } from 'express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { Request, Response } from 'express';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SkipThrottle } from '@nestjs/throttler';
 import { MediaService, MAX_FILE_SIZE } from './media.service';
+import {
+  ImageVariantsService,
+  VARIANT_WIDTHS,
+  acceptsWebp,
+  isResizable,
+  parseWidth,
+} from './image-variants.service';
 import { QueryMediaDto } from './dto/query-media.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -33,6 +48,7 @@ import type { AuthenticatedUser } from '../auth/auth.types';
 export class MediaController {
   constructor(
     private readonly mediaService: MediaService,
+    private readonly variants: ImageVariantsService,
     private readonly audit: AuditService,
   ) {}
 
@@ -40,7 +56,9 @@ export class MediaController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('CREATE', 'Media')
-  @ApiOperation({ summary: 'Upload an image to MinIO and register its metadata' })
+  @ApiOperation({
+    summary: 'Upload an image to MinIO and register its metadata',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -52,7 +70,9 @@ export class MediaController {
       },
     },
   })
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE, files: 1 } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE, files: 1 } }),
+  )
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser() user: AuthenticatedUser,
@@ -102,7 +122,10 @@ export class MediaController {
       action: 'DELETE',
       resource: 'Media',
       userId: user.id,
-      metadata: { orphansPurged: result.deleted, freedBytes: result.freedBytes },
+      metadata: {
+        orphansPurged: result.deleted,
+        freedBytes: result.freedBytes,
+      },
     });
     return result;
   }
@@ -125,14 +148,57 @@ export class MediaController {
   // A gallery page loads dozens of images at once; the global limit would fire.
   @SkipThrottle()
   @ApiOperation({ summary: 'Stream the binary of a media file' })
-  async streamFile(@Param('id', ParseUUIDPipe) id: string, @Res() res: Response) {
-    const { media, stream } = await this.mediaService.getStream(id);
+  @ApiQuery({
+    name: 'w',
+    required: false,
+    enum: [...VARIANT_WIDTHS],
+    description:
+      'Serve a derivative resized to this width instead of the original.',
+  })
+  async streamFile(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: Request,
+    @Res() res: Response,
+    @Query('w') rawWidth?: string,
+  ) {
+    const media = await this.mediaService.findOne(id);
 
-    res.setHeader('Content-Type', media.mimeType);
-    res.setHeader('Content-Length', media.size);
+    /*
+      A width is a request for a derivative; without one the original is
+      streamed exactly as before. An unknown width is ignored rather than
+      refused: the allowlist is there to stop the cache being filled with a
+      thousand renders, and a visitor should still get their image.
+    */
+    const width = parseWidth(rawWidth);
+
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     res.setHeader('Content-Disposition', 'inline');
     res.setHeader('X-Content-Type-Options', 'nosniff');
+
+    if (width && isResizable(media.mimeType)) {
+      // The same URL answers WebP or the original format depending on the
+      // request, so a shared cache must key on it or it will hand a WebP to a
+      // client that said it cannot read one.
+      res.setHeader('Vary', 'Accept');
+
+      const webp = acceptsWebp(req.headers.accept);
+      const variant = await this.variants.get(
+        media.storageKey,
+        media.mimeType,
+        width,
+        webp,
+      );
+
+      res.setHeader('Content-Type', variant.mimeType);
+      res.setHeader('Content-Length', variant.buffer.length);
+      res.end(variant.buffer);
+      return;
+    }
+
+    const { stream } = await this.mediaService.getStream(id);
+
+    res.setHeader('Content-Type', media.mimeType);
+    res.setHeader('Content-Length', media.size);
 
     stream.on('error', () => {
       if (!res.headersSent) res.status(500);
@@ -173,9 +239,17 @@ export class MediaController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('DELETE', 'Media')
   @ApiOperation({ summary: 'Delete a media file from MinIO and the database' })
-  async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser) {
+  async remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     const result = await this.mediaService.remove(id);
-    await this.audit.record({ action: 'DELETE', resource: 'Media', resourceId: id, userId: user.id });
+    await this.audit.record({
+      action: 'DELETE',
+      resource: 'Media',
+      resourceId: id,
+      userId: user.id,
+    });
     return result;
   }
 }

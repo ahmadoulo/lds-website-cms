@@ -11,6 +11,7 @@ import { useLocale } from '../../context/LocaleContext';
 import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 import type { Locale } from '../../lib/i18n/locale';
+import { responsiveImage } from '../../lib/imageSrc';
 
 /**
  * The locale tags the dates are formatted with.
@@ -158,7 +159,7 @@ export const NewsDetail = () => {
 
           {article.image && (
             <img
-              src={article.image.url}
+              {...responsiveImage(article.image.url, '(min-width: 768px) 720px, 100vw', 1280)}
               alt={localized(article.image.altText, locale) || title.text}
               /* The lead image of the article being read: it is the LCP here. */
               fetchPriority="high"

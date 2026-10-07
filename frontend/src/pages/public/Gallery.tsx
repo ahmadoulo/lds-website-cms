@@ -9,6 +9,7 @@ import { cn } from '../../lib/cn';
 import { useLocale } from '../../context/LocaleContext';
 import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { usePagesT } from '../../lib/i18n/dictionaries/pages';
+import { responsiveImage, variantUrl } from '../../lib/imageSrc';
 
 export const Gallery = () => {
   const { data: albums, isLoading, isError, refetch } = useGalleryAlbums();
@@ -49,7 +50,9 @@ export const Gallery = () => {
     localized(image.caption, locale) || image.albumTitle;
 
   const slides: LightboxSlide[] = images.map((image) => ({
-    src: image.media.url,
+    /* The lightbox draws the photo as large as the screen allows, so it takes
+       the widest render - but still a render, not the 3072px upload. */
+    src: variantUrl(image.media.url, 1920),
     alt: localized(image.media.altText, locale) || captionOf(image) || p.alt.ldsAction,
     caption: captionOf(image),
   }));
@@ -135,7 +138,11 @@ export const Gallery = () => {
                       )}
                     >
                       <img
-                        src={image.media.url}
+                        {...responsiveImage(
+                          image.media.url,
+                          '(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw',
+                          640,
+                        )}
                         alt={localized(image.media.altText, locale) || caption || p.alt.ldsAction}
                         loading="lazy"
                         decoding="async"
