@@ -117,8 +117,31 @@ describe('public layout — language switch', () => {
     const inHeader = within(header()).getByRole('navigation', { name: 'Changer de langue' });
     for (const link of within(inHeader).getAllByRole('link')) {
       expect(link.className).toContain('min-h-8');
-      expect(link.className).toContain('min-w-10');
+      expect(link.className).toContain('min-w-9');
     }
+  });
+
+  it('lets the lockup give way rather than push the menu button off the gutter', () => {
+    renderWithProviders(<PublicLayout />);
+
+    // On a narrow phone the row is wider than the screen, and something has to
+    // yield. Pinning this here because the symptom - a clipped burger on an
+    // iPhone Pro - is invisible in jsdom and easy to reintroduce.
+    // Selected structurally: the lockup is the first link in the header, and
+    // its accessible name collides with the nav's own "Accueil" entry.
+    const lockup = header().querySelector('a')!;
+    expect(lockup.className).toContain('min-w-0');
+    expect(lockup.className).toContain('shrink');
+    expect(lockup.className).not.toMatch(/(^|\s)shrink-0/);
+    expect(lockup.className).toContain('lg:shrink-0');
+  });
+
+  it('never lets the controls be the part that shrinks', () => {
+    renderWithProviders(<PublicLayout />);
+
+    const button = screen.getByRole('button', { name: 'Ouvrir le menu' });
+    expect(button.className).toContain('shrink-0');
+    expect(button.parentElement!.className).toContain('shrink-0');
   });
 
   it('does not repeat the switch inside the menu panel', async () => {

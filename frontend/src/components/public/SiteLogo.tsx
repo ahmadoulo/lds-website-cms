@@ -94,16 +94,20 @@ export const SiteLogo = ({ variant = 'light', className }: SiteLogoProps) => {
           variant === 'dark' ? 'text-white' : 'text-navy',
         )}
       >
-        <span className="whitespace-nowrap text-body-lg font-extrabold tracking-tight">
-          {lead}
-        </span>
+        {/*
+          `truncate` rather than `whitespace-nowrap`: the line still never
+          wraps, but it can now give way. Without it the lockup was an
+          unshrinkable block, so on a narrow phone it pushed the menu button
+          off the gutter instead of losing a character of its own.
+        */}
+        <span className="truncate text-body-lg font-extrabold tracking-tight">{lead}</span>
         {tail && (
           /*
             Between 1024 and 1279px the eight nav entries and the donate button
             need every pixel: the second line stands down there and comes back
             once there is room for it.
           */
-          <span className="block whitespace-nowrap text-caption font-semibold opacity-80 lg:hidden xl:block">
+          <span className="block truncate text-caption font-semibold opacity-80 lg:hidden xl:block">
             {tail}
           </span>
         )}

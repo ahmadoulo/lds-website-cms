@@ -179,11 +179,23 @@ export const PublicLayout = () => {
       >
         <div
           className={cn(
-            'container-page flex items-center justify-between gap-4 transition-[padding] duration-300 sm:gap-6',
+            'container-page flex items-center justify-between gap-2 transition-[padding] duration-300 sm:gap-6',
             isScrolled ? 'py-2 sm:py-3' : 'py-2.5 sm:py-4',
           )}
         >
-          <Link to="/" className="flex shrink-0 items-center" aria-label={layout.header.home}>
+          {/*
+            Shrinkable on a phone, fixed from lg up.
+
+            Up there the nav needs the lockup to hold its width; down here the
+            lockup is the only thing that can yield, and something has to -
+            otherwise the row is wider than the screen and the menu button is
+            the part that leaves it.
+          */}
+          <Link
+            to="/"
+            className="flex min-w-0 shrink items-center lg:shrink-0"
+            aria-label={layout.header.home}
+          >
             <SiteLogo />
           </Link>
 
@@ -234,23 +246,27 @@ export const PublicLayout = () => {
             language they had no reason to go looking for. A switch that has to
             be found is a switch that does not exist.
           */}
-          <div className="ms-auto me-2 flex items-center lg:hidden">
+          {/* lg:hidden on the group, not on each child: left visible it would
+              be a third flex item on the desktop row and push the nav off the
+              end it is justified to. */}
+          <div className="ms-auto flex shrink-0 items-center gap-1.5 lg:hidden">
             <LocaleSwitch variant="segmented" />
-          </div>
 
-          <button
-            type="button"
-            onClick={() => setIsMenuOpen((open) => !open)}
-            aria-expanded={isMenuOpen}
-            aria-label={isMenuOpen ? layout.header.closeMenu : layout.header.openMenu}
-            aria-controls="menu-mobile"
-            ref={menuButtonRef}
-            /* 44px of tappable area; the negative margin keeps the icon on the
-               gutter - logical, so it is the trailing gutter in both directions. */
-            className="-me-2.5 flex h-11 w-11 items-center justify-center rounded-xl text-navy transition-colors active:bg-navy/5 lg:hidden"
-          >
-            {isMenuOpen ? <X className="h-6 w-6" aria-hidden /> : <Menu className="h-6 w-6" aria-hidden />}
-          </button>
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen((open) => !open)}
+              aria-expanded={isMenuOpen}
+              aria-label={isMenuOpen ? layout.header.closeMenu : layout.header.openMenu}
+              aria-controls="menu-mobile"
+              ref={menuButtonRef}
+              /* 44px of tappable area; the negative margin keeps the icon on
+                 the gutter - logical, so it is the trailing gutter in both
+                 directions. */
+              className="-me-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-navy transition-colors active:bg-navy/5 lg:hidden"
+            >
+              {isMenuOpen ? <X className="h-6 w-6" aria-hidden /> : <Menu className="h-6 w-6" aria-hidden />}
+            </button>
+          </div>
         </div>
 
         {isMenuOpen && (
