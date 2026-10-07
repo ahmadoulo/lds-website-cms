@@ -1,5 +1,5 @@
 import React from 'react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -38,6 +38,21 @@ const renderAt = (url: string) =>
     </MemoryRouter>,
   );
 
+/**
+ * Pretends the visitor's device is set to a given list of languages.
+ *
+ * `navigator.languages` is read-only, so it has to be redefined rather than
+ * assigned; the spy is undone after each test so one device setting never
+ * leaks into the next case.
+ */
+const deviceLanguages = (languages: readonly string[]) => {
+  vi.spyOn(window.navigator, 'languages', 'get').mockReturnValue([...languages]);
+};
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 beforeEach(() => {
   window.localStorage.clear();
   document.documentElement.removeAttribute('lang');
@@ -48,6 +63,39 @@ describe('locale provider', () => {
   it('opens a shared Arabic address in Arabic', () => {
     renderAt('/a-propos?lang=ar');
     expect(screen.getByTestId('locale')).toHaveTextContent('ar');
+  });
+
+  it('opens in Arabic on a device set to Arabic, with no address and nothing stored', () => {
+    // The visitor the switch exists for: arriving cold, from a shared link
+    // with no parameter, on a phone whose system language is Arabic.
+    deviceLanguages(['ar-MA', 'fr-FR']);
+    renderAt('/');
+    expect(screen.getByTestId('locale')).toHaveTextContent('ar');
+    expect(screen.getByTestId('dir')).toHaveTextContent('rtl');
+  });
+
+  it('states the detected language in the address, so the page stays shareable', () => {
+    deviceLanguages(['ar']);
+    renderAt('/a-propos');
+    expect(screen.getByTestId('url')).toHaveTextContent('/a-propos?lang=ar');
+  });
+
+  it('stays in French on any device that is not set to Arabic', () => {
+    deviceLanguages(['en-US', 'en']);
+    renderAt('/');
+    expect(screen.getByTestId('locale')).toHaveTextContent('fr');
+    expect(screen.getByTestId('url').textContent).not.toContain('lang');
+  });
+
+  it('lets an Arabic-speaking visitor choose French and keeps that choice', async () => {
+    // Detection is a starting point, not a verdict: it must not fight the
+    // visitor who then picks the other language.
+    const user = userEvent.setup();
+    deviceLanguages(['ar']);
+    renderAt('/');
+    await user.click(screen.getByRole('button', { name: /repasser en fran/i }));
+    expect(screen.getByTestId('locale')).toHaveTextContent('fr');
+    expect(screen.getByTestId('url').textContent).not.toContain('lang=ar');
   });
 
   it('tells the document what it is', () => {

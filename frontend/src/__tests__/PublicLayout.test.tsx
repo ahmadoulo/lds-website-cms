@@ -82,3 +82,60 @@ describe('public layout — mobile menu', () => {
     expect(document.body.style.overflow).toBe('');
   });
 });
+
+describe('public layout — language switch', () => {
+  /*
+    The switch used to be reachable on a phone only by opening the burger
+    menu, so a visitor arriving on the site saw a French page and no sign that
+    an Arabic one existed. These guard the fix: it is in the header bar, it is
+    there before anything is opened, and it is not duplicated inside the panel.
+  */
+  const header = () => document.querySelector('header')!;
+
+  it('offers the language switch without opening anything', () => {
+    renderWithProviders(<PublicLayout />);
+
+    const inHeader = within(header()).getByRole('navigation', { name: 'Changer de langue' });
+    expect(within(inHeader).getByRole('link', { name: 'العربية' })).toBeInTheDocument();
+    expect(within(inHeader).getByRole('link', { name: 'Français' })).toBeInTheDocument();
+  });
+
+  it('marks the language being read, so the control shows a state', () => {
+    renderWithProviders(<PublicLayout />);
+
+    const inHeader = within(header()).getByRole('navigation', { name: 'Changer de langue' });
+    expect(within(inHeader).getByRole('link', { name: 'Français' })).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+    expect(within(inHeader).getByRole('link', { name: 'العربية' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('gives each half a finger-sized target', () => {
+    renderWithProviders(<PublicLayout />);
+
+    const inHeader = within(header()).getByRole('navigation', { name: 'Changer de langue' });
+    for (const link of within(inHeader).getAllByRole('link')) {
+      expect(link.className).toContain('min-h-9');
+      expect(link.className).toContain('min-w-11');
+    }
+  });
+
+  it('does not repeat the switch inside the menu panel', async () => {
+    renderWithProviders(<PublicLayout />);
+    await openMenu();
+
+    const panel = document.getElementById('menu-mobile')!;
+    expect(within(panel).queryByRole('navigation', { name: 'Changer de langue' })).toBeNull();
+  });
+
+  it('keeps each language reachable as a real address', () => {
+    renderWithProviders(<PublicLayout />);
+
+    const inHeader = within(header()).getByRole('navigation', { name: 'Changer de langue' });
+    const arabic = within(inHeader).getByRole('link', { name: 'العربية' });
+    // A crawler never runs the click handler, so the href has to carry it.
+    expect(arabic.getAttribute('href')).toContain('lang=ar');
+    expect(arabic).toHaveAttribute('hreflang', 'ar');
+  });
+});

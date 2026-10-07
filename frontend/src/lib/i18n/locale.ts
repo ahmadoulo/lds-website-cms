@@ -34,6 +34,20 @@ export const LOCALE_SHORT: Record<Locale, string> = {
   ar: 'ع',
 };
 
+/**
+ * The label for a switch that has room for a word but not for a full name.
+ *
+ * Deliberately not `LOCALE_SHORT`: that one is a badge a few millimetres wide
+ * in the back-office, where a single letter is all that fits and the reader is
+ * an editor who already knows what it means. This one is the public switch a
+ * visitor meets before reading anything, and a lone ع does not tell them the
+ * site exists in their language.
+ */
+export const LOCALE_COMPACT: Record<Locale, string> = {
+  fr: 'FR',
+  ar: 'عربي',
+};
+
 export function isLocale(value: unknown): value is Locale {
   return typeof value === 'string' && (LOCALES as readonly string[]).includes(value);
 }

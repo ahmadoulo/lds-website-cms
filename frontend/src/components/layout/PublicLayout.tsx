@@ -225,6 +225,19 @@ export const PublicLayout = () => {
             </CtaLink>
           </nav>
 
+          {/*
+            Always visible, never inside the menu.
+
+            It used to live only in the burger panel on a phone, which meant a
+            visitor arriving on the site had no way of knowing it was published
+            in Arabic at all - they would have had to open a menu to discover a
+            language they had no reason to go looking for. A switch that has to
+            be found is a switch that does not exist.
+          */}
+          <div className="ms-auto flex items-center gap-1 lg:hidden">
+            <LocaleSwitch variant="segmented" />
+          </div>
+
           <button
             type="button"
             onClick={() => setIsMenuOpen((open) => !open)}
@@ -266,14 +279,11 @@ export const PublicLayout = () => {
               <Heart className="h-4 w-4" aria-hidden /> {layout.actions.donate}
             </CtaLink>
             {/*
-              The switch's own links drop to a compact height from sm upwards,
-              which is right in the contact bar and wrong here: this panel is
-              still a touch target between 640 and 1024px. The child selector
-              holds the 44px without editing the shared component.
+              The language switch is not repeated here: it now sits in the
+              header bar, visible without opening anything and a few pixels
+              above this panel. Two controls doing the same thing, one of them
+              hidden, is what the problem was.
             */}
-            <div className="mt-3 flex justify-center border-t border-navy/8 pt-2">
-              <LocaleSwitch className="[&>a]:min-h-11" />
-            </div>
           </div>
         )}
       </header>
