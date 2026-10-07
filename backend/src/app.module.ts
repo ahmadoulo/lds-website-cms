@@ -21,6 +21,7 @@ import { MediaModule } from './media/media.module';
 import { ContactModule } from './contact/contact.module';
 import { AuditModule } from './audit/audit.module';
 import { PublicModule } from './public/public.module';
+import { SeoModule } from './seo/seo.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
@@ -43,6 +44,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     MediaModule,
     ContactModule,
     PublicModule,
+    SeoModule,
     DashboardModule,
   ],
   controllers: [AppController],

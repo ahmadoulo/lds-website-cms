@@ -1,7 +1,0 @@
-User-agent: *
-Allow: /
-
-# The administration is not public content.
-Disallow: /admin
-
-Sitemap: /sitemap.xml
