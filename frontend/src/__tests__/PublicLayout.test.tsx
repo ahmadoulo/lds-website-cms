@@ -116,8 +116,8 @@ describe('public layout — language switch', () => {
 
     const inHeader = within(header()).getByRole('navigation', { name: 'Changer de langue' });
     for (const link of within(inHeader).getAllByRole('link')) {
-      expect(link.className).toContain('min-h-9');
-      expect(link.className).toContain('min-w-11');
+      expect(link.className).toContain('min-h-8');
+      expect(link.className).toContain('min-w-10');
     }
   });
 

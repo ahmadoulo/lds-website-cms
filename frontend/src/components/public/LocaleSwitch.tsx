@@ -74,7 +74,10 @@ export const LocaleSwitch = ({
                 'inline-flex items-center justify-center font-bold transition-colors',
                 segmented
                   ? cn(
-                      'min-h-9 min-w-11 rounded-full px-2.5 text-caption leading-none',
+                      /* 13px is the smallest step in the type scale, so the
+                         pill is made compact by tightening its box rather than
+                         by inventing a size below the system. */
+                      'min-h-8 min-w-10 rounded-full px-2 text-caption leading-none',
                       isCurrent
                         ? 'bg-navy text-white shadow-sm'
                         : 'text-navy/55 hover:text-navy',

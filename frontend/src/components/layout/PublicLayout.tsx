@@ -234,7 +234,7 @@ export const PublicLayout = () => {
             language they had no reason to go looking for. A switch that has to
             be found is a switch that does not exist.
           */}
-          <div className="ms-auto flex items-center gap-1 lg:hidden">
+          <div className="ms-auto me-2 flex items-center lg:hidden">
             <LocaleSwitch variant="segmented" />
           </div>
 
