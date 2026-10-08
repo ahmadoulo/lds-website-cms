@@ -133,5 +133,80 @@ export const DEFAULT_SETTINGS: Record<SettingKey, Record<string, any>> = {
       ar: 'جمعية، لوغا، السنغال، تضامن، تعليم، صحة، تنمية مستدامة',
     },
     ogImageId: null,
+    /*
+      Per-page metadata, keyed by the route it belongs to.
+
+      It lives here rather than in the frontend's interface dictionary because
+      two readers need exactly the same answer: the server renders these into
+      the HTML a crawler receives, and the browser writes the same values into
+      the head after a client-side navigation. Two copies of a title is two
+      titles that eventually disagree.
+
+      `title` is the page's own name - the site name is appended by whoever
+      renders it, so renaming the association does not mean editing nine rows.
+      An empty description falls back to the site-wide one.
+    */
+    pages: {
+      '/': {
+        title: { fr: '', ar: '' },
+        description: { fr: '', ar: '' },
+      },
+      '/a-propos': {
+        title: { fr: 'À propos', ar: 'من نحن' },
+        description: {
+          fr: "L'histoire, la mission et les valeurs de Louga Développement Solidaire.",
+          ar: 'تاريخ جمعية لوغا للتنمية والتضامن ورسالتها وقيمها.',
+        },
+      },
+      '/nos-actions': {
+        title: { fr: 'Nos actions', ar: 'مجالات عملنا' },
+        description: {
+          fr: "Éducation, santé, environnement et solidarité : les domaines d'action de l'association à Louga.",
+          ar: 'التعليم والصحة والبيئة والتضامن: مجالات عمل الجمعية في لوغا.',
+        },
+      },
+      '/actualites': {
+        title: { fr: 'Actualités', ar: 'الأخبار' },
+        description: {
+          fr: 'Suivez les projets, les événements et les bilans de Louga Développement Solidaire.',
+          ar: 'تابع مستجدّات مشاريع جمعية لوغا للتنمية والتضامن وفعالياتها وحصائل عملها.',
+        },
+      },
+      '/galerie': {
+        title: { fr: 'Galerie', ar: 'معرض الصور' },
+        description: {
+          fr: 'Les actions de Louga Développement Solidaire en images.',
+          ar: 'أعمال جمعية لوغا للتنمية والتضامن في صور.',
+        },
+      },
+      '/impact': {
+        title: { fr: 'Notre impact', ar: 'أثرنا' },
+        description: {
+          fr: "Les chiffres et les résultats concrets de l'action de l'association à Louga.",
+          ar: 'أرقام العمل الجمعوي في لوغا ونتائجه الملموسة.',
+        },
+      },
+      '/partenaires': {
+        title: { fr: 'Partenaires', ar: 'شركاؤنا' },
+        description: {
+          fr: 'Les organisations qui accompagnent Louga Développement Solidaire.',
+          ar: 'المنظّمات التي ترافق جمعية لوغا للتنمية والتضامن.',
+        },
+      },
+      '/nous-soutenir': {
+        title: { fr: 'Nous soutenir', ar: 'ادعمنا' },
+        description: {
+          fr: "Faire un don, devenir bénévole ou partenaire : les façons de soutenir l'association.",
+          ar: 'التبرّع أو التطوّع أو الشراكة: سبل دعم الجمعية.',
+        },
+      },
+      '/contact': {
+        title: { fr: 'Contact', ar: 'اتصل بنا' },
+        description: {
+          fr: "Écrire à Louga Développement Solidaire : adresse, téléphone et formulaire de contact.",
+          ar: 'مراسلة جمعية لوغا للتنمية والتضامن: العنوان والهاتف ونموذج الاتصال.',
+        },
+      },
+    },
   },
 };

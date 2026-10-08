@@ -213,6 +213,14 @@ export interface SiteSettings {
     ogImageId: string | null;
     /** Resolved by the public API from the id above. */
     ogImage?: Media | null;
+    /**
+     * Per-page metadata, keyed by route.
+     *
+     * The server writes these into the HTML a crawler receives; the browser
+     * writes the same values after a client-side navigation. One source, so
+     * the two cannot drift apart.
+     */
+    pages?: Record<string, { title?: Localized; description?: Localized } | undefined>;
   };
 }
 

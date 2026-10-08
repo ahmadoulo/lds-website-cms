@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { localized } from '../../lib/i18n/resolve';
+import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { useLocation } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext';
 import { DEFAULT_LOCALE, LOCALES, LOCALE_PARAM, type Locale } from '../../lib/i18n/locale';
@@ -94,8 +94,27 @@ export const Seo = ({ title, description, image, noIndex, type = 'website' }: Se
   /* The SEO settings carry both languages now: an Arabic page indexed under
      a French title is an Arabic page nobody finds. */
   const siteName = localized(settings?.seo.title, locale) || t.common.organizationName;
-  const fullTitle = title ? `${title} — ${siteName}` : siteName;
-  const metaDescription = description || localized(settings?.seo.description, locale) || '';
+
+  const location = useLocation();
+  const path = location.pathname;
+
+  /*
+    The saved metadata for this exact route, when there is one.
+
+    The server writes these same values into the HTML before it leaves, so a
+    crawler and a visitor who navigated here from another page have to agree -
+    a title that changes after hydration is a title Google may report as
+    cloaking, and is certainly one nobody can reason about. The props stay as
+    the fallback for routes with no entry, the article page above all, which
+    passes its own.
+  */
+  const saved = settings?.seo.pages?.[path];
+  const ownTitle = localizedOrSource(saved?.title, locale).text || title;
+  const ownDescription = localizedOrSource(saved?.description, locale).text || description;
+
+  const fullTitle = ownTitle ? `${ownTitle} — ${siteName}` : siteName;
+  const metaDescription =
+    ownDescription || localized(settings?.seo.description, locale) || '';
   const shareImage = image ?? settings?.seo.ogImage?.url ?? null;
 
   /*
@@ -106,9 +125,7 @@ export const Seo = ({ title, description, image, noIndex, type = 'website' }: Se
     nothing would have caught them drifting during a transition. The origin
     still comes from the window, which is the one part the router does not know.
   */
-  const location = useLocation();
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
-  const path = location.pathname;
 
   useEffect(() => {
     const canonical = addressFor(locale, origin, path);
