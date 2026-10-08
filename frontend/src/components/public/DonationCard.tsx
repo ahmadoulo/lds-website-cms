@@ -74,16 +74,24 @@ export const DonationCard = ({ method }: { method: DonationMethod }) => {
           type="button"
           onClick={() => void copyToClipboard()}
           lang={actionLabel.untranslated ? 'fr' : undefined}
-          className={`flex w-full items-center justify-center gap-2 rounded-xl border-2 border-navy/8 py-3.5 font-bold transition-colors ${colors.text} ${colors.hover}`}
+          className={`flex w-full flex-col items-center justify-center gap-0.5 rounded-xl border-2 border-navy/8 px-3 py-3 font-bold transition-colors ${colors.text} ${colors.hover}`}
         >
-          <Copy className="h-4 w-4" aria-hidden />
-          {/* One flex child, so the gap is unchanged, and the number is
-              isolated: the groups of "77 123 45 67" would otherwise be printed
-              back to front inside an Arabic sentence. */}
-          <span>
-            {' '}
-            {actionLabel.text} · <bdi>{method.actionData}</bdi>
+          <span className="flex items-center gap-2">
+            <Copy className="h-4 w-4 shrink-0" aria-hidden />
+            {actionLabel.text}
           </span>
+          {/*
+            The number on its own line, and never broken.
+
+            It used to sit after the label on one line, so a narrow card wrapped
+            it mid-number - "+221 77 861 32" above "02", which is unreadable and
+            uncopyable by eye. bdi isolates it as well: the groups of
+            "77 123 45 67" would otherwise print back to front inside an Arabic
+            sentence.
+          */}
+          <bdi className="whitespace-nowrap text-caption font-semibold tabular-nums opacity-75">
+            {method.actionData}
+          </bdi>
         </button>
       ) : method.actionType === 'email' ? (
         <a

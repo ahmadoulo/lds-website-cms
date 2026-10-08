@@ -9,8 +9,8 @@ import { useLocale } from '../../../context/LocaleContext';
  * instead of shipping a French word into an Arabic page.
  *
  * Vocabulary comes from GLOSSARY.md and is not re-decided here - the eight
- * navigation labels, "Faire un don" and "Administration" read the same in the
- * header, the mobile panel and the footer because they are one entry each.
+ * navigation labels and "Faire un don" read the same in the header, the mobile
+ * panel and the footer because they are one entry each.
  */
 export const layoutFr = {
   /** The eight entries of the main navigation, in display order. */
@@ -50,7 +50,6 @@ export const layoutFr = {
     contactHeading: 'Contact',
     /** Follows the year and the organization name, which are composed in the JSX. */
     rights: 'Tous droits réservés.',
-    administration: 'Administration',
   },
   preview: {
     editor: 'Mode prévisualisation — vous voyez les modifications non publiées.',
@@ -102,7 +101,6 @@ export const layoutAr: LayoutDictionary = {
     footerNavigation: 'روابط أسفل الصفحة',
     contactHeading: 'اتصل بنا',
     rights: 'جميع الحقوق محفوظة.',
-    administration: 'لوحة التحكّم',
   },
   preview: {
     editor: 'وضع المعاينة — أنت ترى التعديلات غير المنشورة.',

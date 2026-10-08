@@ -395,9 +395,13 @@ export const PublicLayout = () => {
           <span>
             © {new Date().getFullYear()} {organizationName}. {layout.footer.rights}
           </span>
-          <Link to="/admin/login" className="transition-colors hover:text-white/80">
-            {layout.footer.administration}
-          </Link>
+          {/*
+            No link to the administration.
+
+            It served nobody: a visitor has no use for it, and the three people
+            who do know the address. Printing it on every page of a public site
+            only tells a scanner where the login form is.
+          */}
         </div>
       </footer>
     </div>
