@@ -9,7 +9,7 @@ import { useLocale } from '../../../context/LocaleContext';
 import { PageHeader } from '../../../components/admin/ui/PageHeader';
 import { ErrorState, LoadingState } from '../../../components/ui/States';
 import { Button } from '../../../components/ui/Button';
-import { Checkbox, Field, Input, Select } from '../../../components/ui/Field';
+import { Checkbox, Field, Input, Select, Textarea } from '../../../components/ui/Field';
 import {
   Section,
   TestResultNotice,
@@ -34,6 +34,10 @@ interface Draft {
   identities: Record<EmailPurpose, { fromName: string; fromEmail: string; replyTo: string }>;
   batchSize: string;
   ratePerMinute: string;
+  siteUrl: string;
+  privacyPolicyUrl: string;
+  signatureFr: string;
+  signatureAr: string;
 }
 
 const PURPOSES: EmailPurpose[] = ['contact', 'notification', 'newsletter'];
@@ -63,6 +67,12 @@ function toDraft(settings: EmailSettings): Draft {
     },
     batchSize: String(settings.batchSize),
     ratePerMinute: String(settings.ratePerMinute),
+    // Pre-filled with the administrator's own address when nothing is saved:
+    // they see it, and saving is what confirms it.
+    siteUrl: settings.siteUrl ?? settings.detectedSiteUrl ?? '',
+    privacyPolicyUrl: settings.privacyPolicyUrl ?? '',
+    signatureFr: settings.signature?.fr ?? '',
+    signatureAr: settings.signature?.ar ?? '',
   };
 }
 
@@ -95,6 +105,9 @@ function toPayload(draft: Draft) {
     identities,
     batchSize: Number(draft.batchSize) || 20,
     ratePerMinute: Number(draft.ratePerMinute) || 60,
+    siteUrl: orNull(draft.siteUrl),
+    privacyPolicyUrl: orNull(draft.privacyPolicyUrl),
+    signature: { fr: draft.signatureFr.trim(), ar: draft.signatureAr.trim() },
   };
 }
 
@@ -127,8 +140,11 @@ export const EmailSettingsAdmin = () => {
 
   const dirty = useMemo(() => {
     if (!draft || !query.data) return false;
+    // Compared with what is stored, not with the suggestion: a suggested site
+    // address that has never been saved is a change waiting to be saved.
+    const stored = toDraft({ ...query.data, detectedSiteUrl: null });
     return (
-      JSON.stringify(toPayload(draft)) !== JSON.stringify(toPayload(toDraft(query.data))) ||
+      JSON.stringify(toPayload(draft)) !== JSON.stringify(toPayload(stored)) ||
       password !== '' ||
       removePassword
     );
@@ -398,6 +414,63 @@ export const EmailSettingsAdmin = () => {
               </div>
             </fieldset>
           ))}
+        </Section>
+
+        {/* ---------------------------------------------- site */}
+        <Section title={s.siteSection}>
+          <Field
+            label={s.siteUrl}
+            htmlFor="site-url"
+            hint={
+              settings.siteUrlFromEnvironment
+                ? s.siteUrlFromEnv(settings.siteUrlFromEnvironment)
+                : !settings.siteUrl && settings.detectedSiteUrl
+                  ? s.siteUrlSuggested(settings.detectedSiteUrl)
+                  : s.siteUrlHint
+            }
+          >
+            <Input
+              id="site-url"
+              type="url"
+              dir="ltr"
+              placeholder="https://"
+              disabled={Boolean(settings.siteUrlFromEnvironment)}
+              value={settings.siteUrlFromEnvironment ?? draft.siteUrl}
+              onChange={(event) => set('siteUrl', event.target.value)}
+            />
+          </Field>
+          <Field label={s.privacyPolicyUrl} htmlFor="privacy-url" hint={s.privacyPolicyHint}>
+            <Input
+              id="privacy-url"
+              type="url"
+              dir="ltr"
+              placeholder="https://"
+              value={draft.privacyPolicyUrl}
+              onChange={(event) => set('privacyPolicyUrl', event.target.value)}
+            />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label={`${s.signature} · Français`} htmlFor="signature-fr" hint={s.signatureHint}>
+              <Textarea
+                id="signature-fr"
+                rows={3}
+                lang="fr"
+                dir="ltr"
+                value={draft.signatureFr}
+                onChange={(event) => set('signatureFr', event.target.value)}
+              />
+            </Field>
+            <Field label={`${s.signature} · العربية`} htmlFor="signature-ar">
+              <Textarea
+                id="signature-ar"
+                rows={3}
+                lang="ar"
+                dir="rtl"
+                value={draft.signatureAr}
+                onChange={(event) => set('signatureAr', event.target.value)}
+              />
+            </Field>
+          </div>
         </Section>
 
         {/* ---------------------------------------------- recipients */}

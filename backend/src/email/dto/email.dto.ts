@@ -61,6 +61,15 @@ export class UpdateEmailSettingsDto {
 
   @IsOptional() @IsInt() @Min(1) @Max(200) batchSize?: number;
   @IsOptional() @IsInt() @Min(1) @Max(1000) ratePerMinute?: number;
+
+  /** Normalised and checked to be a bare http(s) origin in the service. */
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(255) siteUrl?:
+    string | null;
+
+  @IsOptional() @IsObject() signature?: Record<string, string>;
+
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(500) privacyPolicyUrl?:
+    string | null;
 }
 
 export class SendTestDto {

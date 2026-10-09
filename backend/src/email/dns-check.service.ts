@@ -66,9 +66,14 @@ export class DnsCheckService {
     ]);
 
     const spf = spfRecords.find((record) => /^v=spf1\b/i.test(record)) ?? null;
-    const spfCount = spfRecords.filter((record) => /^v=spf1\b/i.test(record)).length;
-    const dmarc = dmarcRecords.find((record) => /^v=DMARC1\b/i.test(record)) ?? null;
-    const policy = dmarc?.match(/\bp=(none|quarantine|reject)\b/i)?.[1]?.toLowerCase() ?? null;
+    const spfCount = spfRecords.filter((record) =>
+      /^v=spf1\b/i.test(record),
+    ).length;
+    const dmarc =
+      dmarcRecords.find((record) => /^v=DMARC1\b/i.test(record)) ?? null;
+    const policy =
+      dmarc?.match(/\bp=(none|quarantine|reject)\b/i)?.[1]?.toLowerCase() ??
+      null;
 
     return {
       domain,

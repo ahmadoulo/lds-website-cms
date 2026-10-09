@@ -322,6 +322,18 @@ model EmailSettings {
   batchSize     Int @default(20)
   ratePerMinute Int @default(60)
 
+  /// The public address written into every email: links, logo, unsubscribe.
+  /// Stored rather than read from each request, because the request that
+  /// triggers a contact acknowledgement is an anonymous visitor's, and its
+  /// Host / X-Forwarded-Host headers are theirs to forge - which would put
+  /// their domain into a genuine email sent from this server.
+  siteUrl          String?
+  /// Appended to campaigns. { fr, ar }.
+  signature        Json?
+  /// Linked from the newsletter consent. Supplied by the association, never
+  /// written by the application.
+  privacyPolicyUrl String?
+
   lastTestAt    DateTime?
   lastTestOk    Boolean?
   /// Redacted before it is stored: a provider error can quote credentials.
@@ -378,6 +390,11 @@ model EmailMessage {
 
   /// What caused this message, for the history and for not sending twice.
   contactMessageId String?
+  campaignId       String?
+  subscriberId     String?
+
+  /// Extra headers, e.g. List-Unsubscribe for newsletters.
+  headers Json?
 
   /// When the SMTP server accepted it.
   sentAt DateTime?
@@ -389,6 +406,9 @@ model EmailMessage {
   /// or a double-clicked button does. NULLs do not collide in PostgreSQL, so
   /// this constrains only the messages that have a cause.
   @@unique([contactMessageId, kind])
+  /// One copy of a campaign per subscriber, whatever happens to the sender.
+  @@unique([campaignId, subscriberId])
+  @@index([campaignId])
   @@index([status, nextAttemptAt])
   @@index([createdAt])
   @@index([kind])
@@ -411,4 +431,101 @@ model EmailTemplate {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// -----------------------------------------------------------------------------
+// Newsletter
+// -----------------------------------------------------------------------------
+
+enum SubscriberStatus {
+  /// Asked to subscribe, has not clicked the confirmation link. Receives nothing.
+  PENDING
+  /// Confirmed. The only status a campaign is ever sent to.
+  ACTIVE
+  UNSUBSCRIBED
+}
+
+/// Someone who asked for the newsletter. Not a contact: writing to the
+/// association is not consent to its newsletter, and nothing creates a row
+/// here except an explicit, confirmed request (or an attested import).
+model NewsletterSubscriber {
+  id     String           @id @default(uuid())
+  email  String           @unique
+  status SubscriberStatus @default(PENDING)
+  locale String           @default("fr")
+  /// 'footer', 'page', 'import'.
+  source String           @default("footer")
+
+  /// The consent, as given: when, and the exact sentence that was agreed to.
+  consentAt   DateTime?
+  consentText String?
+
+  /// SHA-256 of the confirmation token. The token itself exists only in the
+  /// email; a database dump cannot be used to confirm anyone.
+  confirmTokenHash      String?   @unique
+  confirmTokenExpiresAt DateTime?
+  confirmSentAt         DateTime?
+  confirmedAt           DateTime?
+
+  unsubscribedAt         DateTime?
+  /// Which campaign's link was used, for that campaign's statistics.
+  unsubscribedCampaignId String?
+
+  lastCampaignAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// -----------------------------------------------------------------------------
+// Campaigns
+// -----------------------------------------------------------------------------
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  PAUSED
+  SENT
+  CANCELLED
+}
+
+model Campaign {
+  id   String @id @default(uuid())
+  /// For the team only; never shown to a recipient.
+  name String
+
+  subject   String
+  /// The line inbox lists show after the subject.
+  preheader String?
+  /// The content, as editor blocks. Rendered to email HTML by the server, so
+  /// nothing typed in the editor can reach a recipient as markup.
+  blocks    Json
+  /// One language per campaign: an Arabic campaign goes to Arabic readers.
+  locale    String  @default("fr")
+  /// { segment: 'all' | 'fr' | 'ar' | 'period', from?, to? }
+  audience  Json
+
+  fromName         String?
+  replyTo          String?
+  includeSignature Boolean @default(true)
+
+  status         CampaignStatus @default(DRAFT)
+  scheduledAt    DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  /// The site address at the moment of sending, so a campaign that fires
+  /// later from the scheduler links where the administrator meant.
+  siteUrl        String?
+  recipientCount Int?
+
+  createdById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, scheduledAt])
 }

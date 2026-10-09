@@ -10,8 +10,10 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
@@ -27,6 +29,8 @@ import { EmailQueueService } from './email-queue.service';
 import { EmailHistoryService } from './email-history.service';
 import { DnsCheckService } from './dns-check.service';
 import { redact } from './secret-box';
+import { resolvePublicApiUrl } from '../common/media-url.interceptor';
+import { normaliseSiteUrl } from '../common/site-url';
 import {
   HistoryQueryDto,
   PreviewTemplateDto,
@@ -101,8 +105,17 @@ export class EmailController {
   @Get('settings')
   @RequirePermission('READ', 'Email')
   @ApiOperation({ summary: 'SMTP settings, without the password' })
-  getSettings() {
-    return this.settings.get();
+  async getSettings(@Req() request: Request) {
+    return {
+      ...(await this.settings.get()),
+      /*
+        The address this administrator is using right now, offered as the
+        value for the site address field. An authenticated administrator's
+        request is a source worth suggesting; it is still only a suggestion
+        they confirm by saving.
+      */
+      detectedSiteUrl: adminOrigin(request),
+    };
   }
 
   @Put('settings')
@@ -156,6 +169,7 @@ export class EmailController {
   async sendTest(
     @Body() dto: SendTestDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ) {
     const identity = await this.settings.identityFor('default');
     const sentAt = new Intl.DateTimeFormat('fr-FR', {
@@ -163,9 +177,12 @@ export class EmailController {
       timeStyle: 'short',
       timeZone: 'Africa/Dakar',
     }).format(new Date());
-    const email = await this.templates.render('test', dto.locale ?? 'fr', {
-      sentAt,
-    });
+    const email = await this.templates.render(
+      'test',
+      dto.locale ?? 'fr',
+      { sentAt },
+      { fallbackSiteUrl: adminOrigin(request) },
+    );
 
     /*
       Sent directly rather than through the queue: a test exists to answer
@@ -283,21 +300,38 @@ export class EmailController {
   @Post('templates/:key/preview')
   @HttpCode(200)
   @RequirePermission('READ', 'Email')
-  previewTemplate(@Param('key') key: string, @Body() dto: PreviewTemplateDto) {
-    return this.templates.preview(key, dto.locale ?? 'fr', dto);
+  previewTemplate(
+    @Param('key') key: string,
+    @Body() dto: PreviewTemplateDto,
+    @Req() request: Request,
+  ) {
+    return this.templates.preview(
+      key,
+      dto.locale ?? 'fr',
+      dto,
+      adminOrigin(request),
+    );
   }
 
   @Post('templates/:key/test')
   @HttpCode(200)
   @RequirePermission('UPDATE', 'Email')
-  @ApiOperation({ summary: 'Send a template, with example values, to one address' })
+  @ApiOperation({
+    summary: 'Send a template, with example values, to one address',
+  })
   async testTemplate(
     @Param('key') key: string,
     @Body() dto: SendTestDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ) {
     const locale = dto.locale ?? 'fr';
-    const email = await this.templates.preview(key, locale);
+    const email = await this.templates.preview(
+      key,
+      locale,
+      {},
+      adminOrigin(request),
+    );
     const identity = await this.settings.identityFor('default');
 
     // Marked as a test in the subject, so nobody mistakes the example values
@@ -453,4 +487,12 @@ export class EmailController {
 
     return `${summary} (${detail})`;
   }
+}
+
+/**
+ * The origin of a signed-in administrator's request. Every route in this
+ * controller is behind JwtAuthGuard, so this is never a visitor's header.
+ */
+function adminOrigin(request: Request): string | null {
+  return normaliseSiteUrl(resolvePublicApiUrl(request));
 }

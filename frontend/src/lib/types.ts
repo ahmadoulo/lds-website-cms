@@ -266,6 +266,12 @@ export interface EmailSettings {
   identities: Partial<Record<EmailPurpose, EmailIdentity>>;
   batchSize: number;
   ratePerMinute: number;
+  siteUrl: string | null;
+  siteUrlFromEnvironment: string | null;
+  /** The administrator's own address, offered as a value; not saved until they save. */
+  detectedSiteUrl?: string | null;
+  signature: Localized;
+  privacyPolicyUrl: string | null;
   lastTestAt: string | null;
   lastTestOk: boolean | null;
   lastTestError: string | null;

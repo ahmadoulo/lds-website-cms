@@ -40,6 +40,10 @@ const SETTINGS: EmailSettings = {
   identities: {},
   batchSize: 20,
   ratePerMinute: 60,
+  siteUrl: 'https://ldslouga.sn',
+  siteUrlFromEnvironment: null,
+  signature: {},
+  privacyPolicyUrl: null,
   lastTestAt: null,
   lastTestOk: null,
   lastTestError: null,
@@ -123,6 +127,22 @@ describe('Email settings screen', () => {
     expect(
       await screen.findByText('Identifiant ou mot de passe refusé par le serveur.'),
     ).toBeInTheDocument();
+  });
+
+  it('offers the address in use when no site address is saved, without saving it', async () => {
+    setup({ siteUrl: null, detectedSiteUrl: 'https://ldslouga.sn' });
+    const field = await screen.findByLabelText('Adresse publique du site');
+    expect(field).toHaveValue('https://ldslouga.sn');
+    // A suggestion is a change waiting to be confirmed, not a saved value.
+    expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeEnabled();
+    expect(mockedApi.put).not.toHaveBeenCalled();
+  });
+
+  it('shows the deployment’s address read-only when it overrides the field', async () => {
+    setup({ siteUrlFromEnvironment: 'https://ldslouga.sn' });
+    const field = await screen.findByLabelText('Adresse publique du site');
+    expect(field).toBeDisabled();
+    expect(screen.getByText(/PUBLIC_SITE_URL/)).toBeInTheDocument();
   });
 
   it('shows the warnings the API found', async () => {

@@ -99,6 +99,18 @@ export const adminEmailFr = {
     purposeContact: 'Réponses au formulaire de contact',
     purposeNotification: 'Notifications internes',
     purposeNewsletter: 'Newsletter',
+    siteSection: 'Site et mentions',
+    siteUrl: 'Adresse publique du site',
+    siteUrlHint:
+      'Utilisée pour tous les liens des emails : logo, confirmation, désinscription. Indiquez le domaine officiel, sans chemin.',
+    siteUrlSuggested: (url: string) => `Proposée d’après l’adresse que vous utilisez : ${url}. Enregistrez pour la confirmer.`,
+    siteUrlFromEnv: (url: string) =>
+      `Fixée par le serveur (PUBLIC_SITE_URL) : ${url}. Ce champ n’a pas d’effet.`,
+    privacyPolicyUrl: 'Lien vers la politique de confidentialité',
+    privacyPolicyHint:
+      'Affiché sous le formulaire d’inscription à la newsletter. Le texte de cette politique doit être fourni par l’association.',
+    signature: 'Signature des campagnes',
+    signatureHint: 'Ajoutée à la fin des newsletters qui l’incluent. Texte simple.',
     recipients: 'Destinataires',
     contactInbox: 'Réception des demandes de contact',
     contactInboxHint: 'Qui est prévenu quand un visiteur écrit. Vide : personne, mais la demande reste dans le back-office.',
@@ -312,6 +324,18 @@ export const adminEmailAr: AdminEmailDictionary = {
     purposeContact: 'الردود على استمارة الاتصال',
     purposeNotification: 'الإشعارات الداخلية',
     purposeNewsletter: 'النشرة الإخبارية',
+    siteSection: 'الموقع والإشارات',
+    siteUrl: 'العنوان العام للموقع',
+    siteUrlHint:
+      'يُستعمل في كل روابط الرسائل: الشعار والتأكيد وإلغاء الاشتراك. أدخل النطاق الرسمي دون مسار.',
+    siteUrlSuggested: (url: string) => `مقترح بناءً على العنوان الذي تستعمله: ${url}. احفظ لتأكيده.`,
+    siteUrlFromEnv: (url: string) =>
+      `يحدّده الخادم (PUBLIC_SITE_URL): ${url}. لا أثر لهذا الحقل.`,
+    privacyPolicyUrl: 'رابط سياسة الخصوصية',
+    privacyPolicyHint:
+      'يظهر تحت استمارة الاشتراك في النشرة الإخبارية. يجب أن تزوّد الجمعية نص هذه السياسة.',
+    signature: 'توقيع الحملات',
+    signatureHint: 'يُضاف في آخر النشرات التي تتضمّنه. نص بسيط.',
     recipients: 'المستلمون',
     contactInbox: 'استقبال طلبات التواصل',
     contactInboxHint: 'من يُنبَّه حين يكتب زائر. إن تُرك فارغًا لا يُنبَّه أحد، لكن الطلب يبقى في لوحة الإدارة.',

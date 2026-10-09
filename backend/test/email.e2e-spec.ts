@@ -105,6 +105,7 @@ describe('Email — the contact flow and its secrets (e2e)', () => {
         fromName: 'Louga Développement Solidaire',
         fromEmail: 'contact@ldslouga.sn',
         contactInbox: 'equipe@ldslouga.sn',
+        siteUrl: 'https://ldslouga.sn',
       })
       .expect(200);
 
@@ -204,6 +205,37 @@ describe('Email — the contact flow and its secrets (e2e)', () => {
     expect(notify.html).not.toContain('<script>');
     expect(notify.html).not.toContain('<img src=x');
     expect(notify.html).toContain('&lt;script&gt;');
+  });
+
+  it('never lets a visitor’s Host header into an email', async () => {
+    // The phishing this prevents: a contact form submitted with a victim's
+    // address and a forged host would send a genuine LDS email, from LDS's
+    // own server, whose links lead to the attacker's site.
+    await request(http)
+      .post('/api/v1/contact')
+      .set('X-Forwarded-Host', 'evil.example')
+      .set('Host', 'evil.example')
+      .send({
+        name: 'Victime',
+        email: 'victime@example.com',
+        subject: 'Sujet',
+        message: 'Un message assez long.',
+      })
+      .expect(201);
+
+    const stored = prisma.__store.contactMessage.find(
+      (row: any) => row.email === 'victime@example.com',
+    );
+    const emails = prisma.__store.emailMessage.filter(
+      (row: any) => row.contactMessageId === stored.id,
+    );
+
+    expect(emails.length).toBeGreaterThan(0);
+    for (const email of emails) {
+      expect(email.html).not.toContain('evil.example');
+      expect(email.text).not.toContain('evil.example');
+      expect(email.html).toContain('https://ldslouga.sn');
+    }
   });
 
   it('refuses a language it does not publish', () =>

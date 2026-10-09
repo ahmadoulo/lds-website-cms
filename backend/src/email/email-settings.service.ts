@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import type { EmailSettings } from '@prisma/client';
+import type { EmailSettings, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   hasEncryptionKey,
@@ -8,7 +8,9 @@ import {
   seal,
   SecretKeyMissingError,
 } from './secret-box';
-import { assertHeaderSafe, isPlausibleEmail } from './render';
+import { assertHeaderSafe, isPlausibleEmail, type Localized } from './render';
+import { configuredSiteUrl, normaliseSiteUrl } from '../common/site-url';
+import { mergeLocalized } from '../common/sanitize';
 
 /** What a message is for. Each can carry its own display identity. */
 export type Purpose = 'default' | 'contact' | 'notification' | 'newsletter';
@@ -44,6 +46,16 @@ export interface PublicEmailSettings {
   identities: Partial<Record<Purpose, Partial<Identity>>>;
   batchSize: number;
   ratePerMinute: number;
+  /** The address an administrator saved. */
+  siteUrl: string | null;
+  /**
+   * PUBLIC_SITE_URL, when the deployment sets one. It wins over the saved
+   * value, and the screen shows it read-only so nobody edits a field that
+   * has no effect.
+   */
+  siteUrlFromEnvironment: string | null;
+  signature: Localized;
+  privacyPolicyUrl: string | null;
   lastTestAt: Date | null;
   lastTestOk: boolean | null;
   lastTestError: string | null;
@@ -82,9 +94,20 @@ export interface EmailSettingsInput {
   identities?: Partial<Record<Purpose, Partial<Identity>>> | null;
   batchSize?: number;
   ratePerMinute?: number;
+  siteUrl?: string | null;
+  signature?: Localized;
+  privacyPolicyUrl?: string | null;
 }
 
 const ROW = 'default';
+
+export class SiteUrlMissingError extends Error {
+  constructor() {
+    super(
+      "L'adresse publique du site n'est pas définie : aucun email contenant un lien ne peut être envoyé.",
+    );
+  }
+}
 
 const domainOf = (address: string | null | undefined) =>
   address?.split('@')[1]?.toLowerCase() ?? null;
@@ -120,6 +143,40 @@ export class EmailSettingsService {
     return Boolean(row?.enabled && row.host && row.port);
   }
 
+  /**
+   * The address every email links to.
+   *
+   * The deployment's PUBLIC_SITE_URL first, then the one an administrator
+   * saved. Never the Host of the request being served: a contact form is
+   * submitted by anyone, and its Host and X-Forwarded-Host headers are theirs
+   * to write - trusting them would put an attacker's domain into a genuine
+   * email sent from this server, to an address the attacker chose.
+   */
+  async siteUrl(): Promise<string | null> {
+    return configuredSiteUrl() ?? normaliseSiteUrl((await this.row())?.siteUrl);
+  }
+
+  /** As above, or an error naming what to configure. */
+  async requireSiteUrl(): Promise<string> {
+    const url = await this.siteUrl();
+    if (!url) throw new SiteUrlMissingError();
+    return url;
+  }
+
+  /** Where the team's own alerts go: the alert inbox, else the contact inbox. */
+  async adminInbox(): Promise<string | null> {
+    const row = await this.row();
+    return row?.adminInbox ?? row?.contactInbox ?? null;
+  }
+
+  async privacyPolicyUrl(): Promise<string | null> {
+    return (await this.row())?.privacyPolicyUrl ?? null;
+  }
+
+  async signature(): Promise<Localized> {
+    return ((await this.row())?.signature as Localized) ?? {};
+  }
+
   async update(input: EmailSettingsInput): Promise<PublicEmailSettings> {
     const current = await this.row();
 
@@ -147,9 +204,8 @@ export class EmailSettingsService {
       'host',
       'username',
     ] as const) {
-      const value = input[field];
       try {
-        assertHeaderSafe(field, value ?? null);
+        assertHeaderSafe(field, input[field] ?? null);
       } catch {
         throw new BadRequestException(`Valeur invalide : ${field}`);
       }
@@ -163,6 +219,37 @@ export class EmailSettingsService {
         input.port > 65535
       ) {
         throw new BadRequestException('Port invalide');
+      }
+    }
+
+    let siteUrl: string | null | undefined;
+    if (input.siteUrl !== undefined) {
+      if (input.siteUrl === null || input.siteUrl.trim() === '') siteUrl = null;
+      else {
+        siteUrl = normaliseSiteUrl(input.siteUrl);
+        if (!siteUrl) {
+          throw new BadRequestException(
+            'Adresse du site invalide : indiquez seulement le domaine, par exemple https://exemple.org',
+          );
+        }
+      }
+    }
+
+    let privacyPolicyUrl: string | null | undefined;
+    if (input.privacyPolicyUrl !== undefined) {
+      const raw = input.privacyPolicyUrl?.trim();
+      if (!raw) privacyPolicyUrl = null;
+      else {
+        try {
+          const url = new URL(raw);
+          if (url.protocol !== 'https:' && url.protocol !== 'http:')
+            throw new Error('scheme');
+          privacyPolicyUrl = url.toString();
+        } catch {
+          throw new BadRequestException(
+            'Lien vers la politique de confidentialité invalide.',
+          );
+        }
       }
     }
 
@@ -199,6 +286,20 @@ export class EmailSettingsService {
         1,
         1000,
       ),
+      siteUrl: siteUrl === undefined ? (current?.siteUrl ?? null) : siteUrl,
+      privacyPolicyUrl:
+        privacyPolicyUrl === undefined
+          ? (current?.privacyPolicyUrl ?? null)
+          : privacyPolicyUrl,
+      signature:
+        input.signature === undefined
+          ? (current?.signature ?? undefined)
+          : // Per language, like every other bilingual field: a form showing
+            // only the French signature must not wipe the Arabic one.
+            (mergeLocalized(
+              current?.signature ?? undefined,
+              input.signature ?? {},
+            ) as Prisma.InputJsonValue),
       ...(passwordCipher !== undefined ? { passwordCipher } : {}),
     };
 
@@ -208,6 +309,12 @@ export class EmailSettingsService {
     if (next.enabled && (!next.host || !next.port || !next.fromEmail)) {
       throw new BadRequestException(
         "L'envoi ne peut pas être activé sans serveur, port et adresse d'expédition.",
+      );
+    }
+    // Nor without the address every email links to.
+    if (next.enabled && !configuredSiteUrl() && !next.siteUrl) {
+      throw new BadRequestException(
+        "L'envoi ne peut pas être activé sans l'adresse publique du site.",
       );
     }
 
@@ -296,6 +403,10 @@ export class EmailSettingsService {
       identities,
       batchSize: row?.batchSize ?? 20,
       ratePerMinute: row?.ratePerMinute ?? 60,
+      siteUrl: row?.siteUrl ?? null,
+      siteUrlFromEnvironment: configuredSiteUrl(),
+      signature: (row?.signature as Localized) ?? {},
+      privacyPolicyUrl: row?.privacyPolicyUrl ?? null,
       lastTestAt: row?.lastTestAt ?? null,
       lastTestOk: row?.lastTestOk ?? null,
       lastTestError: row?.lastTestError ?? null,
@@ -353,6 +464,11 @@ export class EmailSettingsService {
     if (row.enabled && !row.lastTestOk) {
       found.push(
         "L'envoi est activé mais la configuration n'a pas été testée avec succès.",
+      );
+    }
+    if (!configuredSiteUrl() && !row.siteUrl) {
+      found.push(
+        "L'adresse publique du site n'est pas renseignée : aucun email contenant un lien ne peut partir.",
       );
     }
     if (!row.contactInbox) {

@@ -7,6 +7,11 @@ import {
 } from '@nestjs/common';
 import type { EmailTemplate, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  EmailSettingsService,
+  SiteUrlMissingError,
+} from './email-settings.service';
+import { normaliseSiteUrl } from '../common/site-url';
 import { SettingsService } from '../settings/settings.service';
 import { mergeLocalized } from '../common/sanitize';
 import {
@@ -60,6 +65,7 @@ export class TemplatesService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
+    private readonly emailSettings: EmailSettingsService,
   ) {}
 
   /**
@@ -231,6 +237,12 @@ export class TemplatesService implements OnModuleInit {
     key: string,
     locale: Locale,
     draft: TemplateInput = {},
+    /**
+     * The address of the administrator's own request, used only when no site
+     * address is configured yet so a preview still renders. Never used for an
+     * email that is sent to anyone.
+     */
+    fallbackSiteUrl: string | null = null,
   ): Promise<RenderedEmail> {
     const definition = this.definition(key);
     const stored = await this.get(key);
@@ -243,7 +255,7 @@ export class TemplatesService implements OnModuleInit {
       text: draft.text ? mergeLocalized(stored.text, draft.text) : stored.text,
     };
 
-    const site = await this.siteValues();
+    const site = await this.siteValues(fallbackSiteUrl);
     const now = new Intl.DateTimeFormat(locale === 'ar' ? 'ar' : 'fr-FR', {
       dateStyle: 'long',
       timeStyle: 'short',
@@ -273,8 +285,15 @@ export class TemplatesService implements OnModuleInit {
     return this.renderView(merged, locale, values, site, {});
   }
 
-  /** The values every template can use, read from the site's own settings. */
-  async siteValues(): Promise<{
+  /**
+   * The values every template can use, read from the site's own settings.
+   *
+   * The address comes from configuration only - PUBLIC_SITE_URL or the one
+   * saved in the email settings - and there is no literal domain to fall back
+   * to: a wrong link in a sent email is worse than an email that waits until
+   * the address is set. `fallback` exists for previews alone.
+   */
+  async siteValues(fallback: string | null = null): Promise<{
     siteName: string;
     siteUrl: string;
     address: string | null;
@@ -284,9 +303,9 @@ export class TemplatesService implements OnModuleInit {
       string,
       Record<string, unknown>
     >;
-    const siteUrl = (
-      process.env.PUBLIC_SITE_URL?.trim() || 'https://ldslouga.sn'
-    ).replace(/\/+$/, '');
+    const siteUrl =
+      (await this.emailSettings.siteUrl()) ?? normaliseSiteUrl(fallback);
+    if (!siteUrl) throw new SiteUrlMissingError();
     const address = config.global_contact?.address as
       Localized | string | undefined;
 
@@ -315,13 +334,21 @@ export class TemplatesService implements OnModuleInit {
     key: TemplateKey,
     locale: Locale,
     values: Values,
-    options: { unsubscribeUrl?: string | null } = {},
+    options: {
+      unsubscribeUrl?: string | null;
+      /**
+       * Admin-initiated tests only: the administrator's own request origin,
+       * used when no site address is configured yet. Never passed for an
+       * email triggered by a visitor.
+       */
+      fallbackSiteUrl?: string | null;
+    } = {},
   ): Promise<RenderedEmail> {
     return this.renderView(
       await this.get(key),
       locale,
       values,
-      await this.siteValues(),
+      await this.siteValues(options.fallbackSiteUrl ?? null),
       options,
     );
   }

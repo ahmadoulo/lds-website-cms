@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Mail, MailOpen, Trash2 } from 'lucide-react';
 import api from '../../lib/api/axios';
@@ -57,6 +58,33 @@ export const MessagesAdmin = () => {
       setOpened(null);
     },
   });
+
+  /*
+    `?id=` opens one message directly. The team's notification email links
+    here, and landing on the list with the message somewhere in it would
+    leave them looking for the thing the email was about.
+  */
+  const [params, setParams] = useSearchParams();
+  const linkedId = params.get('id');
+  const linked = useQuery({
+    queryKey: ['admin', 'contact', 'one', linkedId],
+    enabled: Boolean(linkedId),
+    queryFn: async () => (await api.get<ContactMessage>(`/contact/${linkedId}`)).data,
+  });
+  useEffect(() => {
+    if (linked.data) openMessage(linked.data);
+    // Opened once per link; the effect must not reopen it after closing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linked.data]);
+
+  const closeMessage = () => {
+    setOpened(null);
+    if (linkedId) {
+      const next = new URLSearchParams(params);
+      next.delete('id');
+      setParams(next, { replace: true });
+    }
+  };
 
   /** Opening a message marks it read, which is what an inbox is expected to do. */
   const openMessage = (message: ContactMessage) => {
@@ -184,7 +212,7 @@ export const MessagesAdmin = () => {
 
       <Modal
         isOpen={Boolean(opened)}
-        onClose={() => setOpened(null)}
+        onClose={closeMessage}
         title={opened?.subject ?? ''}
         description={
           opened
