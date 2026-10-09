@@ -87,13 +87,26 @@ set_if_empty() {
   current=$(grep "^${key}=" "$ENV_FILE" | head -n 1 | cut -d= -f2-)
 
   if [ -z "$current" ]; then
-    tmp="${ENV_FILE}.tmp"
-    awk -v k="$key" -v v="$value" \
-      'index($0, k "=") == 1 { print k "=" v; next } { print }' \
-      "$ENV_FILE" > "$tmp"
-    mv "$tmp" "$ENV_FILE"
-    echo "  * generated ${key}"
-    return 0
+    if grep -q "^${key}=" "$ENV_FILE"; then
+      tmp="${ENV_FILE}.tmp"
+      awk -v k="$key" -v v="$value" \
+        'index($0, k "=") == 1 { print k "=" v; next } { print }' \
+        "$ENV_FILE" > "$tmp"
+      mv "$tmp" "$ENV_FILE"
+    else
+      # The awk above only rewrites a line that is already there. A key with
+      # no line at all - one added to the stack after this .env was created -
+      # used to be reported as generated while nothing was written.
+      printf '%s=%s\n' "$key" "$value" >> "$ENV_FILE"
+    fi
+
+    # Said only once it is true.
+    if [ "$(grep "^${key}=" "$ENV_FILE" | head -n 1 | cut -d= -f2-)" = "$value" ]; then
+      echo "  * generated ${key}"
+      return 0
+    fi
+    echo "  ! could not write ${key} to ${ENV_FILE}" >&2
+    return 1
   fi
 
   echo "  = kept existing ${key}"
