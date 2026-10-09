@@ -86,6 +86,8 @@ describe('ContactPage', () => {
         email: 'aissatou@example.com',
         subject: 'Bénévolat',
         message: 'Je souhaite rejoindre votre équipe de bénévoles.',
+        // The acknowledgement answers in the language the visitor was reading.
+        locale: 'fr',
       }),
     );
 

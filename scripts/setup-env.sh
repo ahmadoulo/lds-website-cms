@@ -130,6 +130,10 @@ RECOVERED_DB=$(from_container lds-postgres POSTGRES_PASSWORD || true)
 RECOVERED_STORAGE=$(from_container lds-minio MINIO_ROOT_PASSWORD || true)
 RECOVERED_JWT=$(from_container lds-backend JWT_SECRET || true)
 RECOVERED_JWT_REFRESH=$(from_container lds-backend JWT_REFRESH_SECRET || true)
+# Recovered like the others, and for a sharper reason: the SMTP password is
+# stored encrypted with this key, so a freshly generated one would leave it
+# undecryptable and silently stop every email the site sends.
+RECOVERED_EMAIL_KEY=$(from_container lds-backend EMAIL_ENCRYPTION_KEY || true)
 
 EXISTING_DEPLOYMENT=0
 if [ -n "$RECOVERED_DB" ] || [ -n "$RECOVERED_STORAGE" ]; then
@@ -165,6 +169,7 @@ set_if_empty POSTGRES_PASSWORD "${RECOVERED_DB:-$(random_string 32)}" || true
 set_if_empty MINIO_ROOT_PASSWORD "${RECOVERED_STORAGE:-$(random_string 32)}" || true
 set_if_empty JWT_SECRET "${RECOVERED_JWT:-$(random_string 64)}" || true
 set_if_empty JWT_REFRESH_SECRET "${RECOVERED_JWT_REFRESH:-$(random_string 64)}" || true
+set_if_empty EMAIL_ENCRYPTION_KEY "${RECOVERED_EMAIL_KEY:-$(random_string 48)}" || true
 
 # The database name and user are part of the volume too.
 if [ "$EXISTING_DEPLOYMENT" -eq 1 ]; then

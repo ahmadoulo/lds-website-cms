@@ -275,3 +275,140 @@ model AuditLog {
   @@index([resource, resourceId])
   @@index([userId])
 }
+
+// -----------------------------------------------------------------------------
+// Email
+// -----------------------------------------------------------------------------
+
+/// SMTP configuration and the identities the site sends under. One row.
+///
+/// Deliberately not a SiteSettings key: that table is returned whole by
+/// GET /public/settings to anonymous visitors, so an SMTP host, a username and
+/// the inbox the contact form lands in would all have been published.
+model EmailSettings {
+  id String @id @default("default")
+
+  /// Outgoing mail off by default: nothing is sent until it is configured,
+  /// tested and switched on deliberately.
+  enabled Boolean @default(false)
+
+  host           String?
+  port           Int?
+  /// 'tls' for implicit TLS (usually 465), 'starttls' (usually 587), or 'none'.
+  security       String  @default("starttls")
+  username       String?
+  /// AES-256-GCM, keyed by EMAIL_ENCRYPTION_KEY. Never leaves the API, in any
+  /// response, log or error message.
+  passwordCipher String?
+
+  /// The default identity. Per-purpose overrides live in `identities`.
+  fromName     String?
+  fromEmail    String?
+  replyToName  String?
+  replyToEmail String?
+
+  /// Where a contact request lands, and where the system reports its own
+  /// failures. Separate, because they are read by different people.
+  contactInbox String?
+  adminInbox   String?
+
+  /// { contact: { fromName, fromEmail, replyToEmail }, newsletter: {...} }
+  /// A single mailbox, several identities: the provider decides what it will
+  /// accept as the envelope sender, so these change the display name and the
+  /// Reply-To rather than the authenticated address.
+  identities Json?
+
+  /// How hard the worker is allowed to push a provider.
+  batchSize     Int @default(20)
+  ratePerMinute Int @default(60)
+
+  lastTestAt    DateTime?
+  lastTestOk    Boolean?
+  /// Redacted before it is stored: a provider error can quote credentials.
+  lastTestError String?
+
+  updatedAt DateTime @updatedAt
+}
+
+enum EmailStatus {
+  PENDING
+  SENDING
+  /// Accepted by the SMTP server. Not the same thing as delivered, and the
+  /// interface never says otherwise.
+  SENT
+  /// Permanent: a bad address, a rejected sender, attempts exhausted.
+  FAILED
+  CANCELLED
+}
+
+/// The send queue and the history, in one table.
+///
+/// PostgreSQL rather than Redis: the deployment has no queue and adding a
+/// container to run one would be the heaviest part of this feature. A row per
+/// recipient claimed with FOR UPDATE SKIP LOCKED gives safe concurrent
+/// workers, survives a restart by construction, and leaves the history already
+/// written - which a separate queue would have had to duplicate anyway.
+model EmailMessage {
+  id String @id @default(uuid())
+
+  /// 'contact_ack' | 'contact_notify' | 'test' | and later the newsletter ones.
+  kind String
+
+  toEmail String
+  toName  String?
+
+  fromName  String
+  fromEmail String
+  replyTo   String?
+
+  subject String
+  html    String @db.Text
+  text    String @db.Text
+  locale  String @default("fr")
+
+  status        EmailStatus @default(PENDING)
+  attempts      Int         @default(0)
+  /// The earliest a worker may try again. Backoff moves it forward.
+  nextAttemptAt DateTime    @default(now())
+  /// Set while a worker holds the row; a stale value releases a crashed claim.
+  lockedAt      DateTime?
+
+  /// Redacted, and never the credentials.
+  error String? @db.Text
+
+  /// What caused this message, for the history and for not sending twice.
+  contactMessageId String?
+
+  /// When the SMTP server accepted it.
+  sentAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Exactly one acknowledgement per contact request, whatever a retried POST
+  /// or a double-clicked button does. NULLs do not collide in PostgreSQL, so
+  /// this constrains only the messages that have a cause.
+  @@unique([contactMessageId, kind])
+  @@index([status, nextAttemptAt])
+  @@index([createdAt])
+  @@index([kind])
+}
+
+/// The text of every email the system sends, editable without a deploy.
+model EmailTemplate {
+  id String @id @default(uuid())
+
+  /// The stable name the code asks for: 'contact_ack', 'contact_notify', 'test'.
+  key  String @unique
+  name String
+
+  /// { fr, ar } like every other editorial column in this schema.
+  subject Json
+  html    Json
+  text    Json
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

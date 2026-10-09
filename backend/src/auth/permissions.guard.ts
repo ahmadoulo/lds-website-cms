@@ -27,6 +27,8 @@ const RESOURCE_MIN_LEVEL: Record<string, number> = {
   Donation: ROLE_LEVEL.ADMIN,
   ImpactStatistic: ROLE_LEVEL.ADMIN,
   ContactMessage: ROLE_LEVEL.ADMIN,
+  // The emails those messages produce, and the SMTP account that sends them.
+  Email: ROLE_LEVEL.ADMIN,
 };
 
 /**

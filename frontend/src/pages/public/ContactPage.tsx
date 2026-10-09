@@ -38,7 +38,10 @@ export const ContactPage = () => {
   } = useForm<FormValues>({ defaultValues: EMPTY_FORM });
 
   const mutation = useMutation({
-    mutationFn: async (values: FormValues) => (await api.post('/contact', values)).data,
+    // The language the visitor is reading in, so the acknowledgement answers
+    // in it. The API accepts only the two published languages.
+    mutationFn: async (values: FormValues) =>
+      (await api.post('/contact', { ...values, locale })).data,
     onSuccess: () => {
       setError(null);
       setIsSent(true);

@@ -84,6 +84,14 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-}
       PUBLIC_API_URL: ${PUBLIC_API_URL:-}
       TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
+      # Encrypts the SMTP password at rest. Optional on purpose: without it the
+      # site runs normally and the email screen refuses to store a password,
+      # saying why - a required variable here would fail the whole deploy.
+      # ./scripts/setup-env.sh generates it, and keeps the existing one.
+      EMAIL_ENCRYPTION_KEY: ${EMAIL_ENCRYPTION_KEY:-}
+      # The public address written into emails (links, logo). Defaults to
+      # https://ldslouga.sn; set it on a preview host.
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-}
     # Not published on a public interface: the API is reached through nginx.
     # The loopback binding keeps Swagger and debugging available over an SSH
     # tunnel without exposing the service to the internet.

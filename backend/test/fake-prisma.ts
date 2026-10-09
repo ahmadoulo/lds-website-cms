@@ -141,6 +141,9 @@ export function createFakePrisma() {
     navigationItem: table([]),
     siteSettings: table([]),
     auditLog: table([]),
+    emailSettings: table([]),
+    emailMessage: table([]),
+    emailTemplate: table([]),
     $transaction: jest.fn(async (ops: any) =>
       typeof ops === 'function' ? ops(prisma) : Promise.all(ops),
     ),

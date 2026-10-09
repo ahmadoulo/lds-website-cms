@@ -22,6 +22,7 @@ import { ContactModule } from './contact/contact.module';
 import { AuditModule } from './audit/audit.module';
 import { PublicModule } from './public/public.module';
 import { SeoModule } from './seo/seo.module';
+import { EmailModule } from './email/email.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
@@ -45,6 +46,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     ContactModule,
     PublicModule,
     SeoModule,
+    EmailModule,
     DashboardModule,
   ],
   controllers: [AppController],

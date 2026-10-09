@@ -3,13 +3,28 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { QueryContactDto } from './dto/query-contact.dto';
 import { paginated, type Paginated } from '../common/dto/pagination.dto';
+import { ContactMailService } from '../email/contact-mail.service';
 
 @Injectable()
 export class ContactService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private contactMail: ContactMailService,
+  ) {}
 
   async create(dto: CreateContactDto) {
-    const message = await this.prisma.contactMessage.create({ data: dto });
+    // The language travels with the request but is not a column of the
+    // message: it only decides which acknowledgement is queued.
+    const { locale, ...fields } = dto;
+
+    // Stored first. Everything after this line may fail without costing the
+    // visitor their request.
+    const message = await this.prisma.contactMessage.create({ data: fields });
+
+    // Queued, not sent: this is a database write, so the visitor is not kept
+    // waiting on an SMTP server, and an unreachable one loses nothing.
+    // onReceived never throws - an email problem is not the visitor's problem.
+    await this.contactMail.onReceived(message, locale ?? 'fr');
 
     // The visitor only needs a confirmation, never the stored record.
     return {
@@ -52,7 +67,9 @@ export class ContactService {
   }
 
   async findOne(id: string) {
-    const message = await this.prisma.contactMessage.findUnique({ where: { id } });
+    const message = await this.prisma.contactMessage.findUnique({
+      where: { id },
+    });
     if (!message) throw new NotFoundException('Message introuvable');
     return message;
   }

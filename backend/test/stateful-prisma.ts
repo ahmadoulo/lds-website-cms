@@ -30,6 +30,9 @@ const TABLES = [
   'navigationItem',
   'siteSettings',
   'auditLog',
+  'emailSettings',
+  'emailMessage',
+  'emailTemplate',
 ] as const;
 
 function matches(row: any, where: any): boolean {
@@ -105,6 +108,15 @@ const COLUMN_DEFAULTS: Record<string, Record<string, unknown>> = {
   contactMessage: { isRead: false, readAt: null },
   navigationItem: { order: 0, parentId: null },
   siteSettings: { draftValue: null, draftUpdatedAt: null, publishedAt: null },
+  emailMessage: {
+    status: 'PENDING',
+    attempts: 0,
+    lockedAt: null,
+    error: null,
+    sentAt: null,
+    contactMessageId: null,
+  },
+  emailTemplate: { isActive: true },
 };
 
 function applyDefaults(table: string, data: any) {

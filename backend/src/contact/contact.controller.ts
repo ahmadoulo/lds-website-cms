@@ -65,7 +65,10 @@ export class ContactController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('UPDATE', 'ContactMessage')
   @ApiOperation({ summary: 'Mark a message as read or unread' })
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateContactDto) {
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateContactDto,
+  ) {
     return this.contactService.setRead(id, dto.isRead);
   }
 
@@ -74,7 +77,10 @@ export class ContactController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('DELETE', 'ContactMessage')
   @ApiOperation({ summary: 'Delete a message' })
-  async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser) {
+  async remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     const result = await this.contactService.remove(id);
     await this.audit.record({
       action: 'DELETE',
