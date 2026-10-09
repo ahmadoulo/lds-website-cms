@@ -84,6 +84,7 @@ export class TemplatesService implements OnModuleInit {
             subject: definition.subject as Prisma.InputJsonValue,
             html: definition.html as Prisma.InputJsonValue,
             text: definition.text as Prisma.InputJsonValue,
+            isActive: definition.defaultActive ?? true,
           },
           update: {},
         });
@@ -124,7 +125,7 @@ export class TemplatesService implements OnModuleInit {
       subject,
       html,
       text,
-      isActive: row?.isActive ?? true,
+      isActive: row?.isActive ?? definition.defaultActive ?? true,
       updatedAt: row?.updatedAt ?? null,
       unknownVariables: [...used].filter(
         (name) => !(name in definition.variables),

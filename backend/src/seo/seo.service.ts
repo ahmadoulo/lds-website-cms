@@ -38,6 +38,7 @@ const STATIC_ROUTES: readonly StaticRoute[] = [
   { path: '/partenaires', changefreq: 'monthly', priority: '0.6' },
   { path: '/nous-soutenir', changefreq: 'monthly', priority: '0.9' },
   { path: '/contact', changefreq: 'monthly', priority: '0.7' },
+  { path: '/newsletter', changefreq: 'yearly', priority: '0.4' },
 ];
 
 /** The five characters that are not allowed to appear raw in a sitemap URL. */

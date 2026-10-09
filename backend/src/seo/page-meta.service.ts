@@ -42,6 +42,15 @@ export interface PageMeta {
 
 const ARTICLE_PREFIX = '/actualites/';
 
+/** See resolve(): real, reachable, and never indexed. */
+const PRIVATE_PAGES: Record<string, Localized> = {
+  '/newsletter/confirmation': {
+    fr: 'Confirmation d’inscription',
+    ar: 'تأكيد الاشتراك',
+  },
+  '/newsletter/desinscription': { fr: 'Désinscription', ar: 'إلغاء الاشتراك' },
+};
+
 @Injectable()
 export class PageMetaService {
   constructor(private readonly prisma: PrismaService) {}
@@ -80,6 +89,25 @@ export class PageMetaService {
     const pages = seo.pages as
       Record<string, Record<string, Localized>> | undefined;
     const page = pages?.[path];
+
+    /*
+      Pages that exist but are one person's business: the link in their
+      confirmation email, the link in their newsletter footer. They answer 200
+      - they are real pages - and ask not to be indexed, so a search engine
+      never lists someone's unsubscribe page.
+    */
+    if (PRIVATE_PAGES[path]) {
+      const own = readLocalized(PRIVATE_PAGES[path], locale);
+      return {
+        ...base,
+        title: `${own} — ${siteName}`,
+        description: siteDescription,
+        type: 'website',
+        noIndex: true,
+        status: 200,
+        jsonLd: [],
+      };
+    }
 
     if (!page) {
       /*

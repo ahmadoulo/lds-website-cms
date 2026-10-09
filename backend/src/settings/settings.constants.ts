@@ -207,6 +207,13 @@ export const DEFAULT_SETTINGS: Record<SettingKey, Record<string, any>> = {
           ar: 'مراسلة جمعية لوغا للتنمية والتضامن: العنوان والهاتف ونموذج الاتصال.',
         },
       },
+      '/newsletter': {
+        title: { fr: 'Newsletter', ar: 'النشرة الإخبارية' },
+        description: {
+          fr: 'Recevez par email les nouvelles et les actions de Louga Développement Solidaire.',
+          ar: 'تلقَّ أخبار جمعية لوغا للتنمية والتضامن وأعمالها عبر البريد الإلكتروني.',
+        },
+      },
     },
   },
 };

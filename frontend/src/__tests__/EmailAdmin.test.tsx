@@ -267,6 +267,7 @@ describe('Communication navigation', () => {
       '/admin/communication',
       '/admin/emails/configuration',
       '/admin/emails/modeles',
+      '/admin/emails/abonnes',
       '/admin/emails/historique',
     ]);
   });

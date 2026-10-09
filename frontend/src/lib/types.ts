@@ -362,3 +362,36 @@ export interface EmailOverview {
     recent: Array<{ id: string; name: string; subject: string; isRead: boolean; createdAt: string }>;
   };
 }
+
+// ---------------------------------------------------------------------------
+// Newsletter
+// ---------------------------------------------------------------------------
+
+export type SubscriberStatus = 'PENDING' | 'ACTIVE' | 'UNSUBSCRIBED';
+
+export interface Subscriber {
+  id: string;
+  email: string;
+  status: SubscriberStatus;
+  locale: 'fr' | 'ar';
+  source: 'footer' | 'page' | 'import';
+  consentAt: string | null;
+  confirmedAt: string | null;
+  unsubscribedAt: string | null;
+  lastCampaignAt: string | null;
+  createdAt: string;
+}
+
+export interface SubscriberStats {
+  counts: Record<SubscriberStatus, number>;
+  total: number;
+  lastConfirmedAt: string | null;
+  months: Array<{ month: string; confirmed: number; unsubscribed: number }>;
+}
+
+export interface ImportResult {
+  added: number;
+  existing: number;
+  invalid: number;
+  duplicates: number;
+}

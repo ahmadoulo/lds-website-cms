@@ -29,6 +29,9 @@ const RESOURCE_MIN_LEVEL: Record<string, number> = {
   ContactMessage: ROLE_LEVEL.ADMIN,
   // The emails those messages produce, and the SMTP account that sends them.
   Email: ROLE_LEVEL.ADMIN,
+  // Newsletter subscribers and the campaigns sent to them.
+  Subscriber: ROLE_LEVEL.ADMIN,
+  Campaign: ROLE_LEVEL.ADMIN,
 };
 
 /**
@@ -37,6 +40,11 @@ const RESOURCE_MIN_LEVEL: Record<string, number> = {
  */
 const ACTION_MIN_LEVEL: Record<string, number> = {
   'DELETE:Media': ROLE_LEVEL.ADMIN,
+  // Personal data in bulk: taking the list out, erasing people from it, or
+  // adding people to it on someone's word are the super administrator's.
+  'EXPORT:Subscriber': ROLE_LEVEL.SUPER_ADMIN,
+  'DELETE:Subscriber': ROLE_LEVEL.SUPER_ADMIN,
+  'IMPORT:Subscriber': ROLE_LEVEL.SUPER_ADMIN,
 };
 
 @Injectable()

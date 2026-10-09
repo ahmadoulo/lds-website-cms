@@ -41,6 +41,7 @@ const NAV_LABELS_FR: Record<string, string> = {
   '/admin/emails/configuration': 'Configuration email',
   '/admin/emails/modeles': 'Modèles d’emails',
   '/admin/emails/historique': 'Historique des envois',
+  '/admin/emails/abonnes': 'Abonnés',
 };
 
 const NAV_LABELS_AR: Record<string, string> = {
@@ -63,6 +64,7 @@ const NAV_LABELS_AR: Record<string, string> = {
   '/admin/emails/configuration': 'إعدادات البريد الإلكتروني',
   '/admin/emails/modeles': 'قوالب الرسائل',
   '/admin/emails/historique': 'سجلّ الإرسال',
+  '/admin/emails/abonnes': 'المشتركون',
 };
 
 const NAV_HINTS_FR: Record<string, string> = {
@@ -80,6 +82,7 @@ const NAV_HINTS_FR: Record<string, string> = {
   '/admin/emails/configuration': 'Serveur SMTP, expéditeur',
   '/admin/emails/modeles': 'Textes des emails automatiques',
   '/admin/emails/historique': 'Chaque email envoyé',
+  '/admin/emails/abonnes': 'Inscrits à la newsletter',
 };
 
 const NAV_HINTS_AR: Record<string, string> = {
@@ -99,6 +102,7 @@ const NAV_HINTS_AR: Record<string, string> = {
   '/admin/emails/configuration': 'خادم SMTP والمرسِل',
   '/admin/emails/modeles': 'نصوص الرسائل الآلية',
   '/admin/emails/historique': 'كل رسالة مُرسَلة',
+  '/admin/emails/abonnes': 'المشتركون في النشرة',
 };
 
 /** Keyed by the group title in `navigation.ts`, which is its only identifier. */

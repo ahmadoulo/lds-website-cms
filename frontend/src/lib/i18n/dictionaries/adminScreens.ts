@@ -145,6 +145,7 @@ export const adminScreensFr = {
       LOGOUT: "s'est déconnecté",
       LOGIN_FAILED: 'a échoué à se connecter',
       PASSWORD_CHANGED: 'a changé son mot de passe',
+      EXPORT: 'a exporté',
     },
     resources: {
       News: 'une actualité',
@@ -180,6 +181,7 @@ export const adminScreensFr = {
       LOGOUT: 'Déconnexion',
       LOGIN_FAILED: 'Échec de connexion',
       PASSWORD_CHANGED: 'Mot de passe modifié',
+      EXPORT: 'Export',
     },
     resources: {
       News: 'Actualité',
@@ -811,6 +813,7 @@ export const adminScreensAr: AdminScreensDictionary = {
       LOGOUT: 'سجّل الخروج',
       LOGIN_FAILED: 'فشل في تسجيل الدخول',
       PASSWORD_CHANGED: 'غيّر كلمة المرور',
+      EXPORT: 'صدّر',
     },
     resources: {
       News: 'خبرًا',
@@ -845,6 +848,7 @@ export const adminScreensAr: AdminScreensDictionary = {
       LOGOUT: 'تسجيل خروج',
       LOGIN_FAILED: 'فشل تسجيل الدخول',
       PASSWORD_CHANGED: 'تغيير كلمة المرور',
+      EXPORT: 'تصدير',
     },
     resources: {
       News: 'خبر',

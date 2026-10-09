@@ -15,6 +15,7 @@ export interface OutgoingEmail {
   subject: string;
   html: string;
   text: string;
+  headers?: Record<string, string>;
 }
 
 export class SmtpNotConfiguredError extends Error {
@@ -100,6 +101,10 @@ export class TransportService {
     assertHeaderSafe('subject', email.subject);
     assertHeaderSafe('fromName', email.fromName);
     assertHeaderSafe('toName', email.toName ?? null);
+    for (const [name, value] of Object.entries(email.headers ?? {})) {
+      assertHeaderSafe(name, name);
+      assertHeaderSafe(name, value);
+    }
 
     const transporter = await this.transporter();
     try {
@@ -110,6 +115,7 @@ export class TransportService {
         subject: email.subject,
         html: email.html,
         text: email.text,
+        headers: email.headers,
       })) as { messageId: string };
       return { messageId: info.messageId };
     } finally {

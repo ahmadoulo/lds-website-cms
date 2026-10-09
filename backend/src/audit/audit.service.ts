@@ -3,7 +3,16 @@ import { PrismaService } from '../prisma/prisma.service';
 import { paginated, type Paginated } from '../common/dto/pagination.dto';
 import type { QueryAuditDto } from './dto/query-audit.dto';
 
-export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGIN_FAILED' | 'LOGOUT' | 'PASSWORD_CHANGED';
+export type AuditAction =
+  | 'CREATE'
+  | 'UPDATE'
+  | 'DELETE'
+  | 'LOGIN'
+  | 'LOGIN_FAILED'
+  | 'LOGOUT'
+  | 'PASSWORD_CHANGED'
+  /** Personal data taken out of the system, e.g. the subscriber list as CSV. */
+  | 'EXPORT';
 
 export interface AuditEntry {
   action: AuditAction;

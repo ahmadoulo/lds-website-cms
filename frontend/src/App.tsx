@@ -26,6 +26,18 @@ import { Gallery } from './pages/public/Gallery';
 
 import { AdminLayout } from './components/admin/layout/AdminLayout';
 import { ProtectedRoute } from './components/admin/ProtectedRoute';
+// The newsletter pages are reached from an email, rarely: a chunk of their own
+// rather than weight on every visitor's first load.
+const NewsletterPage = lazy(() =>
+  import('./pages/public/NewsletterPages').then((m) => ({ default: m.NewsletterPage })),
+);
+const NewsletterConfirmPage = lazy(() =>
+  import('./pages/public/NewsletterPages').then((m) => ({ default: m.NewsletterConfirmPage })),
+);
+const NewsletterUnsubscribePage = lazy(() =>
+  import('./pages/public/NewsletterPages').then((m) => ({ default: m.NewsletterUnsubscribePage })),
+);
+
 // The administration is a separate chunk: public visitors never download it.
 const AdminLogin = lazy(() =>
   import('./pages/admin/AdminLogin').then((m) => ({ default: m.AdminLogin })),
@@ -77,6 +89,7 @@ const CommunicationOverview = lazy(() => import('./pages/admin/communication/Com
 const EmailSettingsAdmin = lazy(() => import('./pages/admin/communication/EmailSettingsAdmin'));
 const EmailTemplatesAdmin = lazy(() => import('./pages/admin/communication/EmailTemplatesAdmin'));
 const EmailHistoryAdmin = lazy(() => import('./pages/admin/communication/EmailHistoryAdmin'));
+const SubscribersAdmin = lazy(() => import('./pages/admin/communication/SubscribersAdmin'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -126,6 +139,12 @@ function App() {
                     <Route path="/partenaires" element={<PartnersPage />} />
                     <Route path="/nous-soutenir" element={<SupportPage />} />
                     <Route path="/contact" element={<ContactPage />} />
+                    <Route path="/newsletter" element={<NewsletterPage />} />
+                    <Route path="/newsletter/confirmation" element={<NewsletterConfirmPage />} />
+                    <Route
+                      path="/newsletter/desinscription"
+                      element={<NewsletterUnsubscribePage />}
+                    />
                     <Route path="*" element={<NotFoundPage />} />
                   </Route>
 
@@ -154,6 +173,7 @@ function App() {
                         <Route path="emails/configuration" element={<EmailSettingsAdmin />} />
                         <Route path="emails/modeles" element={<EmailTemplatesAdmin />} />
                         <Route path="emails/historique" element={<EmailHistoryAdmin />} />
+                        <Route path="emails/abonnes" element={<SubscribersAdmin />} />
                       </Route>
 
                       {/* Accounts and audit trail: super administrators only. */}

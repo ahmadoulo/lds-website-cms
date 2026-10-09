@@ -13,6 +13,7 @@ import {
   FileCode2,
   History,
   Send,
+  UserCheck,
   Menu,
   Settings,
   ShieldCheck,
@@ -171,6 +172,13 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: FileCode2,
         minRole: 'ADMIN',
         hint: 'Textes des emails automatiques',
+      },
+      {
+        name: 'Abonnés',
+        href: '/admin/emails/abonnes',
+        icon: UserCheck,
+        minRole: 'ADMIN',
+        hint: 'Inscrits à la newsletter',
       },
       {
         name: 'Historique des envois',

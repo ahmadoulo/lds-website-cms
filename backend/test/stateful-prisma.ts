@@ -33,6 +33,8 @@ const TABLES = [
   'emailSettings',
   'emailMessage',
   'emailTemplate',
+  'newsletterSubscriber',
+  'campaign',
 ] as const;
 
 function matches(row: any, where: any): boolean {
@@ -117,6 +119,18 @@ const COLUMN_DEFAULTS: Record<string, Record<string, unknown>> = {
     contactMessageId: null,
   },
   emailTemplate: { isActive: true },
+  newsletterSubscriber: {
+    status: 'PENDING',
+    locale: 'fr',
+    source: 'footer',
+    confirmTokenHash: null,
+    confirmTokenExpiresAt: null,
+    confirmedAt: null,
+    unsubscribedAt: null,
+    unsubscribedCampaignId: null,
+    lastCampaignAt: null,
+  },
+  campaign: { status: 'DRAFT', includeSignature: true },
 };
 
 function applyDefaults(table: string, data: any) {
@@ -265,6 +279,18 @@ export function createStatefulPrisma() {
       };
       store[table].push(created);
       return created;
+    },
+
+    createMany: async ({ data }: any) => {
+      for (const item of data) {
+        store[table].push({
+          id: randomUUID(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          ...applyDefaults(table, normalizeWrite(item)),
+        });
+      }
+      return { count: data.length };
     },
 
     updateMany: async ({ where, data }: any) => {

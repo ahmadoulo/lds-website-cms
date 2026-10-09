@@ -16,6 +16,7 @@ import { cn } from '../../lib/cn';
 import { SiteLogo } from '../public/SiteLogo';
 import { CtaLink } from '../public/CtaLink';
 import { LocaleSwitch } from '../public/LocaleSwitch';
+import { NewsletterSignup, useNewsletterStatus } from '../public/NewsletterSignup';
 import { PreviewBanner } from '../public/PreviewBanner';
 
 /*
@@ -391,6 +392,8 @@ export const PublicLayout = () => {
           </div>
         </div>
 
+        <FooterNewsletter />
+
         <div className="container-page mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6 text-sm text-white/45 sm:mt-14 sm:pt-8">
           <span>
             © {new Date().getFullYear()} {organizationName}. {layout.footer.rights}
@@ -424,5 +427,33 @@ export const PublicLayout = () => {
         </div>
       </footer>
     </div>
+  );
+};
+
+/**
+ * The newsletter band of the footer.
+ *
+ * All or nothing: when the API says signing up would not work, the band is
+ * absent, heading included - a title over an empty space is a feature that
+ * looks broken.
+ */
+const FooterNewsletter = () => {
+  const t = useT();
+  const status = useNewsletterStatus();
+  if (!status.data?.available) return null;
+
+  return (
+    <section
+      aria-labelledby="footer-newsletter"
+      className="container-page mt-10 grid gap-5 border-t border-white/10 pt-8 sm:mt-14 md:grid-cols-[1fr_1.4fr] md:items-start md:gap-10"
+    >
+      <div>
+        <h2 id="footer-newsletter" className="text-base font-bold text-white">
+          {t.newsletter.title}
+        </h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-white/60">{t.newsletter.intro}</p>
+      </div>
+      <NewsletterSignup source="footer" tone="dark" />
+    </section>
   );
 };

@@ -27,7 +27,6 @@ import type {
 } from '../../../lib/types';
 
 const STATUSES: EmailStatus[] = ['PENDING', 'SENDING', 'SENT', 'FAILED', 'CANCELLED'];
-const KINDS = ['contact_ack', 'contact_notify', 'test', 'template_test'];
 
 /**
  * Every email the site sent or tried to send.
@@ -177,7 +176,9 @@ export const EmailHistoryAdmin = () => {
           onChange={(event) => setFilter('kind', event.target.value)}
         >
           <option value="">{h.allKinds}</option>
-          {KINDS.map((value) => (
+          {/* Every kind the dictionary names, so a new kind of email appears
+              in the filter the moment it has a label. */}
+          {Object.keys(t.admin.email.kinds).map((value) => (
             <option key={value} value={value}>
               {kindLabel(value)}
             </option>

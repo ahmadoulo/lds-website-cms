@@ -20,6 +20,10 @@ export interface Enqueue {
   /** Overrides the purpose's Reply-To: the internal notification replies to the visitor. */
   replyTo?: string | null;
   contactMessageId?: string | null;
+  campaignId?: string | null;
+  subscriberId?: string | null;
+  /** Extra headers, e.g. List-Unsubscribe. Values are checked for line breaks. */
+  headers?: Record<string, string> | null;
 }
 
 /**
@@ -91,6 +95,9 @@ export class EmailQueueService {
           text: input.email.text,
           locale: input.locale ?? 'fr',
           contactMessageId: input.contactMessageId ?? null,
+          campaignId: input.campaignId ?? null,
+          subscriberId: input.subscriberId ?? null,
+          headers: input.headers ?? undefined,
         },
       });
     } catch (error) {
@@ -123,6 +130,11 @@ export class EmailQueueService {
          SELECT "id" FROM "EmailMessage"
           WHERE "status" = 'PENDING'::"EmailStatus"
             AND "nextAttemptAt" <= NOW()
+            -- A paused campaign keeps its place in the queue and is simply
+            -- not taken; resuming it needs nothing but the status changing.
+            AND ("campaignId" IS NULL OR "campaignId" NOT IN (
+                  SELECT "id" FROM "Campaign" WHERE "status" = 'PAUSED'::"CampaignStatus"
+                ))
           ORDER BY "createdAt" ASC
           LIMIT ${limit}
           FOR UPDATE SKIP LOCKED
@@ -188,6 +200,30 @@ export class EmailQueueService {
       return;
     }
 
+    /*
+      Mail addressed to a subscriber is only sent while they are subscribed.
+      A campaign is queued all at once and drains over minutes or hours; an
+      unsubscribe clicked in that window must stop the copies still waiting,
+      whatever the campaign does.
+    */
+    if (message.subscriberId) {
+      const subscriber = await this.prisma.newsletterSubscriber.findUnique({
+        where: { id: message.subscriberId },
+        select: { status: true },
+      });
+      if (subscriber?.status !== 'ACTIVE') {
+        await this.prisma.emailMessage.update({
+          where: { id: message.id },
+          data: {
+            status: 'CANCELLED',
+            lockedAt: null,
+            error: 'Désinscrit avant l’envoi : non envoyé.',
+          },
+        });
+        return;
+      }
+    }
+
     try {
       await this.transport.send({
         to: message.toEmail,
@@ -198,6 +234,8 @@ export class EmailQueueService {
         subject: message.subject,
         html: message.html,
         text: message.text,
+        headers:
+          (message.headers as Record<string, string> | null) ?? undefined,
       });
 
       await this.prisma.emailMessage.update({
@@ -209,6 +247,16 @@ export class EmailQueueService {
           error: null,
         },
       });
+
+      if (message.campaignId && message.subscriberId) {
+        await this.prisma.newsletterSubscriber
+          .update({
+            where: { id: message.subscriberId },
+            data: { lastCampaignAt: new Date() },
+          })
+          // A subscriber erased mid-campaign is not a failed send.
+          .catch(() => undefined);
+      }
     } catch (error) {
       const config = await this.settings.transportConfig().catch(() => null);
       const reason = redact(String((error as Error)?.message ?? error), [

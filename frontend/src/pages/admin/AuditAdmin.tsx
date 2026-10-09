@@ -22,6 +22,8 @@ const ACTION_TONES: Record<string, 'green' | 'blue' | 'red' | 'neutral'> = {
   LOGOUT: 'neutral',
   LOGIN_FAILED: 'red',
   PASSWORD_CHANGED: 'blue',
+  // Personal data leaving the system is worth noticing in the log.
+  EXPORT: 'red',
 };
 
 const RESOURCE_KEYS = [
