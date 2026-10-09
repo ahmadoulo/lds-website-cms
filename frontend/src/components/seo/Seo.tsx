@@ -5,6 +5,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { DEFAULT_LOCALE, LOCALES, LOCALE_PARAM, type Locale } from '../../lib/i18n/locale';
 import { useShellLocale } from '../../lib/i18n/dictionaries/adminShell';
 import { useShellT } from '../../lib/i18n/useT';
+import { siteOrigin } from '../../lib/siteOrigin';
 
 interface SeoProps {
   title?: string;
@@ -123,9 +124,10 @@ export const Seo = ({ title, description, image, noIndex, type = 'website' }: Se
     reading the window made the canonical and the alternates depend on
     something outside React's knowledge: they could not be asserted at all, and
     nothing would have caught them drifting during a transition. The origin
-    still comes from the window, which is the one part the router does not know.
+    is the one the server wrote (PUBLIC_SITE_URL), so the canonical does not
+    switch to a preview host after hydration; the window's is the fallback.
   */
-  const origin = typeof window === 'undefined' ? '' : window.location.origin;
+  const origin = siteOrigin();
 
   useEffect(() => {
     const canonical = addressFor(locale, origin, path);

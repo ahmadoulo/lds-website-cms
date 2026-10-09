@@ -69,6 +69,7 @@ export class SeoController {
     const locale = normaliseLocale(header(request, 'x-lds-lang') ?? rawLang);
 
     const shell = await this.pageShell.shell();
+    const banner = await this.pageMeta.banner(locale);
     const meta = await this.pageMeta.resolve(
       path,
       locale,
@@ -89,7 +90,7 @@ export class SeoController {
       // shared cache has to key on.
       .setHeader('Vary', 'Accept-Language')
       .setHeader('X-Content-Type-Options', 'nosniff')
-      .send(this.pageShell.render(shell, meta));
+      .send(this.pageShell.render(shell, meta, banner));
   }
 
   @Get('robots.txt')

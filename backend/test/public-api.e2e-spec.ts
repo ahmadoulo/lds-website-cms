@@ -45,6 +45,7 @@ describe('Public API and media (e2e)', () => {
         'news',
         'partners',
         'settings',
+        'upcoming',
       ].sort(),
     );
     // A plain visitor is never in preview.

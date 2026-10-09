@@ -1,8 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { Edit2, Eye, EyeOff, FileText, ImageIcon, Plus, ScanEye, Tag, Trash2 } from 'lucide-react';
+import { useForm, type Control, type UseFormRegister } from 'react-hook-form';
+import {
+  Archive,
+  ArchiveRestore,
+  Edit2,
+  Eye,
+  EyeOff,
+  FileText,
+  ImageIcon,
+  Link2,
+  Plus,
+  ScanEye,
+  Tag,
+  Trash2,
+} from 'lucide-react';
 import api from '../../lib/api/axios';
 import { useLocale } from '../../context/LocaleContext';
 import { useT } from '../../lib/i18n/useT';
@@ -25,8 +38,27 @@ import { Badge } from '../../components/ui/Badge';
 import { Checkbox, Field, Input, Select } from '../../components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import type { NewsArticle, NewsCategory, Paginated } from '../../lib/types';
+import { useToast } from '../../components/ui/Toast';
+import { AnnouncementFields } from '../../components/admin/news/AnnouncementFields';
+import { articleAddress } from '../../lib/siteOrigin';
+import {
+  EMPTY_ANNOUNCEMENT,
+  announcementFormValues,
+  announcementPayload,
+  articleStatus,
+  hasAnnouncement,
+  type AnnouncementFormValues,
+  type ArticleStatus,
+} from '../../lib/announcementForm';
 
-interface FormValues {
+const STATUS_TONE: Record<ArticleStatus, 'green' | 'blue' | 'neutral' | 'orange'> = {
+  draft: 'neutral',
+  scheduled: 'blue',
+  published: 'green',
+  archived: 'orange',
+};
+
+interface FormValues extends AnnouncementFormValues {
   /* The slug, the cover, the category and the date are not linguistic. */
   title: LocalizedValue;
   slug: string;
@@ -43,6 +75,7 @@ const EMPTY_FORM: FormValues = {
   content: {},
   categoryId: '',
   isPublished: false,
+  ...EMPTY_ANNOUNCEMENT,
 };
 
 export const NewsAdmin = () => {
@@ -56,13 +89,29 @@ export const NewsAdmin = () => {
   const [pendingDelete, setPendingDelete] = useState<NewsArticle | null>(null);
   const [cover, setCover] = useState<ImageSelection>(null);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<ArticleStatus | ''>('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [fromFilter, setFromFilter] = useState('');
+  const [toFilter, setToFilter] = useState('');
+  const toast = useToast();
+  const a = t.announcements.admin;
+  const isFiltered = Boolean(search || statusFilter || categoryFilter || fromFilter || toFilter);
 
   const listQuery = useQuery({
-    queryKey: ['admin', 'news', page, search],
+    queryKey: ['admin', 'news', page, search, statusFilter, categoryFilter, fromFilter, toFilter],
     queryFn: async () =>
       (
         await api.get<Paginated<NewsArticle>>('/news', {
-          params: { page, limit: 10, search: search || undefined },
+          params: {
+            page,
+            limit: 10,
+            search: search || undefined,
+            status: statusFilter || undefined,
+            categoryId: categoryFilter || undefined,
+            // Whole days, in the editor's clock.
+            from: fromFilter ? new Date(`${fromFilter}T00:00:00`).toISOString() : undefined,
+            to: toFilter ? new Date(`${toFilter}T23:59:59.999`).toISOString() : undefined,
+          },
         })
       ).data,
   });
@@ -101,6 +150,7 @@ export const NewsAdmin = () => {
       content: article.content ?? {},
       categoryId: article.categoryId ?? '',
       isPublished: article.isPublished,
+      ...announcementFormValues(article),
     });
     setIsFormOpen(true);
   };
@@ -145,6 +195,7 @@ export const NewsAdmin = () => {
         categoryId: values.categoryId || undefined,
         imageId: uploaded?.id ?? null,
         isPublished: values.isPublished,
+        ...announcementPayload(values, Boolean(editing)),
       };
 
       return editing
@@ -162,6 +213,26 @@ export const NewsAdmin = () => {
     successMessage: t.admin.news.statusUpdated,
     invalidate: [['admin', 'news']],
   });
+
+  const archiveMutation = useAdminMutation<NewsArticle>({
+    mutationFn: async (article) =>
+      (await api.patch(`/news/${article.id}`, { archived: !article.archivedAt })).data,
+    successMessage: a.archiveUpdated,
+    invalidate: [['admin', 'news']],
+  });
+
+  /* The address a visitor will open: the site's official one, never this
+     back-office's. */
+  const copyAddress = async (article: NewsArticle) => {
+    const address = articleAddress(article.slug, 'fr');
+    try {
+      await navigator.clipboard.writeText(address);
+      toast.success(a.urlCopied);
+    } catch {
+      // No clipboard (an insecure context, a refused permission): show it.
+      toast.error(address);
+    }
+  };
 
   const deleteMutation = useAdminMutation<string>({
     mutationFn: async (id) => (await api.delete(`/news/${id}`)).data,
@@ -228,11 +299,16 @@ export const NewsAdmin = () => {
     {
       key: 'status',
       header: t.admin.common.status,
-      render: (article) => (
-        <Badge tone={article.isPublished ? 'green' : 'neutral'}>
-          {article.isPublished ? t.admin.common.published : t.admin.common.draft}
-        </Badge>
-      ),
+      render: (article) => {
+        const status = articleStatus(article);
+        return (
+          <div className="flex flex-wrap gap-1">
+            <Badge tone={STATUS_TONE[status]}>{a.status[status]}</Badge>
+            {article.showInBanner && <Badge tone="navy">{a.placementBanner}</Badge>}
+            {article.showInUpcoming && <Badge tone="navy">{a.placementUpcoming}</Badge>}
+          </div>
+        );
+      },
     },
   ];
 
@@ -254,15 +330,69 @@ export const NewsAdmin = () => {
         }
       />
 
-      <div className="mb-4">
-        <SearchInput
-          value={search}
-          onChange={(value) => {
-            setSearch(value);
-            setPage(1);
-          }}
-          placeholder={t.admin.news.searchPlaceholder}
-        />
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="min-w-0 flex-1">
+          <SearchInput
+            value={search}
+            onChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
+            placeholder={t.admin.news.searchPlaceholder}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:flex">
+          <Select
+            aria-label={t.admin.common.status}
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(event.target.value as ArticleStatus | '');
+              setPage(1);
+            }}
+          >
+            <option value="">{a.allStatuses}</option>
+            {(['draft', 'scheduled', 'published', 'archived'] as const).map((value) => (
+              <option key={value} value={value}>
+                {a.status[value]}
+              </option>
+            ))}
+          </Select>
+          <Select
+            aria-label={t.admin.news.columnCategory}
+            value={categoryFilter}
+            onChange={(event) => {
+              setCategoryFilter(event.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">{a.allCategories}</option>
+            {categoriesQuery.data?.map((category) => (
+              <option key={category.id} value={category.id}>
+                {text(category.name)}
+              </option>
+            ))}
+          </Select>
+          <Input
+            type="date"
+            aria-label={a.periodFrom}
+            title={a.periodFrom}
+            value={fromFilter}
+            onChange={(event) => {
+              setFromFilter(event.target.value);
+              setPage(1);
+            }}
+          />
+          <Input
+            type="date"
+            aria-label={a.periodTo}
+            title={a.periodTo}
+            value={toFilter}
+            onChange={(event) => {
+              setToFilter(event.target.value);
+              setPage(1);
+            }}
+          />
+        </div>
       </div>
 
       {listQuery.isLoading ? (
@@ -272,12 +402,12 @@ export const NewsAdmin = () => {
       ) : !listQuery.data?.data.length ? (
         <EmptyState
           icon={FileText}
-          title={search ? t.admin.common.noResults : t.admin.news.emptyTitle}
+          title={isFiltered ? t.admin.common.noResults : t.admin.news.emptyTitle}
           description={
-            search ? t.admin.news.emptySearchDescription : t.admin.news.emptyDescription
+            isFiltered ? t.admin.news.emptySearchDescription : t.admin.news.emptyDescription
           }
           action={
-            !search && (
+            !isFiltered && (
               <Button onClick={openCreate}>
                 <Plus className="h-4 w-4" /> {t.admin.news.emptyAction}
               </Button>
@@ -303,6 +433,13 @@ export const NewsAdmin = () => {
                   icon={article.isPublished ? EyeOff : Eye}
                   onClick={() => togglePublish.mutate(article)}
                   disabled={togglePublish.isPending}
+                />
+                <IconButton label={a.copyUrl} icon={Link2} onClick={() => void copyAddress(article)} />
+                <IconButton
+                  label={article.archivedAt ? a.unarchive : a.archive}
+                  icon={article.archivedAt ? ArchiveRestore : Archive}
+                  onClick={() => archiveMutation.mutate(article)}
+                  disabled={archiveMutation.isPending}
                 />
                 <IconButton label={t.common.edit} icon={Edit2} onClick={() => openEdit(article)} />
                 <IconButton
@@ -429,6 +566,16 @@ export const NewsAdmin = () => {
             label={t.admin.news.publishCheckbox}
             hint={t.admin.news.publishHint}
             {...register('isPublished')}
+          />
+
+          <AnnouncementFields
+            /* Remounted per article, so the fold opens on one that uses it. */
+            key={editing?.id ?? 'new'}
+            /* The editor's form is a superset of the section's: viewed as
+               the part it edits. */
+            control={control as unknown as Control<AnnouncementFormValues>}
+            register={register as unknown as UseFormRegister<AnnouncementFormValues>}
+            defaultOpen={editing ? hasAnnouncement(announcementFormValues(editing)) : false}
           />
         </form>
       </Modal>

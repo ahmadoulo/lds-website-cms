@@ -19,6 +19,7 @@ import { LocaleSwitch } from '../public/LocaleSwitch';
 import { NewsletterSignup, useNewsletterStatus } from '../public/NewsletterSignup';
 import { NewsletterPopup } from '../public/NewsletterPopup';
 import { PreviewBanner } from '../public/PreviewBanner';
+import { AnnouncementBanner } from '../public/AnnouncementBanner';
 
 /*
   The labels used to live here as French text, which made this table the one
@@ -124,6 +125,10 @@ export const PublicLayout = () => {
       >
         {layout.header.skipToContent}
       </a>
+
+      {/* Above everything else and out of the sticky header: it scrolls
+          away with the page instead of eating a phone's screen. */}
+      <AnnouncementBanner />
 
       {/* Contact bar */}
       <div className="hidden bg-navy text-caption text-white/80 sm:block">

@@ -102,7 +102,7 @@ export class PageShellService {
     this.cached = null;
   }
 
-  render(shell: string, meta: PageMeta): string {
+  render(shell: string, meta: PageMeta, banner: unknown[] = []): string {
     const head = this.head(meta);
 
     let html = shell;
@@ -120,7 +120,17 @@ export class PageShellService {
       `<html lang="${meta.locale}" dir="${DIRECTION[meta.locale] ?? 'ltr'}">`,
     );
 
-    return html.replace('</head>', `${head}\n  </head>`);
+    /*
+      The banner's data, for the client to render on its first paint. A
+      script element of type application/json is inert - no browser runs it,
+      and the Content-Security-Policy does not apply to it - and escapeJsonLd
+      keeps a title containing "</script>" from ending it early.
+    */
+    const data = banner.length
+      ? `\n    <script type="application/json" id="lds-banner" ${MANAGED}>${escapeJsonLd(banner)}</script>`
+      : '';
+
+    return html.replace('</head>', `${head}${data}\n  </head>`);
   }
 
   private head(meta: PageMeta): string {

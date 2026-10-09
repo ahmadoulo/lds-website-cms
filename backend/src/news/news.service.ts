@@ -13,6 +13,18 @@ import {
   sanitizeRichText,
 } from '../common/sanitize';
 import { slugify, uniqueSlug } from '../common/slug';
+import {
+  bannerWhere,
+  reachableNow,
+  statusWhere,
+  upcomingWhere,
+  validateActions,
+  validateContact,
+  visibleNow,
+} from './announcement';
+
+/** The announcement's own text fields, merged per language like the title. */
+const LOCALIZED_EXTRA = ['location', 'practicalInfo', 'bannerText'] as const;
 
 const NEWS_INCLUDE = { category: true, image: true };
 const DEFAULT_CATEGORY_SLUG = 'actualites';
@@ -26,6 +38,8 @@ export class NewsService {
 
   async create(dto: CreateNewsDto) {
     const data = await this.buildWriteData(dto);
+
+    this.checkDates(data);
 
     const slug = await uniqueSlug(
       dto.slug || dto.title.fr || dto.title.en || '',
@@ -44,7 +58,12 @@ export class NewsService {
         // Explicit rather than relying on the column default: whether an article
         // is live is the most consequential flag in the CMS.
         isPublished: dto.isPublished ?? false,
-        publishedAt: dto.isPublished ? new Date() : null,
+        // A chosen date schedules it; none means now.
+        publishedAt: dto.isPublished
+          ? dto.publishedAt
+            ? new Date(dto.publishedAt)
+            : new Date()
+          : null,
       } as any,
       include: NEWS_INCLUDE,
     });
@@ -54,7 +73,25 @@ export class NewsService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
 
-    const where: any = includeUnpublished ? {} : { isPublished: true };
+    /*
+      Public: published, not archived, and not scheduled for later - before
+      this, an article was public the moment it was published, whatever its
+      date, so nothing could be scheduled. The editor sees everything, and
+      filters by the state they think in.
+    */
+    const where: any = includeUnpublished
+      ? query.status
+        ? { AND: [statusWhere(query.status)] }
+        : { AND: [] }
+      : { AND: [visibleNow()] };
+    if (query.from || query.to) {
+      where.AND.push({
+        createdAt: {
+          ...(query.from ? { gte: new Date(query.from) } : {}),
+          ...(query.to ? { lte: new Date(query.to) } : {}),
+        },
+      });
+    }
     if (query.categoryId) where.categoryId = query.categoryId;
     if (query.search) {
       // Localized fields are JSON columns, so search targets the slug plus the
@@ -86,7 +123,8 @@ export class NewsService {
       where: {
         AND: [
           isUuid ? { OR: [{ id: idOrSlug }, { slug: idOrSlug }] } : { slug: idOrSlug },
-          includeUnpublished ? {} : { isPublished: true },
+          // An archived article still answers at its address: it was shared.
+          includeUnpublished ? {} : reachableNow(),
         ],
       },
       include: NEWS_INCLUDE,
@@ -99,7 +137,7 @@ export class NewsService {
   /** Most recent published articles, excluding the one currently being viewed. */
   async findRelated(id: string, limit = 3) {
     return this.prisma.news.findMany({
-      where: { isPublished: true, NOT: { id } },
+      where: { AND: [visibleNow(), { NOT: { id } }] },
       orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
       take: limit,
       include: NEWS_INCLUDE,
@@ -118,6 +156,10 @@ export class NewsService {
     for (const field of ['title', 'excerpt', 'content'] as const) {
       if (dto[field]) data[field] = mergeLocalized(existing[field], dto[field] as any);
     }
+    for (const field of LOCALIZED_EXTRA) {
+      // null clears the field; an object is merged per language.
+      if (dto[field]) data[field] = mergeLocalized(existing[field] as any, data[field]);
+    }
 
     if (dto.slug && dto.slug !== existing.slug) {
       data.slug = await uniqueSlug(
@@ -130,11 +172,19 @@ export class NewsService {
 
     // Stamp the publication date the first time the article goes live, and clear it
     // when it goes back to draft so the public ordering stays truthful.
-    if (dto.isPublished === true && !existing.isPublished) {
-      data.publishedAt = new Date();
-    } else if (dto.isPublished === false) {
+    if (dto.isPublished === false) {
       data.publishedAt = null;
+    } else if (dto.publishedAt && (dto.isPublished === true || existing.isPublished)) {
+      // Rescheduling, or publishing at a chosen date.
+      data.publishedAt = new Date(dto.publishedAt);
+    } else if (dto.isPublished === true && !existing.isPublished) {
+      data.publishedAt = new Date();
     }
+
+    if (dto.archived === true && !existing.archivedAt) data.archivedAt = new Date();
+    if (dto.archived === false) data.archivedAt = null;
+
+    this.checkDates({ ...existing, ...data });
 
     return this.prisma.news.update({ where: { id }, data, include: NEWS_INCLUDE });
   }
@@ -200,6 +250,43 @@ export class NewsService {
     return { success: true, id };
   }
 
+  // ------------------------------------------------------------ announcements
+
+  /** The banner's announcements, most important first. */
+  async findBanner(limit = 5) {
+    return this.prisma.news.findMany({
+      where: bannerWhere(),
+      orderBy: [{ isFeatured: 'desc' }, { publishedAt: 'desc' }],
+      take: limit,
+      select: { id: true, slug: true, title: true, bannerText: true, bannerScope: true, updatedAt: true },
+    });
+  }
+
+  /** "À venir": featured first, then by date of the activity. */
+  async findUpcoming(limit = 6) {
+    return this.prisma.news.findMany({
+      where: upcomingWhere(),
+      orderBy: [
+        { isFeatured: 'desc' },
+        { eventStartsAt: { sort: 'asc', nulls: 'last' } },
+        { publishedAt: 'desc' },
+      ],
+      take: limit,
+      include: NEWS_INCLUDE,
+    });
+  }
+
+  /** An end before a start is a typo nobody should have to debug on the site. */
+  private checkDates(row: Record<string, any>) {
+    const before = (a?: Date | null, b?: Date | null) => a && b && a.getTime() > b.getTime();
+    if (before(row.eventStartsAt, row.eventEndsAt)) {
+      throw new BadRequestException("La fin de l'activité précède son début.");
+    }
+    if (before(row.visibleFrom, row.visibleUntil)) {
+      throw new BadRequestException("La fin de l'affichage précède son début.");
+    }
+  }
+
   // ------------------------------------------------------------------ helpers
 
   /** Sanitises text, validates relations and normalises optional fields. */
@@ -222,6 +309,23 @@ export class NewsService {
     if (dto.categoryId !== undefined) data.categoryId = dto.categoryId;
     if (dto.imageId !== undefined) data.imageId = dto.imageId || null;
     if (dto.isPublished !== undefined) data.isPublished = dto.isPublished;
+
+    // ------------------------------------------------- announcement fields
+    for (const field of ['eventStartsAt', 'eventEndsAt', 'visibleFrom', 'visibleUntil'] as const) {
+      if (dto[field] !== undefined) data[field] = dto[field] ? new Date(dto[field]!) : null;
+    }
+    for (const field of LOCALIZED_EXTRA) {
+      if (dto[field] === undefined) continue;
+      data[field] = dto[field]
+        ? (sanitizeLocalized(dto[field] as any, (text: string) => sanitizePlainText(text).slice(0, 2000)) as any)
+        : null;
+    }
+    for (const flag of ['showInBanner', 'showInUpcoming', 'isFeatured'] as const) {
+      if (dto[flag] !== undefined) data[flag] = dto[flag];
+    }
+    if (dto.bannerScope !== undefined) data.bannerScope = dto.bannerScope;
+    if (dto.actions !== undefined) data.actions = dto.actions ? validateActions(dto.actions) : null;
+    if (dto.contact !== undefined) data.contact = validateContact(dto.contact);
 
     return data;
   }

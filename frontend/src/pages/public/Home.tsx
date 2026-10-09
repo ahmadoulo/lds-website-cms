@@ -9,6 +9,7 @@ import { MissionGrid } from '../../components/public/MissionGrid';
 import { PartnerCarousel } from '../../components/public/PartnerCarousel';
 import { ImpactFigures } from '../../components/public/ImpactFigures';
 import { NewsCard } from '../../components/public/NewsCard';
+import { UpcomingAnnouncements } from '../../components/public/UpcomingAnnouncements';
 import { Lightbox } from '../../components/public/Lightbox';
 import { DonationCard } from '../../components/public/DonationCard';
 import { PaymentMethodCard } from '../../components/public/PaymentMethodCard';
@@ -63,6 +64,7 @@ const Home = () => {
   const missions = data?.missions ?? [];
   const impact = data?.impact ?? [];
   const news = data?.news ?? [];
+  const upcoming = data?.upcoming ?? [];
   const donations = data?.donations ?? [];
 
   if (isError) {
@@ -209,6 +211,9 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* ------------------------------------------------------------ À venir */}
+      <UpcomingAnnouncements articles={upcoming} />
 
       {/* -------------------------------------------------------- Association */}
       <section className="bg-white section-y">

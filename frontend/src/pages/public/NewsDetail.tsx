@@ -12,6 +12,7 @@ import { localized, localizedOrSource } from '../../lib/i18n/resolve';
 import { usePagesT } from '../../lib/i18n/dictionaries/pages';
 import type { Locale } from '../../lib/i18n/locale';
 import { responsiveImage } from '../../lib/imageSrc';
+import { AnnouncementActions, AnnouncementFacts, ShareBar } from '../../components/public/AnnouncementParts';
 
 /**
  * The locale tags the dates are formatted with.
@@ -114,6 +115,8 @@ export const NewsDetail = () => {
         description={excerpt.text}
         image={article.image?.url}
         type="article"
+        /* Archived: still reachable at the address that was shared, no longer indexed. */
+        noIndex={Boolean(article.archivedAt)}
       />
 
       <article className="bg-white section-y-sm">
@@ -170,6 +173,8 @@ export const NewsDetail = () => {
             />
           )}
 
+          <AnnouncementFacts article={article} />
+
           {/*
             The body is sanitised server-side on every write (tags and attributes
             are whitelisted), so rendering it as HTML is safe here.
@@ -184,6 +189,9 @@ export const NewsDetail = () => {
             {...(content.untranslated ? { lang: 'fr', dir: 'ltr' } : {})}
             dangerouslySetInnerHTML={{ __html: content.text }}
           />
+
+          <AnnouncementActions article={article} />
+          <ShareBar slug={article.slug} title={title.text} />
         </div>
       </article>
 

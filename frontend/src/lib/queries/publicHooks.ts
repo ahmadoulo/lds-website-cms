@@ -8,6 +8,7 @@ import type {
   ImpactStat,
   Mission,
   NewsArticle,
+  Localized,
   Paginated,
   Partner,
   SiteSettings,
@@ -39,6 +40,8 @@ export interface HomepagePayload {
   gallery: GalleryImage[];
   partners: Partner[];
   donations: DonationMethod[];
+  /** "À venir". Absent from an API older than the announcements. */
+  upcoming?: NewsArticle[];
 }
 
 /** One request that fills the entire homepage. */
@@ -132,3 +135,24 @@ export const useGalleryImages = () => {
     staleTime: PUBLIC_STALE_TIME,
   });
 };
+
+export interface BannerAnnouncement {
+  id: string;
+  slug: string;
+  title: Localized;
+  bannerText: Localized | null;
+  bannerScope: string;
+}
+
+/**
+ * The banner, in both languages. The page already carries it in one - the
+ * server writes it in - so this only matters when the visitor switches
+ * language, or when the page came without it.
+ */
+export const useBannerAnnouncements = (enabled = true) =>
+  useQuery({
+    queryKey: ['public', 'public', 'announcements-banner'],
+    queryFn: () => get<BannerAnnouncement[]>('/public/announcements/banner'),
+    staleTime: PUBLIC_STALE_TIME,
+    enabled,
+  });

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { buildMediaUrl } from '../common/media-url.interceptor';
 import { DEFAULT_SETTINGS } from '../settings/settings.constants';
 import { SITEMAP_LOCALES, DEFAULT_LOCALE, addressFor } from './seo.service';
+import { bannerWhere, reachableNow } from '../news/announcement';
 
 export type Locale = (typeof SITEMAP_LOCALES)[number];
 
@@ -146,6 +147,30 @@ export class PageMetaService {
     };
   }
 
+  /**
+   * The banner's announcements, in the visitor's language, for the shell to
+   * write into the HTML. Present on the first paint, so the banner never
+   * pushes the page down after it has loaded.
+   */
+  async banner(locale: Locale): Promise<Array<{ id: string; slug: string; text: string; scope: string }>> {
+    const rows = await this.prisma.news
+      .findMany({
+        where: bannerWhere(),
+        orderBy: [{ isFeatured: 'desc' }, { publishedAt: 'desc' }],
+        take: 5,
+        select: { id: true, slug: true, title: true, bannerText: true, bannerScope: true },
+      })
+      .catch(() => []);
+    return rows.map((row) => ({
+      id: row.id,
+      slug: row.slug,
+      text:
+        readLocalized(row.bannerText as Localized, locale) ||
+        readLocalized(row.title as Localized, locale),
+      scope: row.bannerScope,
+    }));
+  }
+
   private alternates(path: string, origin: string) {
     return [
       ...SITEMAP_LOCALES.map((candidate) => ({
@@ -194,16 +219,17 @@ export class PageMetaService {
     origin: string,
   ): Promise<PageMeta> {
     const article = await this.prisma.news.findFirst({
-      where: {
-        slug,
-        isPublished: true,
-        publishedAt: { not: null, lte: new Date() },
-      },
+      // Archived articles still answer: their address was shared.
+      where: { AND: [{ slug }, reachableNow()] },
       select: {
         title: true,
         excerpt: true,
         publishedAt: true,
         updatedAt: true,
+        archivedAt: true,
+        eventStartsAt: true,
+        eventEndsAt: true,
+        location: true,
         image: { select: { id: true } },
       },
     });
@@ -226,9 +252,15 @@ export class PageMetaService {
     const description =
       readLocalized(article.excerpt as Localized, base.locale) ||
       siteDescription;
+    /*
+      The resized render, not the upload: share previews fetch this image, and
+      WhatsApp drops a preview whose image is too heavy. Previews do not ask
+      for WebP, so they are served a JPEG.
+    */
     const image = article.image
-      ? buildMediaUrl(origin, article.image.id)
+      ? `${buildMediaUrl(origin, article.image.id)}?w=1280`
       : base.image;
+    const place = readLocalized(article.location as Localized, base.locale);
 
     return {
       ...rest,
@@ -236,9 +268,33 @@ export class PageMetaService {
       description,
       image,
       type: 'article',
-      noIndex: false,
+      // Archived: reachable, not indexed. It is no longer news.
+      noIndex: Boolean(article.archivedAt),
       status: 200,
       jsonLd: [
+        /*
+          Event only for a real one: a date and a place the association
+          entered. Nothing is inferred - no time, no organiser address, no
+          ticket offer the page does not state.
+        */
+        ...(article.eventStartsAt && place
+          ? [
+              {
+                '@context': 'https://schema.org',
+                '@type': 'Event',
+                name: title,
+                description,
+                startDate: article.eventStartsAt.toISOString(),
+                ...(article.eventEndsAt ? { endDate: article.eventEndsAt.toISOString() } : {}),
+                eventStatus: 'https://schema.org/EventScheduled',
+                eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+                location: { '@type': 'Place', name: place, address: place },
+                organizer: { '@type': 'Organization', name: rest.siteName, url: `${origin}/` },
+                ...(image ? { image: [image] } : {}),
+                url: rest.canonical,
+              },
+            ]
+          : []),
         ...this.siteGraph(
           origin,
           base.locale,

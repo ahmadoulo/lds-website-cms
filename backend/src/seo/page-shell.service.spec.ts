@@ -106,7 +106,8 @@ describe('page shell', () => {
     );
     expect(html).toContain('Trois cents repas par jour.');
     expect(html).toContain(
-      '<meta property="og:image" content="https://ldslouga.sn/api/v1/media/media-1/file" data-lds-ssr />',
+      // The resized render: WhatsApp drops a preview whose image is too heavy.
+      '<meta property="og:image" content="https://ldslouga.sn/api/v1/media/media-1/file?w=1280" data-lds-ssr />',
     );
     expect(html).toContain('content="article"');
   });

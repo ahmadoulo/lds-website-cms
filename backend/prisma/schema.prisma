@@ -153,7 +153,47 @@ model News {
   image   Media?  @relation("NewsCover", fields: [imageId], references: [id])
 
   isPublished Boolean   @default(false)
+  /// When it becomes public. In the future, the article is scheduled: the
+  /// public site does not show it until then.
   publishedAt DateTime?
+
+  // ---------------------------------------------------------------- announcements
+  // An announcement is an article with some of these set. Every one is
+  // optional: an ordinary article leaves them all empty and is unchanged.
+
+  /// The activity itself: when it happens, where, and what to know.
+  eventStartsAt DateTime?
+  eventEndsAt   DateTime?
+  /// { fr, ar }
+  location      Json?
+  /// { fr, ar } - plain text: what to bring, who it is for, how to take part.
+  practicalInfo Json?
+
+  /// The window during which it appears in the banner and the "À venir"
+  /// block. Outside it the article is still published and reachable; it just
+  /// stops being pushed at visitors.
+  visibleFrom  DateTime?
+  visibleUntil DateTime?
+
+  showInBanner   Boolean @default(false)
+  /// The banner's one line, { fr, ar }. Defaults to the title.
+  bannerText     Json?
+  /// 'home' or 'all'.
+  bannerScope    String  @default("home")
+  /// The "À venir" block of the home page.
+  showInUpcoming Boolean @default(false)
+  /// Listed first wherever announcements are listed.
+  isFeatured     Boolean @default(false)
+
+  /// Archived: out of every list and the sitemap, but its address keeps
+  /// working, because it was shared - a link in a WhatsApp group should not
+  /// turn into a 404 the week after.
+  archivedAt DateTime?
+
+  /// [{ type, label?, url? }] - see news/announcement.ts.
+  actions Json?
+  /// A contact specific to this announcement: { name?, phone?, email? }.
+  contact Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

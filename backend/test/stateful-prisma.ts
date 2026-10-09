@@ -88,6 +88,9 @@ function matches(row: any, where: any): boolean {
       return matches(row[key] ?? {}, condition);
     }
 
+    // A column a row never set is NULL in the database, so `{ x: null }`
+    // matches it - the fake used to treat "absent" and "null" as different.
+    if (condition === null) return row[key] === null || row[key] === undefined;
     return row[key] === condition;
   });
 }

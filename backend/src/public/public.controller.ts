@@ -41,7 +41,7 @@ export class PublicController {
   @Get('homepage')
   @ApiOperation({ summary: 'Everything the homepage needs, in one payload' })
   async getHomepage(@PreviewMode() preview: boolean) {
-    const [settings, missions, impact, news, gallery, partners, donations] = await Promise.all([
+    const [settings, missions, impact, news, gallery, partners, donations, upcoming] = await Promise.all([
       this.settings.findAllWithMedia(preview ? 'draft' : 'published'),
       this.missions.findAll(preview),
       this.impact.findAll(preview),
@@ -49,6 +49,10 @@ export class PublicController {
       this.gallery.findPublishedImages(6, preview),
       this.partners.findAll(preview),
       this.donations.findAll(preview),
+      // The published, current "À venir" items. Never drafts, even in
+      // preview: a preview of the home page is a preview of its own content,
+      // and an upcoming-actions block is about what visitors can act on.
+      this.news.findUpcoming(),
     ]);
 
     return {
@@ -59,6 +63,7 @@ export class PublicController {
       gallery,
       partners,
       donations,
+      upcoming,
       isPreview: preview,
     };
   }
@@ -89,6 +94,17 @@ export class PublicController {
     @PreviewMode() preview: boolean,
   ) {
     return this.news.findAll({ page, limit: Math.min(limit, 50) }, preview);
+  }
+
+  /**
+   * The banner's announcements. The page renderer also writes them into the
+   * HTML so the banner is there on the first paint; this is the fallback for
+   * when it could not.
+   */
+  @Get('announcements/banner')
+  @ApiOperation({ summary: 'Announcements currently shown in the site banner' })
+  getBanner() {
+    return this.news.findBanner();
   }
 
   @Get('news/categories')

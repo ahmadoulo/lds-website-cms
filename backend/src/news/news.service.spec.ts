@@ -145,7 +145,7 @@ describe('NewsService', () => {
     expect(prisma.news.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          AND: expect.arrayContaining([{ isPublished: true }]),
+          AND: expect.arrayContaining([expect.objectContaining({ isPublished: true })]),
         }),
       }),
     );
@@ -158,7 +158,18 @@ describe('NewsService', () => {
     const result = await service.findAll({}, false);
 
     expect(prisma.news.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { isPublished: true } }),
+      expect.objectContaining({
+        where: {
+          AND: [
+            expect.objectContaining({
+              isPublished: true,
+              // Not archived, and not scheduled for later.
+              archivedAt: null,
+              OR: [{ publishedAt: null }, { publishedAt: { lte: expect.any(Date) } }],
+            }),
+          ],
+        },
+      }),
     );
     expect(result.meta.total).toBe(0);
   });

@@ -51,6 +51,51 @@ export interface NewsArticle {
   isPublished: boolean;
   publishedAt: string | null;
   createdAt: string;
+  // An announcement is an article with some of these set; all optional.
+  eventStartsAt?: string | null;
+  eventEndsAt?: string | null;
+  location?: Localized | null;
+  practicalInfo?: Localized | null;
+  visibleFrom?: string | null;
+  visibleUntil?: string | null;
+  showInBanner?: boolean;
+  bannerText?: Localized | null;
+  bannerScope?: 'home' | 'all';
+  showInUpcoming?: boolean;
+  isFeatured?: boolean;
+  archivedAt?: string | null;
+  actions?: AnnouncementAction[] | null;
+  contact?: AnnouncementContact | null;
+}
+
+export type AnnouncementActionType =
+  | 'contact'
+  | 'call'
+  | 'email'
+  | 'donate'
+  | 'newsletter'
+  | 'social'
+  | 'page'
+  | 'external';
+
+export interface AnnouncementAction {
+  type: AnnouncementActionType;
+  label?: { fr?: string; ar?: string };
+  url?: string;
+}
+
+export interface AnnouncementContact {
+  name?: string;
+  phone?: string;
+  email?: string;
+}
+
+/** What the banner needs, written into the page by the server. */
+export interface BannerItem {
+  id: string;
+  slug: string;
+  text: string;
+  scope: string;
 }
 
 export interface GalleryImage {

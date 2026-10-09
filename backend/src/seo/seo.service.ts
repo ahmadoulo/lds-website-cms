@@ -121,7 +121,12 @@ export class SeoService {
       sitemap that lists 404s is a sitemap Search Console reports as broken.
     */
     const articles = await this.prisma.news.findMany({
-      where: { isPublished: true, publishedAt: { not: null, lte: new Date() } },
+      // Archived articles keep their address but leave the sitemap.
+      where: {
+        isPublished: true,
+        archivedAt: null,
+        publishedAt: { not: null, lte: new Date() },
+      },
       select: { slug: true, updatedAt: true, publishedAt: true },
       orderBy: { publishedAt: 'desc' },
     });

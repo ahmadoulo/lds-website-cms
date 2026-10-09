@@ -7,6 +7,7 @@ import { iconLabelsAr, iconLabelsFr } from './dictionaries/iconLabels';
 import { layoutAr, layoutFr } from './dictionaries/layout';
 import { pagesAr, pagesFr } from './dictionaries/pages';
 import { newsletterAr, newsletterFr } from './dictionaries/newsletter';
+import { announcementsAr, announcementsFr } from './dictionaries/announcements';
 import type { Locale } from './locale';
 
 /**
@@ -27,6 +28,7 @@ const DICTIONARIES = {
     admin: adminScreensFr,
     iconLabels: iconLabelsFr,
     newsletter: newsletterFr,
+    announcements: announcementsFr,
   },
   ar: {
     common: commonAr,
@@ -37,6 +39,7 @@ const DICTIONARIES = {
     admin: adminScreensAr,
     iconLabels: iconLabelsAr,
     newsletter: newsletterAr,
+    announcements: announcementsAr,
   },
 } as const;
 
