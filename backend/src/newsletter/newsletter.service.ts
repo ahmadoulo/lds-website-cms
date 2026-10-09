@@ -91,11 +91,24 @@ export class NewsletterService {
    * unsubscribe link must not be possible.
    */
   async isAvailable(): Promise<boolean> {
-    if (!hasEncryptionKey() || !canSignUnsubscribe()) return false;
-    if (!(await this.settings.isEnabled())) return false;
-    if (!(await this.settings.siteUrl())) return false;
-    const identity = await this.settings.identityFor('newsletter');
-    return Boolean(identity.fromEmail);
+    return (await this.missing()).length === 0;
+  }
+
+  /**
+   * Which conditions are not met, for the back-office only.
+   *
+   * The public status says available or not and nothing more - the state of
+   * the configuration is not a visitor's business. An administrator who
+   * cannot see the form on the site needs the opposite: the exact thing to fix.
+   */
+  async missing(): Promise<Array<'key' | 'enabled' | 'siteUrl' | 'sender'>> {
+    const found: Array<'key' | 'enabled' | 'siteUrl' | 'sender'> = [];
+    if (!hasEncryptionKey() || !canSignUnsubscribe()) found.push('key');
+    if (!(await this.settings.isEnabled())) found.push('enabled');
+    if (!(await this.settings.siteUrl())) found.push('siteUrl');
+    if (!(await this.settings.identityFor('newsletter')).fromEmail)
+      found.push('sender');
+    return found;
   }
 
   /**

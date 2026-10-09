@@ -451,6 +451,18 @@ export const adminEmailFr = {
       'Il n’y a pas d’alerte email en cas de panne du serveur d’envoi : elle partirait par le serveur en panne. Ces problèmes s’affichent dans le tableau de bord de la Communication.',
   },
 
+  availability: {
+    visible: 'Le formulaire d’inscription est affiché sur le site.',
+    hidden: 'Le formulaire d’inscription n’est pas affiché sur le site. Il apparaîtra dès que ces points seront réglés :',
+    missing: {
+      key: 'La clé EMAIL_ENCRYPTION_KEY est absente du serveur : lancez ./scripts/setup-env.sh puis redéployez.',
+      enabled: 'L’envoi des emails n’est pas activé (case « Activer l’envoi des emails »).',
+      siteUrl: 'L’adresse publique du site n’est pas renseignée.',
+      sender: 'Aucune adresse d’expédition n’est définie.',
+    },
+    fix: 'Ouvrir la configuration email',
+  },
+
   contact: {
     title: 'Emails liés à cette demande',
     none: 'Aucun email pour cette demande.',
@@ -898,6 +910,18 @@ export const adminEmailAr: AdminEmailDictionary = {
     editRecipient: 'تعديل المستلم',
     smtpAlertNote:
       'لا يوجد تنبيه بالبريد الإلكتروني عند تعطّل خادم الإرسال: كان سيُرسَل عبر الخادم المعطّل نفسه. تظهر هذه المشكلات في لوحة متابعة التواصل.',
+  },
+
+  availability: {
+    visible: 'استمارة الاشتراك معروضة على الموقع.',
+    hidden: 'استمارة الاشتراك غير معروضة على الموقع. ستظهر بمجرّد تسوية هذه النقاط:',
+    missing: {
+      key: 'مفتاح EMAIL_ENCRYPTION_KEY غير موجود على الخادم: شغّل ./scripts/setup-env.sh ثم أعد النشر.',
+      enabled: 'إرسال الرسائل غير مفعّل (خانة « تفعيل إرسال الرسائل »).',
+      siteUrl: 'العنوان العام للموقع غير مُدخَل.',
+      sender: 'لم يُحدَّد أي عنوان إرسال.',
+    },
+    fix: 'فتح إعدادات البريد الإلكتروني',
   },
 
   contact: {

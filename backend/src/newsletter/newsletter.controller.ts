@@ -141,6 +141,14 @@ export class NewsletterAdminController {
     return this.newsletter.stats();
   }
 
+  /** Why the signup form is not on the site, if it is not. */
+  @Get('availability')
+  @RequirePermission('READ', 'Subscriber')
+  async availability() {
+    const missing = await this.newsletter.missing();
+    return { available: missing.length === 0, missing };
+  }
+
   @Get()
   @RequirePermission('READ', 'Subscriber')
   list(@Query() query: SubscriberQueryDto) {

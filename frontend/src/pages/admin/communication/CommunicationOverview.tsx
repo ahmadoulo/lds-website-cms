@@ -21,7 +21,7 @@ import { useLocale } from '../../../context/LocaleContext';
 import { PageHeader } from '../../../components/admin/ui/PageHeader';
 import { ErrorState, LoadingState } from '../../../components/ui/States';
 import { Badge } from '../../../components/ui/Badge';
-import { useKindLabel } from '../../../components/admin/email/EmailParts';
+import { NewsletterAvailability, useKindLabel } from '../../../components/admin/email/EmailParts';
 import { cn } from '../../../lib/cn';
 import type { EmailOverview } from '../../../lib/types';
 
@@ -234,6 +234,9 @@ export const CommunicationOverview = () => {
             {e.subscribersActive(data.subscribers.ACTIVE)}
           </p>
           <p className="mt-1 text-sm text-navy/55">{e.subscribersPending(data.subscribers.PENDING)}</p>
+          <div className="mt-3">
+            <NewsletterAvailability />
+          </div>
           <Link
             to="/admin/emails/abonnes"
             className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-blue hover:underline"

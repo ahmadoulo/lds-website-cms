@@ -19,6 +19,7 @@ import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { Modal } from '../../../components/ui/Modal';
 import { Checkbox, Field, Select, Textarea } from '../../../components/ui/Field';
 import { useToast } from '../../../components/ui/Toast';
+import { NewsletterAvailability } from '../../../components/admin/email/EmailParts';
 import type {
   ImportResult,
   Paginated,
@@ -190,6 +191,8 @@ export const SubscribersAdmin = () => {
           ) : undefined
         }
       />
+
+      <NewsletterAvailability />
 
       {/* ------------------------------------------------------- stats */}
       {stats.data && (

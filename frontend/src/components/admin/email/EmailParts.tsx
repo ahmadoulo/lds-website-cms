@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import api from '../../../lib/api/axios';
 import { useAdminMutation } from '../../../lib/queries/adminHooks';
 import { CheckCircle2, Monitor, Send, Smartphone, XCircle } from 'lucide-react';
@@ -236,6 +237,53 @@ export const ContactEmails = ({ contactId }: { contactId: string }) => {
           ))}
         </ul>
       )}
+    </div>
+  );
+};
+
+/**
+ * Whether the newsletter signup form is on the public site, and if not, why.
+ *
+ * The form hides itself when sending cannot work, which is right for
+ * visitors and baffling for the team: it simply is not there. This names the
+ * exact setting to fix.
+ */
+export const NewsletterAvailability = () => {
+  const t = useT();
+  const a = t.admin.email.availability;
+  const query = useQuery({
+    queryKey: ['admin', 'subscribers', 'availability'],
+    queryFn: async () =>
+      (
+        await api.get<{ available: boolean; missing: Array<keyof typeof a.missing> }>(
+          '/newsletter/subscribers/availability',
+        )
+      ).data,
+  });
+
+  if (!query.data || typeof query.data.available !== 'boolean') return null;
+  if (query.data.available) {
+    return (
+      <p className="flex items-center gap-2 rounded-xl bg-green/10 px-4 py-3 text-sm text-navy">
+        <CheckCircle2 className="h-4 w-4 shrink-0 text-green" aria-hidden /> {a.visible}
+      </p>
+    );
+  }
+
+  return (
+    <div role="status" className="rounded-xl border border-orange/30 bg-orange/5 px-4 py-3 text-sm text-navy">
+      <p className="font-semibold">{a.hidden}</p>
+      <ul className="mt-2 list-disc space-y-1 ps-5 text-navy/75">
+        {(query.data.missing ?? []).map((reason) => (
+          <li key={reason}>{a.missing[reason]}</li>
+        ))}
+      </ul>
+      <Link
+        to="/admin/emails/configuration"
+        className="mt-2 inline-block font-semibold text-blue hover:underline"
+      >
+        {a.fix}
+      </Link>
     </div>
   );
 };

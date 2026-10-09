@@ -16,6 +16,7 @@ import { EmailSettingsAdmin } from '../pages/admin/communication/EmailSettingsAd
 import { CommunicationOverview } from '../pages/admin/communication/CommunicationOverview';
 import { EmailTemplatesAdmin } from '../pages/admin/communication/EmailTemplatesAdmin';
 import { NAV_GROUPS } from '../components/admin/layout/navigation';
+import { NewsletterAvailability } from '../components/admin/email/EmailParts';
 import { renderWithProviders } from './testUtils';
 import type { EmailOverview, EmailSettings, EmailTemplate } from '../lib/types';
 
@@ -204,6 +205,30 @@ describe('Communication overview', () => {
     });
     renderWithProviders(<CommunicationOverview />);
     expect(await screen.findByText(/le site n’envoie aucun email/)).toBeInTheDocument();
+  });
+});
+
+/* ----------------------------------------------------------- availability */
+
+describe('newsletter availability', () => {
+  it('names exactly what keeps the signup form off the site', async () => {
+    mockedApi.get.mockResolvedValue({ data: { available: false, missing: ['enabled', 'siteUrl'] } });
+    renderWithProviders(<NewsletterAvailability />);
+
+    expect(await screen.findByText(/n’est pas affiché sur le site/)).toBeInTheDocument();
+    expect(screen.getByText(/L’envoi des emails n’est pas activé/)).toBeInTheDocument();
+    expect(screen.getByText(/L’adresse publique du site n’est pas renseignée/)).toBeInTheDocument();
+    expect(screen.queryByText(/EMAIL_ENCRYPTION_KEY/)).toBeNull();
+    expect(screen.getByRole('link', { name: 'Ouvrir la configuration email' })).toHaveAttribute(
+      'href',
+      '/admin/emails/configuration',
+    );
+  });
+
+  it('says so when the form is live', async () => {
+    mockedApi.get.mockResolvedValue({ data: { available: true, missing: [] } });
+    renderWithProviders(<NewsletterAvailability />);
+    expect(await screen.findByText(/est affiché sur le site/)).toBeInTheDocument();
   });
 });
 
