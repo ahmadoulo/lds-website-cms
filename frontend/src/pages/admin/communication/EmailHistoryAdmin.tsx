@@ -46,6 +46,8 @@ export const EmailHistoryAdmin = () => {
   const search = params.get('q') ?? '';
   const from = params.get('from') ?? '';
   const to = params.get('to') ?? '';
+  // Set by a campaign's results: that campaign's copies only.
+  const campaign = params.get('campaign') ?? '';
 
   const [openedId, setOpenedId] = useState<string | null>(null);
   const [pendingRetry, setPendingRetry] = useState<EmailMessageRow | null>(null);
@@ -60,7 +62,7 @@ export const EmailHistoryAdmin = () => {
   };
 
   const list = useQuery({
-    queryKey: ['admin', 'email', 'messages', page, status, kind, search, from, to],
+    queryKey: ['admin', 'email', 'messages', page, status, kind, search, from, to, campaign],
     queryFn: async () =>
       (
         await api.get<Paginated<EmailMessageRow>>('/email/messages', {
@@ -69,6 +71,7 @@ export const EmailHistoryAdmin = () => {
             limit: 20,
             status: status || undefined,
             kind: kind || undefined,
+            campaignId: campaign || undefined,
             search: search || undefined,
             // Whole days, in the administrator's own sense of "from" and "to".
             from: from ? new Date(`${from}T00:00:00`).toISOString() : undefined,
@@ -98,7 +101,7 @@ export const EmailHistoryAdmin = () => {
     invalidate: [['admin', 'email']],
   });
 
-  const filtered = Boolean(status || kind || search || from || to);
+  const filtered = Boolean(status || kind || search || from || to || campaign);
 
   const columns: Array<Column<EmailMessageRow>> = [
     {

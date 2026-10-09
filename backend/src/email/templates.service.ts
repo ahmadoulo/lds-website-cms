@@ -44,6 +44,8 @@ export interface TemplateView {
   html: Localized;
   text: Localized;
   isActive: boolean;
+  /** See TemplateDefinition.required. */
+  required: boolean;
   updatedAt: Date | null;
   /** Variables used in the text that the template does not provide. */
   unknownVariables: string[];
@@ -125,7 +127,11 @@ export class TemplatesService implements OnModuleInit {
       subject,
       html,
       text,
-      isActive: row?.isActive ?? definition.defaultActive ?? true,
+      // A required template is active whatever is stored.
+      isActive: definition.required
+        ? true
+        : (row?.isActive ?? definition.defaultActive ?? true),
+      required: Boolean(definition.required),
       updatedAt: row?.updatedAt ?? null,
       unknownVariables: [...used].filter(
         (name) => !(name in definition.variables),
@@ -151,6 +157,11 @@ export class TemplatesService implements OnModuleInit {
 
   async update(key: string, input: TemplateInput): Promise<TemplateView> {
     const definition = this.definition(key);
+    if (definition.required && input.isActive === false) {
+      throw new BadRequestException(
+        'Cet email ne peut pas être désactivé : sans lui, le service correspondant cesse de fonctionner.',
+      );
+    }
     const current = await this.get(key);
 
     // Merged per language, like every other bilingual field: a form showing

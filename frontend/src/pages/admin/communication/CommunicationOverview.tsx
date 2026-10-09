@@ -10,7 +10,9 @@ import {
   Inbox,
   KeyRound,
   MailCheck,
+  Megaphone,
   Send,
+  UserCheck,
   XCircle,
 } from 'lucide-react';
 import api from '../../../lib/api/axios';
@@ -224,12 +226,61 @@ export const CommunicationOverview = () => {
         </section>
       </div>
 
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* ---------------------------------------------- newsletter */}
+        <section className="rounded-xl border border-navy/8 bg-white p-5 sm:p-6">
+          <h2 className="text-base font-bold text-navy">{e.subscribersTitle}</h2>
+          <p className="mt-2 text-2xl font-extrabold text-green">
+            {e.subscribersActive(data.subscribers.ACTIVE)}
+          </p>
+          <p className="mt-1 text-sm text-navy/55">{e.subscribersPending(data.subscribers.PENDING)}</p>
+          <Link
+            to="/admin/emails/abonnes"
+            className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-blue hover:underline"
+          >
+            {e.goSubscribers} <ArrowRight className={arrow} aria-hidden />
+          </Link>
+        </section>
+
+        {/* ----------------------------------------------- campaigns */}
+        <section className="rounded-xl border border-navy/8 bg-white p-5 sm:p-6">
+          <h2 className="text-base font-bold text-navy">{e.campaignsTitle}</h2>
+          {data.campaigns.length === 0 ? (
+            <p className="mt-3 text-sm text-navy/55">{e.campaignsNone}</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-navy/8">
+              {[...data.campaigns]
+                // What is about to happen first.
+                .sort((a, b) => Number(b.status === 'SCHEDULED') - Number(a.status === 'SCHEDULED'))
+                .map((campaign) => (
+                  <li key={campaign.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <Link
+                      to={`/admin/emails/campagnes?id=${campaign.id}`}
+                      className="min-w-0 truncate text-sm font-semibold text-navy hover:underline"
+                    >
+                      {campaign.name}
+                    </Link>
+                    <span className="shrink-0 text-xs text-navy/50">
+                      {t.admin.email.campaigns.status[campaign.status]}
+                      {campaign.status === 'SCHEDULED' && campaign.scheduledAt
+                        ? ` · ${t.admin.common.formatDateTime(campaign.scheduledAt)}`
+                        : ''}
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
       {/* ------------------------------------------------ shortcuts */}
       <section>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-navy/45">
           {e.shortcuts}
         </h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Shortcut to="/admin/emails/campagnes?id=nouvelle" icon={Megaphone} label={e.goCampaigns} />
+          <Shortcut to="/admin/emails/abonnes" icon={UserCheck} label={e.goSubscribers} />
           <Shortcut to="/admin/emails/configuration#test" icon={Send} label={e.sendTest} />
           <Shortcut to="/admin/emails/modeles" icon={FileCode2} label={e.goTemplates} />
           <Shortcut to="/admin/emails/historique" icon={History} label={e.goHistory} />

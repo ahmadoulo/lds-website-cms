@@ -66,23 +66,52 @@ export class EmailController {
   @RequirePermission('READ', 'Email')
   @ApiOperation({ summary: 'The communication cockpit: real counts only' })
   async overview() {
-    const [settings, history, unreadContacts, recentContacts] =
-      await Promise.all([
-        this.settings.get(),
-        this.history.overview(30),
-        this.prisma.contactMessage.count({ where: { isRead: false } }),
-        this.prisma.contactMessage.findMany({
-          select: {
-            id: true,
-            name: true,
-            subject: true,
-            isRead: true,
-            createdAt: true,
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-        }),
-      ]);
+    const [
+      settings,
+      history,
+      unreadContacts,
+      recentContacts,
+      subscribers,
+      campaigns,
+    ] = await Promise.all([
+      this.settings.get(),
+      this.history.overview(30),
+      this.prisma.contactMessage.count({ where: { isRead: false } }),
+      this.prisma.contactMessage.findMany({
+        select: {
+          id: true,
+          name: true,
+          subject: true,
+          isRead: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+      this.prisma.newsletterSubscriber.groupBy({
+        by: ['status'],
+        _count: { _all: true },
+      }),
+      // The most recently touched; the screen lifts scheduled ones to the
+      // top, since what is about to happen matters more than what did.
+      this.prisma.campaign.findMany({
+        where: { status: { not: 'DRAFT' } },
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          scheduledAt: true,
+          completedAt: true,
+          recipientCount: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 6,
+      }),
+    ]);
+
+    const subscriberCounts = { PENDING: 0, ACTIVE: 0, UNSUBSCRIBED: 0 };
+    for (const row of subscribers)
+      subscriberCounts[row.status] = row._count._all;
 
     return {
       smtp: {
@@ -97,6 +126,8 @@ export class EmailController {
       },
       ...history,
       contacts: { unread: unreadContacts, recent: recentContacts },
+      subscribers: subscriberCounts,
+      campaigns,
     };
   }
 

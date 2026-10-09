@@ -24,6 +24,7 @@ import { PublicModule } from './public/public.module';
 import { SeoModule } from './seo/seo.module';
 import { EmailModule } from './email/email.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
+import { CampaignsModule } from './campaigns/campaigns.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
@@ -49,6 +50,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     SeoModule,
     EmailModule,
     NewsletterModule,
+    CampaignsModule,
     DashboardModule,
   ],
   controllers: [AppController],

@@ -46,6 +46,29 @@ function matches(row: any, where: any): boolean {
     if (key === 'NOT') return !matches(row, condition);
 
     if (condition && typeof condition === 'object' && !Array.isArray(condition)) {
+      /*
+        Scalar operators, combinable as Prisma allows ({ not: null, lte: d }).
+        Without these the fake read every such filter as a relation filter and
+        matched nothing - a query the database answers was silently empty here.
+      */
+      const OPERATORS = ['not', 'gt', 'gte', 'lt', 'lte'];
+      if (Object.keys(condition).some((op) => OPERATORS.includes(op))) {
+        const value = row[key];
+        const comparable = (v: any) => (v instanceof Date ? v.getTime() : v);
+        return Object.entries(condition).every(([op, operand]: [string, any]) => {
+          if (op === 'not') {
+            return operand === null ? value !== null && value !== undefined : value !== operand;
+          }
+          if (value === null || value === undefined) return false;
+          const a = comparable(value);
+          const b = comparable(operand);
+          if (op === 'gt') return a > b;
+          if (op === 'gte') return a >= b;
+          if (op === 'lt') return a < b;
+          if (op === 'lte') return a <= b;
+          return true;
+        });
+      }
       if ('in' in condition) return (condition.in as any[]).includes(row[key]);
       if ('contains' in condition) {
         return String(row[key] ?? '')
@@ -133,6 +156,35 @@ const COLUMN_DEFAULTS: Record<string, Record<string, unknown>> = {
   campaign: { status: 'DRAFT', includeSignature: true },
 };
 
+/**
+ * The unique constraints of the real schema that the code under test relies
+ * on. Without them a "store it once" guarantee could not be tested: the fake
+ * would happily store it twice.
+ */
+const UNIQUE: Record<string, string[][]> = {
+  emailMessage: [
+    ['contactMessageId', 'kind'],
+    ['campaignId', 'subscriberId'],
+  ],
+  newsletterSubscriber: [['email'], ['confirmTokenHash']],
+};
+
+/** Whether `row` would break a unique constraint of `table`. NULLs never collide. */
+function collides(table: string, row: any): boolean {
+  return (UNIQUE[table] ?? []).some((columns) =>
+    columns.every((column) => row[column] !== null && row[column] !== undefined) &&
+    store_ref.current![table].some((other) =>
+      columns.every((column) => other[column] === row[column]),
+    ),
+  );
+}
+
+const store_ref: { current: Record<string, any[]> | null } = { current: null };
+
+function uniqueViolation() {
+  return Object.assign(new Error('Unique constraint failed'), { code: 'P2002' });
+}
+
 function applyDefaults(table: string, data: any) {
   return { ...(COLUMN_DEFAULTS[table] ?? {}), ...data };
 }
@@ -186,6 +238,7 @@ function project(row: any, select?: Record<string, boolean>) {
  */
 export function createStatefulPrisma() {
   const store: Record<string, any[]> = Object.fromEntries(TABLES.map((t) => [t, []]));
+  store_ref.current = store;
   store.user = [{ ...ADMIN }];
 
   const hydrate = (table: string, row: any, include: any): any => {
@@ -223,11 +276,14 @@ export function createStatefulPrisma() {
   };
 
   const model = (table: string) => ({
-    findMany: async ({ where, orderBy, include, select, skip = 0, take }: any = {}) => {
-      const filtered = sortRows(
+    findMany: async ({ where, orderBy, include, select, skip = 0, take, cursor }: any = {}) => {
+      const sorted = sortRows(
         store[table].filter((row) => matches(row, where)),
         orderBy,
-      ).slice(skip, take ? skip + take : undefined);
+      );
+      // Prisma's cursor: start at the row it names, then apply skip.
+      const start = cursor ? Math.max(0, sorted.findIndex((row) => row.id === cursor.id)) : 0;
+      const filtered = sorted.slice(start + skip, take ? start + skip + take : undefined);
 
       return filtered.map((row) => project(hydrate(table, row, include), select));
     },
@@ -254,6 +310,7 @@ export function createStatefulPrisma() {
         updatedAt: new Date(),
         ...applyDefaults(table, normalizeWrite(data)),
       };
+      if (collides(table, row)) throw uniqueViolation();
       store[table].push(row);
       return project(hydrate(table, row, include), select);
     },
@@ -281,16 +338,23 @@ export function createStatefulPrisma() {
       return created;
     },
 
-    createMany: async ({ data }: any) => {
+    createMany: async ({ data, skipDuplicates }: any) => {
+      let count = 0;
       for (const item of data) {
-        store[table].push({
+        const row = {
           id: randomUUID(),
           createdAt: new Date(),
           updatedAt: new Date(),
           ...applyDefaults(table, normalizeWrite(item)),
-        });
+        };
+        if (collides(table, row)) {
+          if (skipDuplicates) continue;
+          throw uniqueViolation();
+        }
+        store[table].push(row);
+        count += 1;
       }
-      return { count: data.length };
+      return { count };
     },
 
     updateMany: async ({ where, data }: any) => {

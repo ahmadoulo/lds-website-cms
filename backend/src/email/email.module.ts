@@ -29,6 +29,7 @@ import { DnsCheckService } from './dns-check.service';
     EmailQueueService,
     TemplatesService,
     EmailSettingsService,
+    TransportService,
   ],
 })
 export class EmailModule {}

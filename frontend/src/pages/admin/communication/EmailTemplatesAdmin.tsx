@@ -367,11 +367,17 @@ const TemplateEditor = ({ templateKey, onBack }: { templateKey: string; onBack: 
           </Section>
 
           <div className="flex flex-col gap-4 rounded-xl border border-navy/8 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
-            <Checkbox
-              label={m.activeToggle}
-              checked={isActive}
-              onChange={(event) => setIsActive(event.target.checked)}
-            />
+            {template.required ? (
+              <p className="text-sm text-navy/60" title={t.admin.email.notifications.requiredHint}>
+                {t.admin.email.notifications.required}
+              </p>
+            ) : (
+              <Checkbox
+                label={m.activeToggle}
+                checked={isActive}
+                onChange={(event) => setIsActive(event.target.checked)}
+              />
+            )}
             <div className="flex flex-wrap gap-2">
               <Button variant="ghost" type="button" onClick={() => setConfirmReset(true)}>
                 <RotateCcw className="h-4 w-4" aria-hidden /> {m.reset}

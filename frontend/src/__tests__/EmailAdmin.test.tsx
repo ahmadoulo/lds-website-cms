@@ -174,6 +174,8 @@ describe('Communication overview', () => {
     oldestPendingAt: null,
     recentFailures: [],
     contacts: { unread: 0, recent: [] },
+    subscribers: { PENDING: 1, ACTIVE: 12, UNSUBSCRIBED: 0 },
+    campaigns: [],
   };
 
   it('shows the real counts, and no rate when nothing was attempted', async () => {
@@ -217,6 +219,7 @@ describe('Email templates editor', () => {
     html: { fr: '<p>Bonjour {{firstName}}</p>', ar: '<p>مرحبًا {{firstName}}</p>' },
     text: { fr: 'Bonjour {{firstName}}', ar: 'مرحبًا {{firstName}}' },
     isActive: true,
+    required: false,
     updatedAt: null,
     unknownVariables: [],
   };
@@ -260,14 +263,14 @@ describe('Email templates editor', () => {
 describe('Communication navigation', () => {
   const group = NAV_GROUPS.find((candidate) => candidate.title === 'Communication');
 
-  it('lists only the screens that exist', () => {
-    // An entry for subscribers or campaigns before they exist would be a
-    // promise the back-office cannot keep.
+  it('lists the communication screens in the order the work happens', () => {
     expect(group?.items.map((item) => item.href)).toEqual([
       '/admin/communication',
       '/admin/emails/configuration',
+      '/admin/emails/notifications',
       '/admin/emails/modeles',
       '/admin/emails/abonnes',
+      '/admin/emails/campagnes',
       '/admin/emails/historique',
     ]);
   });

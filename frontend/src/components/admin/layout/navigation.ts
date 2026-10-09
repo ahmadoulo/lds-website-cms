@@ -14,6 +14,8 @@ import {
   History,
   Send,
   UserCheck,
+  Bell,
+  Megaphone,
   Menu,
   Settings,
   ShieldCheck,
@@ -146,9 +148,9 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     /*
-      Only the screens that do something today. Subscribers, campaigns and
-      notification rules join this group when they exist - an empty entry in
-      a sidebar is a promise the back-office cannot keep.
+      The communication cockpit, in the order the work happens: set sending
+      up, decide what is sent automatically, write it, then the people and
+      the campaigns, and what happened.
     */
     title: 'Communication',
     items: [
@@ -167,6 +169,13 @@ export const NAV_GROUPS: NavGroup[] = [
         hint: 'Serveur SMTP, expéditeur',
       },
       {
+        name: 'Notifications',
+        href: '/admin/emails/notifications',
+        icon: Bell,
+        minRole: 'ADMIN',
+        hint: 'Emails envoyés automatiquement',
+      },
+      {
         name: 'Modèles d’emails',
         href: '/admin/emails/modeles',
         icon: FileCode2,
@@ -179,6 +188,13 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: UserCheck,
         minRole: 'ADMIN',
         hint: 'Inscrits à la newsletter',
+      },
+      {
+        name: 'Campagnes',
+        href: '/admin/emails/campagnes',
+        icon: Megaphone,
+        minRole: 'ADMIN',
+        hint: 'Newsletters aux abonnés',
       },
       {
         name: 'Historique des envois',

@@ -8,6 +8,7 @@ export interface HistoryQuery {
   limit?: number;
   status?: EmailStatus;
   kind?: string;
+  campaignId?: string;
   search?: string;
   from?: Date;
   to?: Date;
@@ -51,6 +52,7 @@ export class EmailHistoryService {
     const where: Prisma.EmailMessageWhereInput = {
       ...(query.status ? { status: query.status } : {}),
       ...(query.kind ? { kind: query.kind } : {}),
+      ...(query.campaignId ? { campaignId: query.campaignId } : {}),
       ...(query.search
         ? {
             OR: [

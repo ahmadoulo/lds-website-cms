@@ -314,6 +314,8 @@ export interface EmailTemplate {
   html: Localized;
   text: Localized;
   isActive: boolean;
+  /** Cannot be switched off: something stops working without it. */
+  required: boolean;
   updatedAt: string | null;
   unknownVariables: string[];
 }
@@ -361,6 +363,15 @@ export interface EmailOverview {
     unread: number;
     recent: Array<{ id: string; name: string; subject: string; isRead: boolean; createdAt: string }>;
   };
+  subscribers: { PENDING: number; ACTIVE: number; UNSUBSCRIBED: number };
+  campaigns: Array<{
+    id: string;
+    name: string;
+    status: 'SCHEDULED' | 'SENDING' | 'PAUSED' | 'SENT' | 'CANCELLED';
+    scheduledAt: string | null;
+    completedAt: string | null;
+    recipientCount: number | null;
+  }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -394,4 +405,52 @@ export interface ImportResult {
   existing: number;
   invalid: number;
   duplicates: number;
+}
+
+// ---------------------------------------------------------------------------
+// Campaigns
+// ---------------------------------------------------------------------------
+
+export type CampaignStatus = 'DRAFT' | 'SCHEDULED' | 'SENDING' | 'PAUSED' | 'SENT' | 'CANCELLED';
+
+export type CampaignBlock =
+  | { type: 'heading'; text: string }
+  | { type: 'paragraph'; text: string }
+  | { type: 'list'; items: string[] }
+  | { type: 'image'; mediaId: string; alt: string; caption?: string; url?: string }
+  | { type: 'button'; label: string; url: string }
+  | { type: 'divider' };
+
+export type Segment = 'all' | 'fr' | 'ar' | 'period';
+
+export interface Audience {
+  segment: Segment;
+  from?: string;
+  to?: string;
+}
+
+export interface Campaign {
+  id: string;
+  name: string;
+  subject: string;
+  preheader: string | null;
+  blocks: CampaignBlock[];
+  locale: 'fr' | 'ar';
+  audience: Audience;
+  fromName: string | null;
+  replyTo: string | null;
+  includeSignature: boolean;
+  status: CampaignStatus;
+  scheduledAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  recipientCount: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CampaignStats {
+  queued: number;
+  counts: Record<EmailStatus, number>;
+  unsubscribed: number;
 }

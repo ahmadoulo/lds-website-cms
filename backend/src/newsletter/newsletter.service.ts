@@ -293,12 +293,14 @@ export class NewsletterService {
     subscriberId: string,
     locale: Locale,
     campaignId?: string,
+    /** Passed by a caller building thousands of links, so it is read once. */
+    knownSiteUrl?: string,
   ): Promise<{
     page: string;
     oneClick: string;
     headers: Record<string, string>;
   }> {
-    const siteUrl = await this.settings.requireSiteUrl();
+    const siteUrl = knownSiteUrl ?? (await this.settings.requireSiteUrl());
     const params = new URLSearchParams({
       s: subscriberId,
       t: unsubscribeToken(subscriberId),

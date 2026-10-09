@@ -90,6 +90,8 @@ const EmailSettingsAdmin = lazy(() => import('./pages/admin/communication/EmailS
 const EmailTemplatesAdmin = lazy(() => import('./pages/admin/communication/EmailTemplatesAdmin'));
 const EmailHistoryAdmin = lazy(() => import('./pages/admin/communication/EmailHistoryAdmin'));
 const SubscribersAdmin = lazy(() => import('./pages/admin/communication/SubscribersAdmin'));
+const CampaignsAdmin = lazy(() => import('./pages/admin/communication/CampaignsAdmin'));
+const NotificationsAdmin = lazy(() => import('./pages/admin/communication/NotificationsAdmin'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -174,6 +176,8 @@ function App() {
                         <Route path="emails/modeles" element={<EmailTemplatesAdmin />} />
                         <Route path="emails/historique" element={<EmailHistoryAdmin />} />
                         <Route path="emails/abonnes" element={<SubscribersAdmin />} />
+                        <Route path="emails/campagnes" element={<CampaignsAdmin />} />
+                        <Route path="emails/notifications" element={<NotificationsAdmin />} />
                       </Route>
 
                       {/* Accounts and audit trail: super administrators only. */}

@@ -20,6 +20,12 @@ export interface TemplateDefinition {
    * association's choice to make, not a default to discover in an inbox.
    */
   defaultActive?: boolean;
+  /**
+   * Cannot be switched off, because something stops working without it: the
+   * confirmation is what double opt-in is, and the SMTP test is how sending
+   * is checked at all.
+   */
+  required?: boolean;
 }
 
 export type TemplateKey =
@@ -138,6 +144,7 @@ Ouvrir dans le back-office : {{adminUrl}}`,
     key: 'test',
     name: 'Email de test SMTP',
     audience: 'team',
+    required: true,
     variables: {
       siteName: 'Le nom de l’association',
       sentAt: 'La date et l’heure de l’envoi',
@@ -159,6 +166,7 @@ Envoyé le {{sentAt}}.`,
     key: 'newsletter_confirm',
     name: 'Confirmation d’inscription à la newsletter',
     audience: 'visitor',
+    required: true,
     variables: {
       confirmUrl: 'Le lien qui confirme l’inscription (valable 48 heures)',
       siteName: 'Le nom de l’association',

@@ -301,6 +301,14 @@ describe('Email — the contact flow and its secrets (e2e)', () => {
     expect(after.body.subject.ar).toBe(before.body.subject.ar);
   });
 
+  it('will not switch off the email double opt-in depends on', () =>
+    // Without the confirmation email nobody could ever subscribe again.
+    request(http)
+      .put('/api/v1/email/templates/newsletter_confirm')
+      .set(auth())
+      .send({ isActive: false })
+      .expect(400));
+
   it('refuses a subject that would inject a header', () =>
     request(http)
       .put('/api/v1/email/templates/contact_ack')

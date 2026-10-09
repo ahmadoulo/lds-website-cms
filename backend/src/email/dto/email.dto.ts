@@ -9,6 +9,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -107,6 +108,7 @@ export class HistoryQueryDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) limit?: number;
   @IsOptional() @IsEnum(EmailStatus) status?: EmailStatus;
   @IsOptional() @IsString() @MaxLength(40) kind?: string;
+  @IsOptional() @IsUUID() campaignId?: string;
   @IsOptional() @Transform(trim) @IsString() @MaxLength(254) search?: string;
   @IsOptional() @IsDateString() from?: string;
   @IsOptional() @IsDateString() to?: string;
