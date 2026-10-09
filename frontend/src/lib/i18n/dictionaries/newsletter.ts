@@ -60,6 +60,12 @@ export const newsletterFr = {
   },
 
   backHome: 'Retour à l’accueil',
+
+  popup: {
+    title: 'Restez informé',
+    text: 'Recevez nos actualités et nos réalisations par email.',
+    close: 'Fermer',
+  },
 };
 
 type Translated<T> = {
@@ -121,4 +127,10 @@ export const newsletterAr: NewsletterDictionary = {
   },
 
   backHome: 'العودة إلى الصفحة الرئيسية',
+
+  popup: {
+    title: 'ابقَ على اطّلاع',
+    text: 'تلقَّ أخبارنا وإنجازاتنا عبر البريد الإلكتروني.',
+    close: 'إغلاق',
+  },
 };

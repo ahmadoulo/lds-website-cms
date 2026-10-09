@@ -39,7 +39,7 @@ export interface SubscribeInput {
   email: string;
   consent: boolean;
   locale: Locale;
-  source: 'footer' | 'page';
+  source: 'footer' | 'page' | 'popup';
   /** A field humans never see. Anything in it means a bot filled the form. */
   website?: string;
 }

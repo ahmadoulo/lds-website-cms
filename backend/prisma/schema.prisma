@@ -453,7 +453,7 @@ model NewsletterSubscriber {
   email  String           @unique
   status SubscriberStatus @default(PENDING)
   locale String           @default("fr")
-  /// 'footer', 'page', 'import'.
+  /// 'footer', 'page', 'popup', 'import'.
   source String           @default("footer")
 
   /// The consent, as given: when, and the exact sentence that was agreed to.

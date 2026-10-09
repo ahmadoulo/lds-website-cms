@@ -255,6 +255,7 @@ export const adminEmailFr = {
     sources: {
       footer: 'Pied de page',
       page: 'Page newsletter',
+      popup: 'Encart',
       import: 'Import',
     },
     columnEmail: 'Adresse',
@@ -720,6 +721,7 @@ export const adminEmailAr: AdminEmailDictionary = {
     sources: {
       footer: 'تذييل الموقع',
       page: 'صفحة النشرة',
+      popup: 'النافذة المنبثقة',
       import: 'استيراد',
     },
     columnEmail: 'العنوان',

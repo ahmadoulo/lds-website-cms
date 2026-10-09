@@ -33,7 +33,8 @@ export class SubscribeDto {
 
   @IsOptional() @IsIn(['fr', 'ar']) locale?: 'fr' | 'ar';
 
-  @IsOptional() @IsIn(['footer', 'page']) source?: 'footer' | 'page';
+  @IsOptional() @IsIn(['footer', 'page', 'popup']) source?:
+    'footer' | 'page' | 'popup';
 
   /** The honeypot. Hidden from people; a bot fills it. */
   @IsOptional() @IsString() @MaxLength(200) website?: string;

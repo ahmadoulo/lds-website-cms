@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 vi.mock('../lib/api/axios', async () => {
@@ -14,7 +14,8 @@ vi.mock('../context/SettingsContext', () => ({
 }));
 
 import api from '../lib/api/axios';
-import { NewsletterSignup } from '../components/public/NewsletterSignup';
+import { NewsletterSignup, SUBSCRIBED_KEY } from '../components/public/NewsletterSignup';
+import { DELAY_MS, NewsletterPopup, SNOOZE_MS, mayOffer } from '../components/public/NewsletterPopup';
 import { NewsletterConfirmPage, NewsletterUnsubscribePage } from '../pages/public/NewsletterPages';
 import { renderWithProviders } from './testUtils';
 
@@ -146,5 +147,113 @@ describe('unsubscribe page', () => {
     renderWithProviders(<NewsletterUnsubscribePage />, { route: '/newsletter/desinscription?s=sub-1' });
     expect(await screen.findByText(/n’est pas valide/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Me désinscrire' })).not.toBeInTheDocument();
+  });
+});
+
+describe('newsletter popup', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  const renderPopup = (route = '/') => renderWithProviders(<NewsletterPopup />, { route });
+
+  /** Lets the status request resolve, then moves the clock on. */
+  const wait = async (ms: number) => {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ms);
+    });
+  };
+
+  it('does not appear on arrival, only after the visitor has spent time on the site', async () => {
+    vi.useFakeTimers();
+    try {
+      renderPopup();
+      await wait(5_000);
+      expect(screen.queryByRole('dialog')).toBeNull();
+
+      await wait(DELAY_MS);
+      expect(screen.getByRole('dialog', { name: 'Restez informé' })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('subscribes with the popup as its source', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      mockedApi.post.mockResolvedValue({ data: { ok: true } });
+      renderPopup();
+      await wait(DELAY_MS + 100);
+      const dialog = screen.getByRole('dialog');
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+      await user.type(within(dialog).getByLabelText('Votre adresse email'), 'awa@example.com');
+      await user.click(within(dialog).getByRole('checkbox'));
+      await user.click(within(dialog).getByRole('button', { name: 'S’inscrire' }));
+
+      await waitFor(() =>
+        expect(mockedApi.post).toHaveBeenCalledWith(
+          '/newsletter/subscribe',
+          expect.objectContaining({ source: 'popup' }),
+        ),
+      );
+      // Subscribed once, never asked again - from here or the footer.
+      expect(window.localStorage.getItem(SUBSCRIBED_KEY)).not.toBeNull();
+      expect(mayOffer()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('goes away on Escape and stays away for thirty days', async () => {
+    vi.useFakeTimers();
+    try {
+      renderPopup();
+      await wait(DELAY_MS + 100);
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(mayOffer()).toBe(false);
+      expect(mayOffer(Date.now() + SNOOZE_MS + 1000)).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('never appears on the newsletter pages themselves', async () => {
+    vi.useFakeTimers();
+    try {
+      renderPopup('/newsletter');
+      await wait(DELAY_MS + 100);
+      expect(screen.queryByRole('dialog')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('never appears when signing up would not work', async () => {
+    vi.useFakeTimers();
+    try {
+      mockedApi.get.mockResolvedValue({ data: { ...STATUS, available: false } });
+      renderPopup();
+      await wait(DELAY_MS + 100);
+      expect(screen.queryByRole('dialog')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not cover the page or take the focus', async () => {
+    vi.useFakeTimers();
+    try {
+      renderPopup();
+      await wait(DELAY_MS + 100);
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toHaveAttribute('aria-modal', 'false');
+      expect(dialog.contains(document.activeElement)).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

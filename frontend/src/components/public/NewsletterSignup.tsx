@@ -12,6 +12,17 @@ export interface NewsletterStatus {
   consentText: { fr: string; ar: string };
 }
 
+/** Set once someone subscribes from any form, so the popup never asks them again. */
+export const SUBSCRIBED_KEY = 'lds.newsletter.subscribed';
+
+export function rememberSubscribed(): void {
+  try {
+    window.localStorage.setItem(SUBSCRIBED_KEY, new Date().toISOString());
+  } catch {
+    // Private browsing or blocked storage: the popup may ask again. Harmless.
+  }
+}
+
 export const useNewsletterStatus = () =>
   useQuery({
     queryKey: ['public', 'newsletter', 'status'],
@@ -35,11 +46,14 @@ const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 export const NewsletterSignup = ({
   source,
   tone = 'dark',
+  stacked = false,
   className,
 }: {
-  source: 'footer' | 'page';
-  /** dark sits on the navy footer, light on a page. */
+  source: 'footer' | 'page' | 'popup';
+  /** dark sits on the navy footer, light on a page or a card. */
   tone?: 'dark' | 'light';
+  /** Field above button whatever the screen width, for narrow containers. */
+  stacked?: boolean;
   className?: string;
 }) => {
   const t = useT();
@@ -65,6 +79,7 @@ export const NewsletterSignup = ({
           ...(website ? { website } : {}),
         })
       ).data,
+    onSuccess: () => rememberSubscribed(),
     onError: (error: { response?: { status?: number } }) => {
       const code = error.response?.status;
       setProblem(
@@ -112,7 +127,7 @@ export const NewsletterSignup = ({
         subscribe.mutate();
       }}
     >
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className={cn('flex flex-col gap-2', !stacked && 'sm:flex-row')}>
         <label htmlFor={`${id}-email`} className="sr-only">
           {n.emailLabel}
         </label>

@@ -17,6 +17,7 @@ import { SiteLogo } from '../public/SiteLogo';
 import { CtaLink } from '../public/CtaLink';
 import { LocaleSwitch } from '../public/LocaleSwitch';
 import { NewsletterSignup, useNewsletterStatus } from '../public/NewsletterSignup';
+import { NewsletterPopup } from '../public/NewsletterPopup';
 import { PreviewBanner } from '../public/PreviewBanner';
 
 /*
@@ -308,6 +309,8 @@ export const PublicLayout = () => {
       <main id="contenu" className="flex-1">
         <Outlet />
       </main>
+
+      <NewsletterPopup />
 
       {/* Footer */}
       <footer className="mt-auto bg-navy pb-8 pt-12 text-white sm:pb-10 sm:pt-16">

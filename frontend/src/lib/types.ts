@@ -385,7 +385,7 @@ export interface Subscriber {
   email: string;
   status: SubscriberStatus;
   locale: 'fr' | 'ar';
-  source: 'footer' | 'page' | 'import';
+  source: 'footer' | 'page' | 'popup' | 'import';
   consentAt: string | null;
   confirmedAt: string | null;
   unsubscribedAt: string | null;
