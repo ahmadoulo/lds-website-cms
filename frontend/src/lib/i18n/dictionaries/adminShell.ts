@@ -37,6 +37,10 @@ const NAV_LABELS_FR: Record<string, string> = {
   '/admin/navigation': 'Menu de navigation',
   '/admin/utilisateurs': 'Utilisateurs',
   '/admin/journal': "Journal d'activité",
+  '/admin/communication': 'Tableau de bord',
+  '/admin/emails/configuration': 'Configuration email',
+  '/admin/emails/modeles': 'Modèles d’emails',
+  '/admin/emails/historique': 'Historique des envois',
 };
 
 const NAV_LABELS_AR: Record<string, string> = {
@@ -55,6 +59,10 @@ const NAV_LABELS_AR: Record<string, string> = {
   '/admin/navigation': 'قائمة التنقّل',
   '/admin/utilisateurs': 'المستخدمون',
   '/admin/journal': 'سجلّ النشاط',
+  '/admin/communication': 'لوحة المتابعة',
+  '/admin/emails/configuration': 'إعدادات البريد الإلكتروني',
+  '/admin/emails/modeles': 'قوالب الرسائل',
+  '/admin/emails/historique': 'سجلّ الإرسال',
 };
 
 const NAV_HINTS_FR: Record<string, string> = {
@@ -68,6 +76,10 @@ const NAV_HINTS_FR: Record<string, string> = {
   '/admin/messages': 'Messages reçus du formulaire',
   '/admin/medias': 'Toutes les images du site',
   '/admin/parametres?section=branding': 'Logo, coordonnées, réseaux, SEO',
+  '/admin/communication': 'État des envois, alertes',
+  '/admin/emails/configuration': 'Serveur SMTP, expéditeur',
+  '/admin/emails/modeles': 'Textes des emails automatiques',
+  '/admin/emails/historique': 'Chaque email envoyé',
 };
 
 const NAV_HINTS_AR: Record<string, string> = {
@@ -83,6 +95,10 @@ const NAV_HINTS_AR: Record<string, string> = {
   '/admin/medias': 'جميع صور الموقع',
   '/admin/parametres?section=branding':
     'الشعار، بيانات الاتصال، الشبكات الاجتماعية، تحسين الظهور في محرّكات البحث',
+  '/admin/communication': 'حالة الإرسال والتنبيهات',
+  '/admin/emails/configuration': 'خادم SMTP والمرسِل',
+  '/admin/emails/modeles': 'نصوص الرسائل الآلية',
+  '/admin/emails/historique': 'كل رسالة مُرسَلة',
 };
 
 /** Keyed by the group title in `navigation.ts`, which is its only identifier. */
@@ -90,6 +106,7 @@ const NAV_GROUPS_FR: Record<string, string> = {
   Pilotage: 'Pilotage',
   'Contenu du site': 'Contenu du site',
   Bibliothèque: 'Bibliothèque',
+  Communication: 'Communication',
   Configuration: 'Configuration',
 };
 
@@ -97,6 +114,7 @@ const NAV_GROUPS_AR: Record<string, string> = {
   Pilotage: 'الإشراف',
   'Contenu du site': 'محتوى الموقع',
   Bibliothèque: 'المكتبة',
+  Communication: 'التواصل',
   Configuration: 'التهيئة',
 };
 

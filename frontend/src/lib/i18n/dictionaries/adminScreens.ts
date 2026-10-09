@@ -1,4 +1,5 @@
 import type { Locale } from '../locale';
+import { adminEmailAr, adminEmailFr } from './adminEmail';
 
 /**
  * Every string the fifteen back-office screens put in front of a human being.
@@ -689,6 +690,9 @@ export const adminScreensFr = {
    * What a failed request says. Read by `apiErrorMessage`, which is not a
    * component and therefore takes the locale as an argument.
    */
+  /** The communication screens, kept in their own file. */
+  email: adminEmailFr,
+
   errors: {
     generic: 'Une erreur est survenue.',
     network: 'Impossible de joindre le serveur. Vérifiez votre connexion.',
@@ -1328,6 +1332,8 @@ export const adminScreensAr: AdminScreensDictionary = {
     megabyte: 'ميغابايت',
     gigabyte: 'غيغابايت',
   },
+
+  email: adminEmailAr,
 
   errors: {
     generic: 'حدث خطأ.',

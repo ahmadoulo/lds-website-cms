@@ -25,6 +25,7 @@ import { TransportService } from './transport.service';
 import { TemplatesService } from './templates.service';
 import { EmailQueueService } from './email-queue.service';
 import { EmailHistoryService } from './email-history.service';
+import { DnsCheckService } from './dns-check.service';
 import { redact } from './secret-box';
 import {
   HistoryQueryDto,
@@ -50,6 +51,7 @@ export class EmailController {
     private readonly templates: TemplatesService,
     private readonly queue: EmailQueueService,
     private readonly history: EmailHistoryService,
+    private readonly dns: DnsCheckService,
     private readonly audit: AuditService,
     private readonly prisma: PrismaService,
   ) {}
@@ -221,6 +223,14 @@ export class EmailController {
       : { ok, message: reason };
   }
 
+  @Get('settings/dns')
+  @RequirePermission('READ', 'Email')
+  @ApiOperation({ summary: 'SPF and DMARC of the sender domain, as published' })
+  async dnsReport() {
+    const settings = await this.settings.get();
+    return this.dns.check(settings.fromEmail);
+  }
+
   // ------------------------------------------------------------ templates
 
   @Get('templates')
@@ -275,6 +285,69 @@ export class EmailController {
   @RequirePermission('READ', 'Email')
   previewTemplate(@Param('key') key: string, @Body() dto: PreviewTemplateDto) {
     return this.templates.preview(key, dto.locale ?? 'fr', dto);
+  }
+
+  @Post('templates/:key/test')
+  @HttpCode(200)
+  @RequirePermission('UPDATE', 'Email')
+  @ApiOperation({ summary: 'Send a template, with example values, to one address' })
+  async testTemplate(
+    @Param('key') key: string,
+    @Body() dto: SendTestDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const locale = dto.locale ?? 'fr';
+    const email = await this.templates.preview(key, locale);
+    const identity = await this.settings.identityFor('default');
+
+    // Marked as a test in the subject, so nobody mistakes the example values
+    // for a real request in an inbox.
+    const subject = `[Test] ${email.subject}`;
+
+    let ok = true;
+    let reason: string | null = null;
+    try {
+      await this.transport.send({
+        to: dto.to,
+        fromName: identity.fromName,
+        fromEmail: identity.fromEmail,
+        replyTo: identity.replyTo,
+        ...email,
+        subject,
+      });
+    } catch (error) {
+      ok = false;
+      reason = await this.explain(error);
+    }
+
+    await this.prisma.emailMessage.create({
+      data: {
+        kind: 'template_test',
+        toEmail: dto.to,
+        fromName: identity.fromName,
+        fromEmail: identity.fromEmail || '(non configurée)',
+        replyTo: identity.replyTo,
+        subject,
+        html: email.html,
+        text: email.text,
+        locale,
+        status: ok ? 'SENT' : 'FAILED',
+        attempts: 1,
+        sentAt: ok ? new Date() : null,
+        error: reason,
+      },
+    });
+    await this.audit.record({
+      action: 'CREATE',
+      resource: 'EmailTest',
+      resourceId: key,
+      userId: user.id,
+      metadata: { ok },
+    });
+
+    return ok
+      ? { ok, message: "Le serveur SMTP a accepté l'email de test." }
+      : { ok, message: reason };
   }
 
   // -------------------------------------------------------------- history

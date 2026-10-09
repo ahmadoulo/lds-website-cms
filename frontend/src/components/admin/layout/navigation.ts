@@ -9,6 +9,10 @@ import {
   ImageIcon,
   LayoutDashboard,
   Mail,
+  MailCheck,
+  FileCode2,
+  History,
+  Send,
   Menu,
   Settings,
   ShieldCheck,
@@ -136,6 +140,44 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: ImageIcon,
         minRole: 'ADMIN',
         hint: 'Toutes les images du site',
+      },
+    ],
+  },
+  {
+    /*
+      Only the screens that do something today. Subscribers, campaigns and
+      notification rules join this group when they exist - an empty entry in
+      a sidebar is a promise the back-office cannot keep.
+    */
+    title: 'Communication',
+    items: [
+      {
+        name: 'Tableau de bord',
+        href: '/admin/communication',
+        icon: Send,
+        minRole: 'ADMIN',
+        hint: 'État des envois, alertes',
+      },
+      {
+        name: 'Configuration email',
+        href: '/admin/emails/configuration',
+        icon: MailCheck,
+        minRole: 'ADMIN',
+        hint: 'Serveur SMTP, expéditeur',
+      },
+      {
+        name: 'Modèles d’emails',
+        href: '/admin/emails/modeles',
+        icon: FileCode2,
+        minRole: 'ADMIN',
+        hint: 'Textes des emails automatiques',
+      },
+      {
+        name: 'Historique des envois',
+        href: '/admin/emails/historique',
+        icon: History,
+        minRole: 'ADMIN',
+        hint: 'Chaque email envoyé',
       },
     ],
   },

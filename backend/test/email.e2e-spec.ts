@@ -17,6 +17,8 @@ const EMAIL_ENDPOINTS: Array<[string, string]> = [
   ['get', '/api/v1/email/templates'],
   ['put', '/api/v1/email/templates/contact_ack'],
   ['get', '/api/v1/email/messages'],
+  ['get', '/api/v1/email/settings/dns'],
+  ['post', '/api/v1/email/templates/contact_ack/test'],
 ];
 
 describe('Email — who may touch it (e2e)', () => {

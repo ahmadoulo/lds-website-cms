@@ -234,3 +234,125 @@ export function t(value: Localized | null | undefined, fallback = ''): string {
   if (!value) return fallback;
   return value.fr || value.en || Object.values(value)[0] || fallback;
 }
+
+// ---------------------------------------------------------------------------
+// Email
+// ---------------------------------------------------------------------------
+
+export type EmailStatus = 'PENDING' | 'SENDING' | 'SENT' | 'FAILED' | 'CANCELLED';
+
+export type EmailPurpose = 'contact' | 'notification' | 'newsletter';
+
+export interface EmailIdentity {
+  fromName?: string;
+  fromEmail?: string;
+  replyTo?: string;
+}
+
+/** What the API returns. The password is never part of it. */
+export interface EmailSettings {
+  enabled: boolean;
+  host: string | null;
+  port: number | null;
+  security: 'tls' | 'starttls' | 'none';
+  username: string | null;
+  hasPassword: boolean;
+  fromName: string | null;
+  fromEmail: string | null;
+  replyToName: string | null;
+  replyToEmail: string | null;
+  contactInbox: string | null;
+  adminInbox: string | null;
+  identities: Partial<Record<EmailPurpose, EmailIdentity>>;
+  batchSize: number;
+  ratePerMinute: number;
+  lastTestAt: string | null;
+  lastTestOk: boolean | null;
+  lastTestError: string | null;
+  encryptionReady: boolean;
+  warnings: string[];
+}
+
+export interface EmailMessageRow {
+  id: string;
+  kind: string;
+  toEmail: string;
+  toName: string | null;
+  fromName: string;
+  fromEmail: string;
+  replyTo: string | null;
+  subject: string;
+  locale: string;
+  status: EmailStatus;
+  attempts: number;
+  nextAttemptAt: string;
+  error: string | null;
+  contactMessageId: string | null;
+  sentAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** The detail view adds the body, for the preview. */
+export interface EmailMessageDetail extends EmailMessageRow {
+  html: string;
+  text: string;
+}
+
+export interface EmailTemplate {
+  key: string;
+  name: string;
+  audience: 'visitor' | 'team';
+  variables: Record<string, string>;
+  subject: Localized;
+  html: Localized;
+  text: Localized;
+  isActive: boolean;
+  updatedAt: string | null;
+  unknownVariables: string[];
+}
+
+export interface RenderedEmail {
+  subject: string;
+  html: string;
+  text: string;
+}
+
+export interface TestResult {
+  ok: boolean;
+  message: string;
+}
+
+export interface DnsRecordCheck {
+  found: boolean;
+  record: string | null;
+  advice: string | null;
+}
+
+export interface DnsReport {
+  domain: string | null;
+  spf: DnsRecordCheck;
+  dmarc: DnsRecordCheck & { policy: string | null };
+  dkim: { checkable: false; advice: string };
+  checkedAt: string;
+}
+
+export interface EmailOverview {
+  smtp: {
+    configured: boolean;
+    enabled: boolean;
+    lastTestAt: string | null;
+    lastTestOk: boolean | null;
+    warnings: string[];
+    encryptionReady: boolean;
+  };
+  periodDays: number;
+  counts: Record<EmailStatus, number>;
+  failureRate: number | null;
+  oldestPendingAt: string | null;
+  recentFailures: EmailMessageRow[];
+  contacts: {
+    unread: number;
+    recent: Array<{ id: string; name: string; subject: string; isRead: boolean; createdAt: string }>;
+  };
+}

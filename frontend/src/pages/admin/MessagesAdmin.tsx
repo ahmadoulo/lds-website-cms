@@ -15,6 +15,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States
 import { IconButton } from '../../components/admin/ui/DataTable';
 import { cn } from '../../lib/cn';
 import type { ContactMessage, Paginated } from '../../lib/types';
+import { ContactEmails } from '../../components/admin/email/EmailParts';
 
 type Filter = 'all' | 'unread' | 'read';
 
@@ -222,6 +223,7 @@ export const MessagesAdmin = () => {
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-navy/80">
               {opened.message}
             </p>
+            <ContactEmails contactId={opened.id} />
           </div>
         )}
       </Modal>

@@ -72,6 +72,11 @@ const UsersAdmin = lazy(() =>
 const AuditAdmin = lazy(() =>
   import('./pages/admin/AuditAdmin').then((m) => ({ default: m.AuditAdmin })),
 );
+// Communication: four screens, one chunk each, loaded only when opened.
+const CommunicationOverview = lazy(() => import('./pages/admin/communication/CommunicationOverview'));
+const EmailSettingsAdmin = lazy(() => import('./pages/admin/communication/EmailSettingsAdmin'));
+const EmailTemplatesAdmin = lazy(() => import('./pages/admin/communication/EmailTemplatesAdmin'));
+const EmailHistoryAdmin = lazy(() => import('./pages/admin/communication/EmailHistoryAdmin'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -145,6 +150,10 @@ function App() {
                         <Route path="navigation" element={<NavigationAdmin />} />
                         <Route path="parametres" element={<SettingsAdmin />} />
                         <Route path="messages" element={<MessagesAdmin />} />
+                        <Route path="communication" element={<CommunicationOverview />} />
+                        <Route path="emails/configuration" element={<EmailSettingsAdmin />} />
+                        <Route path="emails/modeles" element={<EmailTemplatesAdmin />} />
+                        <Route path="emails/historique" element={<EmailHistoryAdmin />} />
                       </Route>
 
                       {/* Accounts and audit trail: super administrators only. */}
