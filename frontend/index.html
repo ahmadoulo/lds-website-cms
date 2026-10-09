@@ -30,6 +30,25 @@
     />
     <meta name="twitter:card" content="summary_large_image" />
 
+    <!--
+      Plausible, self-hosted at analytics.senovate.cloud.
+
+      Deferred, so it never competes with the first paint. The matching
+      script-src and connect-src entries are in nginx.conf: the second one is
+      the easy half to forget, and without it the tracker loads and then
+      records nothing at all.
+
+      The queue stub the install snippet puts beside this tag lives in
+      main.tsx instead. It is three lines of inline JavaScript, and allowing
+      inline script in the policy to carry them would have cost the one
+      directive that does the most to contain an XSS.
+    -->
+    <script
+      defer
+      data-domain="ldslouga.sn"
+      src="https://analytics.senovate.cloud/js/script.file-downloads.hash.outbound-links.pageview-props.tagged-events.js"
+    ></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

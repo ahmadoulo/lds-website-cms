@@ -20,6 +20,7 @@ const SHELL = `<!doctype html>
     <meta property="og:title" content="Louga Développement Solidaire" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="/logo-mark.png" />
+    <script defer data-domain="ldslouga.sn" src="https://analytics.senovate.cloud/js/script.js"></script>
   </head>
   <body><div id="root"></div><script type="module" src="/assets/index-abc.js"></script></body>
 </html>`;
@@ -218,6 +219,15 @@ describe('page shell', () => {
     expect(prisma.readSettings.mock.calls).toEqual([
       [{ where: { key: 'seo' } }],
     ]);
+  });
+
+  it('leaves the analytics tag alone', async () => {
+    const { html } = await render('/contact');
+
+    // The head is rewritten on every page view, so anything else living in it
+    // has to survive the rewrite. Nothing counts a pageview if this is eaten.
+    expect(html).toContain('data-domain="ldslouga.sn"');
+    expect(html).toContain('analytics.senovate.cloud');
   });
 
   it('keeps the application markup untouched', async () => {
