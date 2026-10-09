@@ -170,7 +170,7 @@ export const NewsletterSignup = ({
         htmlFor={`${id}-consent`}
         className={cn(
           'flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed',
-          dark ? 'text-white/60' : 'text-navy/65',
+          dark ? 'text-white/55' : 'text-navy/65',
         )}
       >
         <input
@@ -178,7 +178,9 @@ export const NewsletterSignup = ({
           type="checkbox"
           checked={consent}
           onChange={(event) => setConsent(event.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 rounded border-current"
+          // The browser's own box, in the brand's green: a bare white square
+          // on navy looked like something left unstyled.
+          className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded accent-green"
         />
         <span>
           {consentText}

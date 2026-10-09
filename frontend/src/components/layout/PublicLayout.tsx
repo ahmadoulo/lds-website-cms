@@ -442,18 +442,34 @@ const FooterNewsletter = () => {
   const status = useNewsletterStatus();
   if (!status.data?.available) return null;
 
+  /*
+    A panel of its own rather than a band between two rules. Ruled off, it
+    stacked a second divider just above the copyright line, and its form
+    started at a point that lined up with none of the columns above it. As a
+    panel it needs no rule, reads as one thing, and the form keeps a width an
+    email address actually needs instead of half the screen.
+  */
   return (
-    <section
-      aria-labelledby="footer-newsletter"
-      className="container-page mt-10 grid gap-5 border-t border-white/10 pt-8 sm:mt-14 md:grid-cols-[1fr_1.4fr] md:items-start md:gap-10"
-    >
-      <div>
-        <h2 id="footer-newsletter" className="text-base font-bold text-white">
-          {t.newsletter.title}
-        </h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-white/60">{t.newsletter.intro}</p>
+    <section aria-labelledby="footer-newsletter" className="container-page mt-10 sm:mt-14">
+      <div className="grid gap-5 rounded-panel bg-white/5 p-5 ring-1 ring-white/10 sm:p-7 md:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] md:items-center md:gap-10">
+        <div className="flex items-start gap-4">
+          <span
+            aria-hidden
+            className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green/15 text-green sm:flex"
+          >
+            <Mail className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 id="footer-newsletter" className="text-lg font-bold text-white">
+              {t.newsletter.title}
+            </h2>
+            <p className="mt-1 max-w-md text-sm leading-relaxed text-white/60">
+              {t.newsletter.intro}
+            </p>
+          </div>
+        </div>
+        <NewsletterSignup source="footer" tone="dark" />
       </div>
-      <NewsletterSignup source="footer" tone="dark" />
     </section>
   );
 };
