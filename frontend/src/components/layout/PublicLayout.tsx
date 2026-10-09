@@ -396,12 +396,31 @@ export const PublicLayout = () => {
             © {new Date().getFullYear()} {organizationName}. {layout.footer.rights}
           </span>
           {/*
-            No link to the administration.
+            No link to the administration here: a visitor has no use for it,
+            and printing it on every page only tells a scanner where the login
+            form is.
 
-            It served nobody: a visitor has no use for it, and the three people
-            who do know the address. Printing it on every page of a public site
-            only tells a scanner where the login form is.
+            The credit takes its place - same size and colour as the copyright,
+            so it reads as part of the footer's small print rather than as an
+            advertisement. Hardcoded, not a setting.
+
+            rel="noopener" without "noreferrer": noopener is the security half
+            (the new tab cannot reach back into this one); the referrer is what
+            tells Senovate the visit came from here, which is the point of a
+            credit link.
           */}
+          <span>
+            {layout.footer.creditLead}{' '}
+            <a
+              href="https://senovate-it.com"
+              target="_blank"
+              rel="noopener"
+              className="font-semibold text-white/65 underline-offset-4 transition-colors hover:text-white hover:underline"
+            >
+              <bdi>Senovate IT</bdi>
+              <span className="sr-only"> {layout.footer.creditOpensInNewTab}</span>
+            </a>
+          </span>
         </div>
       </footer>
     </div>

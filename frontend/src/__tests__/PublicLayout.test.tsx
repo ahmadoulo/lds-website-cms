@@ -162,3 +162,26 @@ describe('public layout — language switch', () => {
     expect(arabic).toHaveAttribute('hreflang', 'ar');
   });
 });
+
+describe('public layout — footer credit', () => {
+  it('credits Senovate IT with a link that opens in a new tab', () => {
+    renderWithProviders(<PublicLayout />);
+
+    const footer = document.querySelector('footer')!;
+    const link = within(footer).getByRole('link', { name: /Senovate IT/ });
+
+    expect(footer).toHaveTextContent('Site web offert par Senovate IT');
+    expect(link).toHaveAttribute('href', 'https://senovate-it.com');
+    expect(link).toHaveAttribute('target', '_blank');
+    // The new tab must not be able to reach back into this one.
+    expect(link.getAttribute('rel')).toContain('noopener');
+    // A link that opens a tab says so to someone who cannot see it happen.
+    expect(link).toHaveAccessibleName(/nouvel onglet/);
+  });
+
+  it('is not a setting: nothing from the back-office reaches it', () => {
+    // The settings mock returns nothing at all, and the credit is still there.
+    renderWithProviders(<PublicLayout />);
+    expect(document.querySelector('footer a[href="https://senovate-it.com"]')).not.toBeNull();
+  });
+});

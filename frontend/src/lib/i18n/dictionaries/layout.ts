@@ -50,6 +50,13 @@ export const layoutFr = {
     contactHeading: 'Contact',
     /** Follows the year and the organization name, which are composed in the JSX. */
     rights: 'Tous droits réservés.',
+    /**
+     * The credit for the people who built the site. Fixed in code on purpose,
+     * not a setting: it is not the association's content to edit. The brand
+     * name is the link and stays in Latin script in both languages.
+     */
+    creditLead: 'Site web offert par',
+    creditOpensInNewTab: '(s’ouvre dans un nouvel onglet)',
   },
   preview: {
     editor: 'Mode prévisualisation — vous voyez les modifications non publiées.',
@@ -101,6 +108,8 @@ export const layoutAr: LayoutDictionary = {
     footerNavigation: 'روابط أسفل الصفحة',
     contactHeading: 'اتصل بنا',
     rights: 'جميع الحقوق محفوظة.',
+    creditLead: 'موقع مُهدى من',
+    creditOpensInNewTab: '(يُفتح في علامة تبويب جديدة)',
   },
   preview: {
     editor: 'وضع المعاينة — أنت ترى التعديلات غير المنشورة.',
