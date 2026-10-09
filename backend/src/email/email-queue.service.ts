@@ -52,6 +52,17 @@ export const STALE_CLAIM_MS = 10 * 60_000;
  * already replied. Past this it is cancelled with that reason, not sent.
  */
 export const ACK_TTL_MS = 3 * 24 * 60 * 60_000;
+
+/**
+ * How long a finished email keeps its body.
+ *
+ * The body is a copy of personal content: a visitor's message quoted back to
+ * the team, a campaign addressed to someone by their unsubscribe link. It is
+ * kept long enough to answer "what exactly did we send?" and to retry a
+ * failure, then cleared. The row itself stays - recipient, subject, status,
+ * dates - so the history and the statistics are not affected.
+ */
+export const BODY_RETENTION_DAYS = 90;
 const EXPIRING_KINDS = new Set(['contact_ack']);
 
 @Injectable()
@@ -302,6 +313,13 @@ export class EmailQueueService {
     if (message.status !== 'FAILED' && message.status !== 'CANCELLED') {
       throw new Error('Seul un envoi en échec ou annulé peut être relancé.');
     }
+    if (!message.html && !message.text) {
+      // Past the retention period the body is gone, and an empty email is
+      // not a retry.
+      throw new Error(
+        'Le contenu de cet email a été effacé (conservation limitée) : il ne peut plus être renvoyé.',
+      );
+    }
     return this.prisma.emailMessage.update({
       where: { id },
       data: {
@@ -312,6 +330,20 @@ export class EmailQueueService {
         error: null,
       },
     });
+  }
+
+  /** Clears the bodies of finished emails past the retention period. */
+  async purgeBodies(days = BODY_RETENTION_DAYS): Promise<number> {
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60_000);
+    const { count } = await this.prisma.emailMessage.updateMany({
+      where: {
+        status: { in: ['SENT', 'FAILED', 'CANCELLED'] },
+        updatedAt: { lt: cutoff },
+        NOT: { html: '' },
+      },
+      data: { html: '', text: '' },
+    });
+    return count;
   }
 
   /** Withdraws a message that has not been sent yet. */

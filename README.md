@@ -57,6 +57,11 @@ introduites par une mise à jour.
 | `JWT_SECRET`, `JWT_REFRESH_SECRET` | générés — les modifier déconnecte simplement les sessions en cours |
 | `ADMIN_SEED_PASSWORD` | mot de passe du premier administrateur, à changer dès la première connexion |
 | `TRUST_PROXY_HOPS` | nombre de proxys devant l'API (`1` = le nginx intégré) |
+| `EMAIL_ENCRYPTION_KEY` | générée — chiffre le mot de passe SMTP et signe les liens de désinscription. **Ne la changez jamais** après la première configuration : le mot de passe SMTP deviendrait illisible et les liens de désinscription des newsletters déjà envoyées cesseraient de fonctionner |
+| `PUBLIC_SITE_URL` | facultative — adresse publique écrite dans les emails (`https://ldslouga.sn`). Vide : celle enregistrée dans *Communication → Configuration email* |
+| `EMAIL_WORKER_DISABLED` | facultative — `true` empêche ce conteneur d'envoyer (utile pour un second conteneur d'API) |
+
+L'envoi des emails est décrit dans [docs/EMAIL.md](docs/EMAIL.md).
 
 `JWT_SECRET` et `JWT_REFRESH_SECRET` n'ont pas de valeur par défaut en
 production : l'API refuse de démarrer si elles sont absentes.

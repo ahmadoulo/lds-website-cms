@@ -7,6 +7,7 @@ import { MinioService } from './../src/common/minio.service';
 import { createFakeMinio } from './fake-prisma';
 import { ADMIN, SEED_PASSWORD, createStatefulPrisma } from './stateful-prisma';
 import { bootTestApp, type TestContext } from './setup-app';
+import { EmailQueueService } from './../src/email/email-queue.service';
 
 const EMAIL_ENDPOINTS: Array<[string, string]> = [
   ['get', '/api/v1/email/overview'],
@@ -315,6 +316,43 @@ describe('Email — the contact flow and its secrets (e2e)', () => {
       .set(auth())
       .send({ subject: { fr: 'Bonjour\r\nBcc: everyone@example.com' } })
       .expect(400));
+
+  it('clears the body of an old finished email, keeps the row, and will not retry it', async () => {
+    const old = new Date(Date.now() - 91 * 24 * 60 * 60_000);
+    const rows = prisma.__store.emailMessage as any[];
+    const base = {
+      kind: 'contact_ack',
+      toEmail: 'ancien@example.com',
+      fromName: 'LDS',
+      fromEmail: 'contact@ldslouga.sn',
+      subject: 'Ancien',
+      html: '<p>Message personnel</p>',
+      text: 'Message personnel',
+      attempts: 1,
+      createdAt: old,
+    };
+    rows.push(
+      { ...base, id: 'aaaaaaaa-0000-4000-8000-000000000001', status: 'FAILED', updatedAt: old },
+      { ...base, id: 'aaaaaaaa-0000-4000-8000-000000000002', status: 'SENT', updatedAt: new Date() },
+      { ...base, id: 'aaaaaaaa-0000-4000-8000-000000000003', status: 'PENDING', updatedAt: old },
+    );
+
+    await app.get(EmailQueueService).purgeBodies();
+
+    const [failedOld, sentRecent, pendingOld] = [1, 2, 3].map((n) =>
+      rows.find((row) => row.id === `aaaaaaaa-0000-4000-8000-00000000000${n}`),
+    );
+    expect(failedOld.html).toBe('');
+    expect(failedOld.subject).toBe('Ancien'); // The history keeps the row.
+    expect(sentRecent.html).not.toBe('');
+    expect(pendingOld.html).not.toBe(''); // Never the body of something still to send.
+
+    const retry = await request(http)
+      .post(`/api/v1/email/messages/${failedOld.id}/retry`)
+      .set(auth())
+      .expect(400);
+    expect(retry.body.message).toMatch(/effacé/);
+  });
 
   it('records who changed the SMTP settings, never what the password became', async () => {
     const entries = prisma.__store.auditLog.filter(

@@ -26,6 +26,8 @@ export class EmailWorker implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(EmailWorker.name);
   private timer: NodeJS.Timeout | null = null;
   private running = false;
+  /** When the bodies were last purged; once a day is plenty. */
+  private lastPurge = 0;
 
   constructor(private readonly queue: EmailQueueService) {}
 
@@ -61,6 +63,10 @@ export class EmailWorker implements OnModuleInit, OnModuleDestroy {
     this.running = true;
     try {
       await this.queue.processBatch();
+      if (Date.now() - this.lastPurge > 24 * 60 * 60_000) {
+        await this.queue.purgeBodies();
+        this.lastPurge = Date.now();
+      }
     } catch (error) {
       // Never rethrown: a failed pass must not stop the next one.
       this.logger.error(
