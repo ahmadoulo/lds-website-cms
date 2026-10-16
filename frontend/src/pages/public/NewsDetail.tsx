@@ -169,7 +169,8 @@ export const NewsDetail = () => {
               decoding="async"
               width={1600}
               height={900}
-              className="mb-8 aspect-[16/9] w-full rounded-2xl object-cover shadow-e3 sm:mb-10"
+              /* Contained: a poster keeps its title and dates. */
+              className="mb-8 aspect-[16/9] w-full rounded-2xl bg-warm-muted object-contain shadow-e3 sm:mb-10"
             />
           )}
 

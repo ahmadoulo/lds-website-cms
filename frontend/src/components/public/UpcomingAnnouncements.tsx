@@ -31,10 +31,13 @@ export const UpcomingAnnouncements = ({ articles }: { articles: NewsArticle[] })
         <ul
           className={cn(
             'grid gap-4 sm:gap-8',
-            articles.length === 1 ? 'mx-auto max-w-2xl' : 'sm:grid-cols-2 lg:grid-cols-3',
+            articles.length === 1 ? 'mx-auto max-w-5xl' : 'sm:grid-cols-2 lg:grid-cols-3',
           )}
         >
           {articles.map((article) => {
+            // Alone, the card lies on its side from md up: image beside the
+            // text rather than a full-width poster above it.
+            const single = articles.length === 1;
             const title = localizedOrSource(article.title, locale);
             const excerpt = localized(article.excerpt, locale);
             const place = localized(article.location, locale);
@@ -44,20 +47,41 @@ export const UpcomingAnnouncements = ({ articles }: { articles: NewsArticle[] })
             return (
               <li
                 key={article.id}
-                className="flex flex-col overflow-hidden rounded-card bg-white shadow-e2 ring-1 ring-navy/5"
-              >
-                {article.image && (
-                  <img
-                    {...responsiveImage(article.image.url, '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw', 960)}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    width={1200}
-                    height={750}
-                    className="aspect-[16/10] w-full object-cover"
-                  />
+                className={cn(
+                  'flex flex-col overflow-hidden rounded-card bg-white shadow-e2 ring-1 ring-navy/5',
+                  single && 'md:grid md:grid-cols-2',
                 )}
-                <div className="flex flex-1 flex-col p-5 sm:p-7">
+              >
+                {/*
+                  Contained, not cropped: an announcement's image is often a
+                  poster, and cropping it cuts off its own title and dates.
+                  The frame keeps a fixed ratio so nothing shifts as it loads.
+                */}
+                {article.image && (
+                  <div
+                    className={cn(
+                      'relative aspect-[16/10] w-full bg-navy/5',
+                      single && 'md:aspect-auto md:h-full md:min-h-72',
+                    )}
+                  >
+                    <img
+                      {...responsiveImage(
+                        article.image.url,
+                        single
+                          ? '(min-width: 1024px) 512px, (min-width: 768px) 50vw, 100vw'
+                          : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw',
+                        960,
+                      )}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      width={1200}
+                      height={750}
+                      className="absolute inset-0 h-full w-full object-contain"
+                    />
+                  </div>
+                )}
+                <div className={cn('flex flex-1 flex-col p-5 sm:p-7', single && 'md:justify-center')}>
                   {article.isFeatured && (
                     <span className="mb-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-orange/10 px-3 py-1 text-caption font-bold text-orange">
                       <Star className="h-3 w-3" aria-hidden /> {t.featured}
